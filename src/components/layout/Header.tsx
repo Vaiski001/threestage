@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +20,11 @@ export function Header() {
   const { isAuthenticated, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Hide auth status on homepage
+  const isHomePage = location.pathname === "/";
+  const showAuthButtons = !isAuthenticated || !isHomePage;
 
   const handleSignOut = async () => {
     try {
@@ -81,7 +86,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-4">
-            {isAuthenticated ? (
+            {isAuthenticated && !isHomePage ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
@@ -115,33 +120,35 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <Button variant="outline" className="hidden sm:flex gap-2" onClick={handleForceSignOut}>
-                  <RefreshCcw className="h-4 w-4" />
-                  <span>Reset Auth</span>
-                </Button>
-                <div className="hidden sm:block">
-                  <Button variant="outline" onClick={() => navigate("/login")}>
-                    Log in
+              showAuthButtons && (
+                <>
+                  <Button variant="outline" className="hidden sm:flex gap-2" onClick={handleForceSignOut}>
+                    <RefreshCcw className="h-4 w-4" />
+                    <span>Reset Auth</span>
                   </Button>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button>
-                      Sign up
-                      <ChevronDown className="ml-2 h-4 w-4" />
+                  <div className="hidden sm:block">
+                    <Button variant="outline" onClick={() => navigate("/login")}>
+                      Log in
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => navigate("/signup-customer")}>
-                      As Customer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/signup-company")}>
-                      As Company
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button>
+                        Sign up
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => navigate("/signup-customer")}>
+                        As Customer
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/signup-company")}>
+                        As Company
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              )
             )}
 
             <button
@@ -185,7 +192,7 @@ export function Header() {
               >
                 Contact
               </Link>
-              {!isAuthenticated && (
+              {showAuthButtons && !isAuthenticated && (
                 <>
                   <Button 
                     variant="ghost" 
