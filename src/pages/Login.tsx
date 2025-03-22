@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -22,7 +21,6 @@ export default function Login() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check Supabase service status when the component mounts
     const checkServiceStatus = async () => {
       try {
         const isAvailable = await isSupabaseAvailable();
@@ -35,21 +33,17 @@ export default function Login() {
     
     checkServiceStatus();
     
-    // Set up interval to check periodically (every 30 seconds)
     const statusInterval = setInterval(checkServiceStatus, 30000);
     
     return () => clearInterval(statusInterval);
   }, []);
 
   useEffect(() => {
-    // Check for success message passed via location state (from signup or unauthorized page)
     if (location.state && location.state.message) {
       setSuccessMessage(location.state.message);
       
-      // Clear the state so it doesn't persist on page refresh
       window.history.replaceState({}, document.title);
       
-      // Auto-clear success message after 15 seconds
       const timer = setTimeout(() => {
         setSuccessMessage(null);
       }, 15000);
@@ -57,18 +51,14 @@ export default function Login() {
       return () => clearTimeout(timer);
     }
     
-    // Check for error message passed via location state
     if (location.state && location.state.error) {
       setError(location.state.error);
       
-      // Clear the state so it doesn't persist on page refresh
       window.history.replaceState({}, document.title);
     }
   }, [location]);
 
-  // Only redirect to dashboard if user is logged in AND they're not explicitly trying to access the login page
   useEffect(() => {
-    // If the user is explicitly trying to access the login page, don't redirect
     const isExplicitLoginAttempt = location.pathname === "/login";
     
     if (user && !isExplicitLoginAttempt) {
@@ -78,12 +68,10 @@ export default function Login() {
   }, [user, navigate, location]);
 
   const handleLoginSuccess = async () => {
-    // Ensure we have the latest profile data before redirecting
     try {
       console.log("Login successful, refreshing profile before redirect");
       setIsRefreshing(true);
       
-      // Try to refresh profile up to 3 times with a short delay
       let attempts = 0;
       const maxAttempts = 3;
       
@@ -99,7 +87,6 @@ export default function Login() {
           console.error(`Profile refresh attempt ${attempts} failed:`, err);
           
           if (attempts < maxAttempts) {
-            // Wait a moment before trying again
             await new Promise(resolve => setTimeout(resolve, 800));
           }
         }
@@ -175,7 +162,13 @@ export default function Login() {
               <Alert className="mb-6 border-yellow-200 bg-yellow-50">
                 <Info className="h-4 w-4 text-yellow-600" />
                 <AlertDescription className="text-yellow-700">
-                  We're experiencing some CAPTCHA verification issues. Please try using Google login instead, or try again later.
+                  <p>We're experiencing some CAPTCHA verification issues. Please try:</p>
+                  <ol className="list-decimal ml-5 mt-2 space-y-1">
+                    <li>Using Google login instead (recommended)</li>
+                    <li>Waiting a few minutes before trying again</li>
+                    <li>Clearing your browser cookies and cache</li>
+                    <li>Using a different browser or device</li>
+                  </ol>
                 </AlertDescription>
               </Alert>
             )}

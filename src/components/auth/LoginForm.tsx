@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmail, signInWithGoogle } from "@/lib/supabase";
@@ -32,13 +31,11 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   
-  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Check Supabase availability on component mount
   useEffect(() => {
     const checkSupabaseAvailability = async () => {
       setIsCheckingConnection(true);
@@ -64,7 +61,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     checkSupabaseAvailability();
   }, [onError]);
 
-  // Clean up timeout when component unmounts
   useEffect(() => {
     return () => {
       if (loginTimeout) {
@@ -101,7 +97,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       return;
     }
     
-    // Check Supabase availability before submitting
     try {
       const isAvailable = await isSupabaseAvailable();
       if (!isAvailable) {
@@ -116,12 +111,10 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         return;
       }
     } catch (error) {
-      // Continue anyway, the actual login will catch any errors
     }
     
     setIsLoading(true);
     
-    // Set a login timeout to prevent UI from being stuck
     const timeout = setTimeout(() => {
       setIsLoading(false);
       const timeoutMsg = "Login request timed out. Please try again.";
@@ -136,7 +129,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         description: "The login request took too long to complete. Please try again.",
         variant: "destructive",
       });
-    }, 15000); // 15 second timeout
+    }, 15000);
     
     setLoginTimeout(timeout);
     
@@ -144,7 +137,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       console.log("Attempting login with:", { email });
       const { data, error } = await signInWithEmail(email, password);
       
-      // Clear the timeout since we got a response
       if (loginTimeout) {
         clearTimeout(loginTimeout);
         setLoginTimeout(null);
@@ -193,7 +185,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           navigate("/dashboard");
         }
       } else {
-        // Handle the case where login succeeded but no user was returned
         console.error("No user returned after successful login");
         const noUserMsg = "Login succeeded but user data couldn't be retrieved. Please try again.";
         setErrorMessage(noUserMsg);
@@ -203,7 +194,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         }
       }
     } catch (error: any) {
-      // Clear the timeout since we got a response
       if (loginTimeout) {
         clearTimeout(loginTimeout);
         setLoginTimeout(null);
@@ -246,7 +236,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   };
 
   const handleGoogleLogin = async () => {
-    // Check Supabase availability before proceeding
     try {
       const isAvailable = await isSupabaseAvailable();
       if (!isAvailable) {
@@ -261,13 +250,11 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         return;
       }
     } catch (error) {
-      // Continue anyway, the actual Google login will catch errors
     }
     
     setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // Note: We don't set success here because the page will redirect to Google
     } catch (error: any) {
       console.error("Google login error:", error);
       
@@ -423,7 +410,12 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         <Alert className="bg-yellow-50 border-yellow-200">
           <Info className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-700">
-            CAPTCHA verification is preventing direct login. Please try using Google login instead, or try again later.
+            <p>CAPTCHA verification is preventing direct login. Please try:</p>
+            <ul className="list-disc ml-5 mt-2 space-y-1">
+              <li>Using Google login instead (recommended)</li>
+              <li>Waiting 15 minutes before trying again</li>
+              <li>Clearing your browser cookies and cache</li>
+            </ul>
           </AlertDescription>
         </Alert>
       )}
