@@ -76,9 +76,9 @@ export default function Signup() {
               <Button 
                 variant="link" 
                 className="p-0" 
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/login")}
               >
-                Back to Home
+                Log in
               </Button>
             </div>
           </div>

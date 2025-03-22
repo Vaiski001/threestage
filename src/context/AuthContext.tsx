@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, UserProfile, forceSignOut } from '@/lib/supabase';
+import { supabase, UserProfile, forceSignOut, handleOAuthSignIn } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -27,6 +27,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Handle OAuth callback
+  useEffect(() => {
+    // Parse the hash from the URL if it exists
+    const handleOAuthCallback = async () => {
+      // Check if we have a hash in the URL (this indicates an OAuth callback)
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        console.log("Detected OAuth callback");
+        
+        try {
+          // The hash will be automatically handled by Supabase auth
+          const { data, error } = await supabase.auth.getSession();
+          
+          if (error) {
+            console.error("Error retrieving session after OAuth:", error);
+            toast({
+              title: "Authentication Error",
+              description: "There was an error logging in with your social account.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          if (data.session?.user) {
+            console.log("OAuth login successful for user:", data.session.user.id);
+            
+            // Get the role that was stored before the OAuth flow
+            const role = localStorage.getItem('oauth_role') || 'customer';
+            
+            // Handle the OAuth sign-in (create profile if necessary)
+            const profile = await handleOAuthSignIn(data.session.user, role as UserProfile['role']);
+            
+            if (profile) {
+              setUser(data.session.user);
+              setProfile(profile);
+              
+              toast({
+                title: "Login successful",
+                description: `Welcome${profile.name ? ', ' + profile.name : ''}!`,
+              });
+              
+              // Clean up the OAuth data
+              localStorage.removeItem('oauth_role');
+              localStorage.removeItem('oauth_provider');
+              localStorage.removeItem('oauth_timestamp');
+            }
+          }
+        } catch (error) {
+          console.error("Error processing OAuth callback:", error);
+        }
+      }
+    };
+    
+    handleOAuthCallback();
+  }, [toast]);
 
   // Check for session on initial load
   useEffect(() => {
