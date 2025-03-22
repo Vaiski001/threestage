@@ -36,13 +36,16 @@ export default function Login() {
     }
   }, [location]);
 
-  // If user is already logged in, redirect to dashboard
+  // Only redirect to dashboard if user is logged in AND they're not explicitly trying to access the login page
   useEffect(() => {
-    if (user) {
+    // If the user is explicitly trying to access the login page, don't redirect
+    const isExplicitLoginAttempt = location.pathname === "/login";
+    
+    if (user && !isExplicitLoginAttempt) {
       console.log("User already logged in, redirecting to dashboard");
       navigate("/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, navigate, location]);
 
   const handleLoginSuccess = async () => {
     // Ensure we have the latest profile data before redirecting
