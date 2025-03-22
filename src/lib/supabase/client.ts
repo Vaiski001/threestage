@@ -19,6 +19,11 @@ if (supabaseUrl === 'https://placeholder-project.supabase.co' || supabaseAnonKey
   );
 }
 
+console.log("Supabase configuration:", {
+  url: supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+});
+
 // Use a singleton pattern to ensure only one instance is created
 let supabaseInstance: ReturnType<typeof createClient> | null = null;
 
@@ -31,7 +36,15 @@ const getSupabaseClient = () => {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false, // We'll handle this manually
-        storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`
+        storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`,
+      },
+      global: {
+        fetch: (...args) => {
+          return fetch(...args).catch(err => {
+            console.error('Fetch error in Supabase client:', err);
+            throw err;
+          });
+        }
       }
     });
   }

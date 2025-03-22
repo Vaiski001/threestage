@@ -32,10 +32,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        console.log("Checking for existing session...");
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          return;
+        }
+        
         if (data.session?.user) {
+          console.log("Found existing session for user:", data.session.user.id);
           setUser(data.session.user);
           // We'll fetch profile data in a separate effect
+        } else {
+          console.log("No active session found");
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -56,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchProfile = async () => {
       try {
+        console.log("Fetching profile for user:", user.id);
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -72,21 +83,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         
+        console.log("Profile data received:", data);
+        
         // Properly type cast the data to UserProfile
         const profileData: UserProfile = {
-          id: data.id as string,
-          email: data.email as string,
-          role: data.role as UserProfile['role'],
-          name: data.name as string,
-          created_at: data.created_at as string,
+          id: data.id,
+          email: data.email,
+          role: data.role,
+          name: data.name,
+          created_at: data.created_at,
         };
         
         // Add optional fields if they exist
-        if (data.company_name) profileData.company_name = data.company_name as string;
-        if (data.phone) profileData.phone = data.phone as string;
-        if (data.industry) profileData.industry = data.industry as string;
-        if (data.website) profileData.website = data.website as string;
-        if (data.integrations) profileData.integrations = data.integrations as string[];
+        if (data.company_name) profileData.company_name = data.company_name;
+        if (data.phone) profileData.phone = data.phone;
+        if (data.industry) profileData.industry = data.industry;
+        if (data.website) profileData.website = data.website;
+        if (data.integrations) profileData.integrations = data.integrations;
 
         setProfile(profileData);
       } catch (error) {
