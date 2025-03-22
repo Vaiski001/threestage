@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
@@ -25,6 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const { toast } = useToast();
 
   // Initialize database tables if needed
@@ -55,10 +57,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkSession = async () => {
       try {
         console.log("Checking for existing session...");
+        setLoading(true);
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error checking session:", error);
+          setLoading(false);
           return;
         }
         
@@ -89,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const fetchProfile = async () => {
       try {
         console.log("Fetching profile for user:", user.id);
+        setProfileLoading(true);
         
         // Ensure profiles table exists first
         const tableExists = await ensureProfilesTableExists();
@@ -115,12 +120,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (createdProfile) {
                 console.log("Created new profile during fetch:", createdProfile);
                 setProfile(createdProfile);
-                return;
               } else {
                 console.error("Failed to create profile during fetch");
               }
             } catch (createError) {
               console.error("Error creating profile during fetch:", createError);
+            } finally {
+              setProfileLoading(false);
             }
           }
           return;
@@ -128,6 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (!data) {
           console.log("No profile found for user:", user.id);
+          setProfileLoading(false);
           return;
         }
         
@@ -152,6 +159,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(profileData);
       } catch (error) {
         console.error("Error in profile fetch:", error);
+      } finally {
+        setProfileLoading(false);
       }
     };
 
@@ -202,7 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       profile, 
-      loading, 
+      loading: loading || profileLoading, // Consider both loading states
       isAuthenticated: !!user,
       resetAuth
     }}>

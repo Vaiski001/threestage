@@ -104,8 +104,8 @@ const CompanyDashboard = () => {
                     <p className="text-muted-foreground">Here's what's happening with your enquiries today.</p>
                   </div>
                   <div className="flex gap-3">
-                    <Button variant="outline">Export</Button>
-                    <Button>Add New</Button>
+                    <Button variant="outline" onClick={() => toast({ title: "Feature coming soon", description: "Export functionality is coming soon." })}>Export</Button>
+                    <Button onClick={() => toast({ title: "Feature coming soon", description: "Add new functionality is coming soon." })}>Add New</Button>
                   </div>
                 </div>
 
@@ -151,7 +151,7 @@ const CompanyDashboard = () => {
               </Container>
             </div>
 
-            {/* Always show the Kanban board, it will display its own empty state */}
+            {/* Always show the Kanban board with empty state */}
             <KanbanBoard isDemo={false} />
           </main>
         </div>
