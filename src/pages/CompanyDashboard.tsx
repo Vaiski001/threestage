@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 
 const CompanyDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+
+  // Set mounted state to true after the component mounts
+  useEffect(() => {
+    setMounted(true);
+    
+    console.log("CompanyDashboard mounted, profile:", profile);
+  }, [profile]);
 
   // Stats for all company users (showing zero values initially)
   const stats = [
@@ -20,6 +28,17 @@ const CompanyDashboard = () => {
     { label: "Response Time", value: "0h", change: "0h", changeType: "neutral" },
     { label: "Conversion Rate", value: "0%", change: "0%", changeType: "neutral" }
   ];
+
+  // If not mounted yet, show minimal loading state
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg">Loading company dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

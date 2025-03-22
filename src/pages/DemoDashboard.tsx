@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { Header } from "@/components/layout/Header";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";

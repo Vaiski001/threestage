@@ -17,15 +17,21 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
   useEffect(() => {
     if (loading) return;
 
-    // Skip redirection if we're already on the correct dashboard or designated paths
+    // Define paths that should always be accessible regardless of auth state
+    const publicPaths = ['/', '/demo', '/login', '/signup', '/unauthorized'];
+    const isPublicPath = publicPaths.some(path => location.pathname === path || location.pathname.startsWith('/auth/'));
+    
+    // Skip redirection for public paths or if already on correct dashboard
+    if (isPublicPath) {
+      return;
+    }
+    
     const currentPath = location.pathname;
     const isOnCorrectDashboard = 
       (profile?.role === 'company' && currentPath.includes('/company/')) ||
       (profile?.role === 'customer' && currentPath.includes('/customer/')) ||
-      currentPath === '/' || 
-      currentPath.includes('/profile') ||
-      currentPath.includes('/auth/callback');
-
+      currentPath.includes('/profile');
+    
     if (profile && !isOnCorrectDashboard) {
       console.log("RoleRouter redirecting user based on role:", profile.role);
       
