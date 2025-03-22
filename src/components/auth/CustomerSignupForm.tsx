@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -98,7 +97,12 @@ export function CustomerSignupForm() {
       
       // Clear form and redirect
       form.reset();
-      navigate("/login");
+      
+      // Add a small delay to allow toast to show before redirect
+      setTimeout(() => {
+        console.log("[CustomerSignup] Redirecting to login page");
+        navigate("/login");
+      }, 500);
       
     } catch (error: any) {
       console.error("[CustomerSignup] Signup error:", error);

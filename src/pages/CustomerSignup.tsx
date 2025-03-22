@@ -33,6 +33,9 @@ export default function CustomerSignup() {
           } else {
             navigate("/profile");
           }
+        } else {
+          // Explicitly handle the case where there's no session
+          console.log("CustomerSignup: No existing session found, showing signup form");
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -55,7 +58,7 @@ export default function CustomerSignup() {
     }, 3000); // 3 seconds timeout
     
     return () => clearTimeout(timeoutId);
-  }, [navigate, toast, isCheckingAuth]);
+  }, [navigate, toast]);
   
   if (isCheckingAuth) {
     console.log("CustomerSignup: Showing loading state");
