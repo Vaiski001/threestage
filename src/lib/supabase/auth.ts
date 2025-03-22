@@ -292,10 +292,10 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
     if (!existingProfile) {
       console.log('No existing profile found, creating new profile');
       
-      const newProfile = {
+      const newProfile: UserProfile = {
         id: user.id,
         email: user.email || '',
-        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        name: user.user_metadata?.full_name as string || user.user_metadata?.name as string || '',
         role: role,
         created_at: new Date().toISOString()
       };
@@ -311,24 +311,24 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       
       console.log('New profile created successfully');
       
-      return newProfile as UserProfile;
+      return newProfile;
     }
     
     console.log('Existing profile found:', existingProfile);
     
     const profile: UserProfile = {
-      id: existingProfile.id,
-      email: existingProfile.email || '',
-      role: existingProfile.role,
-      name: existingProfile.name || '',
-      created_at: existingProfile.created_at,
+      id: existingProfile.id as string,
+      email: existingProfile.email as string,
+      role: existingProfile.role as UserRole,
+      name: existingProfile.name as string,
+      created_at: existingProfile.created_at as string,
     };
     
-    if (existingProfile.company_name) profile.company_name = existingProfile.company_name;
-    if (existingProfile.phone) profile.phone = existingProfile.phone;
-    if (existingProfile.industry) profile.industry = existingProfile.industry;
-    if (existingProfile.website) profile.website = existingProfile.website;
-    if (existingProfile.integrations) profile.integrations = existingProfile.integrations;
+    if (existingProfile.company_name) profile.company_name = existingProfile.company_name as string;
+    if (existingProfile.phone) profile.phone = existingProfile.phone as string;
+    if (existingProfile.industry) profile.industry = existingProfile.industry as string;
+    if (existingProfile.website) profile.website = existingProfile.website as string;
+    if (existingProfile.integrations) profile.integrations = existingProfile.integrations as string[] || [];
     
     return profile;
   } catch (error) {
