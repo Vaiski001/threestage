@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase";
 
@@ -13,11 +13,18 @@ export default function Unauthorized() {
   const location = useLocation();
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isSuggestionVisible, setIsSuggestionVisible] = useState(false);
 
   // Extract error message from location state if available
   useEffect(() => {
     if (location.state && location.state.errorMessage) {
       setErrorDetails(location.state.errorMessage);
+      
+      // Check if this is an RLS error and show suggestions
+      if (location.state.errorMessage.includes("row-level security") || 
+          location.state.errorMessage.includes("RLS")) {
+        setIsSuggestionVisible(true);
+      }
     }
   }, [location]);
 
@@ -57,6 +64,17 @@ export default function Unauthorized() {
               <Alert variant="destructive" className="max-w-md mx-auto">
                 <AlertTitle>Error Details</AlertTitle>
                 <AlertDescription>{errorDetails}</AlertDescription>
+              </Alert>
+            )}
+            
+            {isSuggestionVisible && (
+              <Alert className="max-w-md mx-auto">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Database Permission Issue</AlertTitle>
+                <AlertDescription className="text-left">
+                  <p className="mb-2">This is a Supabase Row-Level Security (RLS) error. Your account creation was successful, but the profile could not be created due to security settings.</p>
+                  <p>Please try signing out, then sign in with the account you just created.</p>
+                </AlertDescription>
               </Alert>
             )}
             

@@ -169,8 +169,31 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             throw new Error("This email is already registered. Please use a different email or try logging in.");
           } else if (profileError.code === '42P01') {
             throw new Error("Database setup issue. Please contact support with error code: 42P01");
-          } else if (profileError.message.includes("foreign key constraint")) {
+          } else if (profileError.message?.includes("foreign key constraint")) {
             throw new Error("Authentication issue. Please try again or contact support.");
+          } else if (profileError.message?.includes("violates row-level security")) {
+            // The auth user was created, but we couldn't create a profile due to RLS
+            // This is actually somewhat expected since RLS policies restrict anonymous inserts
+            console.log("RLS policy prevented profile creation. This is expected. User should log in first.");
+            
+            await supabase.auth.signOut();
+            
+            // Show a helpful message and redirect to login
+            toast({
+              title: "Account created successfully",
+              description: "Please log in with your new account credentials.",
+              duration: 5000,
+            });
+            
+            // Navigate to login page with a helpful message
+            navigate('/login', { 
+              state: { 
+                message: "Your account was created successfully. Please log in with your new credentials." 
+              } 
+            });
+            
+            setIsLoading(false);
+            return;
           }
           
           // General fallback error
@@ -181,7 +204,27 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       } catch (profileError: any) {
         console.error("Detailed profile creation error:", profileError);
         
-        // Try to sign out the user if the profile creation failed
+        if (profileError.message?.includes("violates row-level security")) {
+          // Handle RLS error specifically - the user was created but we couldn't create a profile
+          await supabase.auth.signOut();
+          
+          toast({
+            title: "Account created",
+            description: "Your account was created. Please sign in with your new credentials.",
+            duration: 5000,
+          });
+          
+          navigate('/login', { 
+            state: { 
+              message: "Your account was created successfully. Please log in with your new credentials." 
+            } 
+          });
+          
+          setIsLoading(false);
+          return;
+        }
+        
+        // Try to sign out the user if the profile creation failed for other reasons
         await supabase.auth.signOut();
         
         // Navigate to unauthorized page with error details

@@ -49,6 +49,16 @@ export const ensureProfilesTableExists = async () => {
           CREATE POLICY "Users can update their own profile"
             ON public.profiles FOR UPDATE
             USING (auth.uid() = id);
+            
+          -- Allow users to insert their own profile only
+          CREATE POLICY "Users can insert their own profile"
+            ON public.profiles FOR INSERT
+            WITH CHECK (auth.uid() = id);
+            
+          -- Admin policy for full access (requires setting up admin role)
+          CREATE POLICY "Admin has full access"
+            ON public.profiles
+            USING (auth.jwt() ? auth.jwt()->>'role' = 'admin' : false);
         `);
         
         // Try a fallback: Create the profile table by directly inserting a sample profile
@@ -166,6 +176,17 @@ export const createUserProfile = async (profileData: Partial<UserProfile>) => {
       throw new Error('User ID is required to create a profile');
     }
     
+    // Get the current user to verify if authenticated
+    const { data: authData } = await supabase.auth.getUser();
+    const isAuthenticated = !!authData.user;
+    const isSameUser = isAuthenticated && authData.user.id === profileData.id;
+    
+    if (!isAuthenticated) {
+      console.warn('Attempting to create profile while not authenticated - this may fail due to RLS policies');
+    } else if (!isSameUser) {
+      console.warn('Attempting to create profile for a different user ID - this may fail due to RLS policies');
+    }
+    
     // Convert UserProfile to Record<string, unknown>
     const profileRecord: Record<string, unknown> = {};
     
@@ -207,6 +228,8 @@ export const createUserProfile = async (profileData: Partial<UserProfile>) => {
         throw new Error('The profiles table does not exist. Please set up your database first.');
       } else if (error.message?.includes('foreign key constraint')) {
         throw new Error('There was an issue with user authentication. Please sign out and try again.');
+      } else if (error.message?.includes('violates row-level security')) {
+        throw new Error('new row violates row-level security policy for table "profiles"');
       }
       
       throw error;
