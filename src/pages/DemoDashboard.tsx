@@ -121,7 +121,7 @@ const DemoDashboard = () => {
               </Container>
             </div>
 
-            <KanbanBoard />
+            <KanbanBoard isDemo={true} />
           </main>
         </div>
       </div>
