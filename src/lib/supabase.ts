@@ -1,3 +1,4 @@
+
 import { createClient, User } from '@supabase/supabase-js';
 
 // For local development, use environment variables
@@ -103,7 +104,13 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     // Use window.location.origin to ensure it matches exactly where the app is hosted
     const redirectTo = `${window.location.origin}/auth/callback?role=${role}`;
     
-    console.log(`OAuth redirect URL: ${redirectTo}`);
+    console.log(`OAuth sign-in initiated with ${provider}`);
+    console.log(`Redirect URL: ${redirectTo}`);
+    
+    // Store the role in local storage so we can retrieve it after redirect
+    localStorage.setItem('oauth_role', role);
+    localStorage.setItem('oauth_provider', provider);
+    localStorage.setItem('oauth_timestamp', Date.now().toString());
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -117,6 +124,10 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     });
     
     if (error) throw error;
+    
+    // The user will be redirected to the OAuth provider here,
+    // so we won't actually reach the code below until they return
+    console.log("OAuth redirect initiated successfully");
     return data;
   } catch (error: any) {
     console.error(`Error signing in with ${provider}:`, error);
@@ -199,14 +210,23 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
   if (!user) return null;
   
   try {
+    console.log(`Handling OAuth sign-in for user ${user.id} with role ${role}`);
+    
     // Check if profile exists
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
     
+    if (profileError && profileError.code !== 'PGRST116') {
+      // If it's not a "not found" error, log and throw it
+      console.error('Error checking existing profile:', profileError);
+      throw profileError;
+    }
+    
     if (!existingProfile) {
+      console.log('No existing profile found, creating new profile');
       // Create new profile if it doesn't exist
       const newProfile: Partial<UserProfile> = {
         id: user.id,
@@ -220,14 +240,62 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
         .from('profiles')
         .insert(newProfile);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating profile:', error);
+        throw error;
+      }
       
+      console.log('New profile created successfully');
       return newProfile as UserProfile;
     }
     
+    console.log('Existing profile found:', existingProfile);
     return existingProfile as UserProfile;
   } catch (error) {
     console.error('Error handling OAuth sign-in:', error);
     return null;
+  }
+};
+
+// Function to process access token from hash fragment
+export const processAccessToken = async (accessToken: string, refreshToken: string | null) => {
+  try {
+    console.log('Processing access token from hash fragment');
+    // Set the session using the access token
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+    });
+    
+    if (error) {
+      console.error('Error setting session from access token:', error);
+      throw error;
+    }
+    
+    console.log('Session set successfully from access token');
+    return data.session;
+  } catch (error) {
+    console.error('Error processing access token:', error);
+    throw error;
+  }
+};
+
+// Function to check if user has complete profile
+export const hasCompleteProfile = async (user: User, role: UserRole): Promise<boolean> => {
+  try {
+    const profile = await getUserProfile(user.id);
+    
+    if (!profile) return false;
+    
+    if (role === 'customer') {
+      return !!profile.name;
+    } else if (role === 'company') {
+      return !!profile.company_name;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking profile completeness:', error);
+    return false;
   }
 };

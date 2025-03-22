@@ -1,6 +1,13 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, handleOAuthSignIn, getUserProfile } from "@/lib/supabase";
+import { 
+  supabase, 
+  handleOAuthSignIn, 
+  getUserProfile, 
+  processAccessToken,
+  hasCompleteProfile
+} from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -59,6 +66,7 @@ export default function AuthCallback() {
   const [needsAdditionalInfo, setNeedsAdditionalInfo] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<'customer' | 'company'>('customer');
+  const [authStage, setAuthStage] = useState<string>('initializing');
 
   // Company form setup
   const companyForm = useForm<CompanyFormValues>({
@@ -154,58 +162,106 @@ export default function AuthCallback() {
     }
   };
 
+  // Handle hash fragments from OAuth providers
+  const handleHashFragment = async () => {
+    setAuthStage('processing_hash');
+    console.log("Processing hash fragment:", window.location.hash);
+    
+    try {
+      // Parse hash fragment for access token
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      if (!accessToken) {
+        console.error("No access token found in hash");
+        throw new Error("Authentication failed: No access token found");
+      }
+      
+      console.log("Access token found in hash, setting session");
+      const session = await processAccessToken(accessToken, refreshToken);
+      
+      if (!session) {
+        throw new Error("Failed to establish session from access token");
+      }
+      
+      // Clear the hash to avoid issues with reload
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      
+      const user = session.user;
+      setCurrentUser(user);
+      console.log("User set from hash token:", user.id);
+      
+      // Get role from URL params or localStorage
+      const urlParams = new URLSearchParams(window.location.search);
+      const role = urlParams.get('role') === 'company' ? 'company' : 
+                  localStorage.getItem('oauth_role') === 'company' ? 'company' : 'customer';
+      
+      setUserRole(role);
+      console.log("User role determined:", role);
+      
+      // Process user profile
+      return await processUserProfile(user, role);
+    } catch (error: any) {
+      console.error("Error processing hash fragment:", error);
+      throw error;
+    }
+  };
+
+  // Process user profile
+  const processUserProfile = async (user: User, role: string) => {
+    setAuthStage('processing_profile');
+    console.log(`Processing profile for user ${user.id} with role ${role}`);
+    
+    try {
+      // Check if the user has a complete profile
+      const isProfileComplete = await hasCompleteProfile(user, role as 'customer' | 'company');
+      
+      if (!isProfileComplete) {
+        console.log("Profile incomplete, creating or updating basic profile");
+        await handleOAuthSignIn(user, role as 'customer' | 'company');
+        setNeedsAdditionalInfo(true);
+        setIsProcessing(false);
+        return false;
+      }
+      
+      // Profile exists and has required info
+      console.log("Complete profile found, redirecting");
+      toast({
+        title: "Authentication successful",
+        description: "You have been successfully logged in.",
+      });
+
+      // Redirect based on user role
+      const profile = await getUserProfile(user.id);
+      if (profile?.role === "company") {
+        navigate("/dashboard");
+      } else {
+        navigate("/enquiries");
+      }
+      return true;
+    } catch (error) {
+      console.error("Error processing user profile:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
         console.log("Auth callback started");
         setIsProcessing(true);
-        
-        // Get role from URL params
-        const urlParams = new URLSearchParams(window.location.search);
-        const role = urlParams.get('role') === 'company' ? 'company' : 'customer';
-        setUserRole(role);
-        console.log(`User role from URL: ${role}`);
+        setAuthStage('started');
         
         // Check if we have hash fragments from OAuth provider
-        if (window.location.hash) {
-          console.log("Hash fragment detected", window.location.hash);
-          
-          // Parse hash fragment for access token
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-          
-          if (accessToken) {
-            console.log("Access token found in hash");
-            
-            // Set the session using the access token
-            const { data, error } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || '',
-            });
-            
-            if (error) {
-              console.error("Error setting session:", error);
-              throw error;
-            }
-            
-            if (data.session) {
-              // Clear the hash to avoid issues with reload
-              window.history.replaceState(null, '', window.location.pathname + window.location.search);
-              
-              const user = data.session.user;
-              setCurrentUser(user);
-              console.log("User set from hash token:", user.id);
-              
-              // Check if user has a profile
-              await processUserProfile(user, role);
-              return;
-            }
-          }
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          await handleHashFragment();
+          return;
         }
         
         // No hash fragments, try to get session normally
-        console.log("Getting session from supabase");
+        console.log("No hash fragment, getting session from supabase");
+        setAuthStage('checking_session');
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -217,6 +273,11 @@ export default function AuthCallback() {
           const user = data.session.user;
           setCurrentUser(user);
           console.log("User set from session:", user.id);
+          
+          // Get role from URL params
+          const urlParams = new URLSearchParams(window.location.search);
+          const role = urlParams.get('role') === 'company' ? 'company' : 'customer';
+          setUserRole(role);
           
           // Process user profile
           await processUserProfile(user, role);
@@ -243,55 +304,21 @@ export default function AuthCallback() {
         setIsProcessing(false);
       }
     };
-    
-    // Helper function to process user profile
-    const processUserProfile = async (user: User, role: string) => {
-      try {
-        // Check if the user has a profile
-        const profile = await getUserProfile(user.id);
-        
-        if (!profile) {
-          // No profile yet, we need to collect additional information
-          console.log("No profile found, creating basic profile");
-          await handleOAuthSignIn(user, role as 'customer' | 'company');
-          setNeedsAdditionalInfo(true);
-          setIsProcessing(false);
-          return;
-        } else if (!profile.name && role === 'customer') {
-          // Customer profile exists but missing name
-          console.log("Customer profile missing name");
-          setNeedsAdditionalInfo(true);
-          setIsProcessing(false);
-          return;
-        } else if (!profile.company_name && role === 'company') {
-          // Company profile exists but missing company details
-          console.log("Company profile missing company_name");
-          setNeedsAdditionalInfo(true);
-          setIsProcessing(false);
-          return;
-        }
-        
-        // Profile exists and has required info
-        console.log("Complete profile found, redirecting");
-        toast({
-          title: "Authentication successful",
-          description: "You have been successfully logged in.",
-        });
-
-        // Redirect based on user role
-        if (profile.role === "company") {
-          navigate("/dashboard");
-        } else {
-          navigate("/enquiries");
-        }
-      } catch (error) {
-        console.error("Error processing user profile:", error);
-        throw error;
-      }
-    };
 
     handleAuthCallback();
   }, [navigate, toast]);
+
+  // Debug info component
+  const DebugInfo = () => (
+    <div className="mt-4 p-4 bg-slate-100 rounded-md text-xs text-slate-700">
+      <p><strong>Auth Stage:</strong> {authStage}</p>
+      <p><strong>Role:</strong> {userRole}</p>
+      <p><strong>Needs Additional Info:</strong> {needsAdditionalInfo ? 'Yes' : 'No'}</p>
+      <p><strong>Has URL Hash:</strong> {window.location.hash ? 'Yes' : 'No'}</p>
+      <p><strong>User ID:</strong> {currentUser?.id || 'None'}</p>
+      <p><strong>URL:</strong> {window.location.href}</p>
+    </div>
+  );
 
   // Render the additional info collection form if needed
   if (needsAdditionalInfo && currentUser) {
@@ -447,6 +474,7 @@ export default function AuthCallback() {
                 </Form>
               )}
             </CardContent>
+            {import.meta.env.DEV && <CardFooter><DebugInfo /></CardFooter>}
           </Card>
         </Container>
       </div>
@@ -461,7 +489,9 @@ export default function AuthCallback() {
           <>
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <h2 className="text-xl font-semibold mb-2">Completing authentication...</h2>
-            <p className="text-muted-foreground">Please wait while we log you in.</p>
+            <p className="text-muted-foreground mb-2">Please wait while we log you in.</p>
+            <p className="text-sm text-muted-foreground">Auth stage: {authStage}</p>
+            {import.meta.env.DEV && <DebugInfo />}
           </>
         ) : errorMessage ? (
           <>
@@ -473,6 +503,14 @@ export default function AuthCallback() {
             <h2 className="text-xl font-semibold mb-2 text-destructive">Authentication Failed</h2>
             <p className="text-muted-foreground mb-4">{errorMessage}</p>
             <p className="text-sm text-muted-foreground">Redirecting you to the login page...</p>
+            <Button 
+              variant="outline" 
+              className="mt-4" 
+              onClick={() => navigate("/login")}
+            >
+              Return to Login
+            </Button>
+            {import.meta.env.DEV && <DebugInfo />}
           </>
         ) : (
           <>
@@ -484,6 +522,7 @@ export default function AuthCallback() {
             <h2 className="text-xl font-semibold mb-2 text-primary">Authentication Successful</h2>
             <p className="text-muted-foreground mb-4">You've been successfully authenticated.</p>
             <p className="text-sm text-muted-foreground">Redirecting you to your dashboard...</p>
+            {import.meta.env.DEV && <DebugInfo />}
           </>
         )}
       </div>
