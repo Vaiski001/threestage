@@ -85,21 +85,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         console.log("Profile data received:", data);
         
-        // Properly type cast the data to UserProfile
+        // Create profile with proper type casting
         const profileData: UserProfile = {
-          id: data.id,
-          email: data.email,
-          role: data.role,
-          name: data.name,
-          created_at: data.created_at,
+          id: data.id as string,
+          email: data.email as string,
+          role: data.role as UserProfile["role"],
+          name: data.name as string,
+          created_at: data.created_at as string,
         };
         
         // Add optional fields if they exist
-        if (data.company_name) profileData.company_name = data.company_name;
-        if (data.phone) profileData.phone = data.phone;
-        if (data.industry) profileData.industry = data.industry;
-        if (data.website) profileData.website = data.website;
-        if (data.integrations) profileData.integrations = data.integrations;
+        if (data.company_name) profileData.company_name = data.company_name as string;
+        if (data.phone) profileData.phone = data.phone as string;
+        if (data.industry) profileData.industry = data.industry as string;
+        if (data.website) profileData.website = data.website as string;
+        if (data.integrations) profileData.integrations = data.integrations as string[] || [];
 
         setProfile(profileData);
       } catch (error) {

@@ -39,8 +39,8 @@ const getSupabaseClient = () => {
         storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`,
       },
       global: {
-        fetch: (...args) => {
-          return fetch(...args).catch(err => {
+        fetch: (url: RequestInfo | URL, init?: RequestInit) => {
+          return fetch(url, init).catch(err => {
             console.error('Fetch error in Supabase client:', err);
             throw err;
           });
