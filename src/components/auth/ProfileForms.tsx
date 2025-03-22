@@ -265,8 +265,9 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
         
         if (data) {
           console.log("Loaded profile data:", data);
-          form.setValue('name', data.name || '');
-          form.setValue('phone', data.phone || '');
+          // Fix TypeScript errors by using type assertions
+          form.setValue('name', data.name ? String(data.name) : '');
+          form.setValue('phone', data.phone ? String(data.phone) : '');
         }
       } catch (error) {
         console.error("Failed to load profile data:", error);
