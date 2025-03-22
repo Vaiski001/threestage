@@ -3,7 +3,12 @@ import { useState, useEffect } from "react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
+import { 
+  SidebarProvider, 
+  Sidebar, 
+  SidebarContent, 
+  SidebarTrigger 
+} from "@/components/ui/sidebar";
 import { 
   BarChart, 
   MessageSquare, 

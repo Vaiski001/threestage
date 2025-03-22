@@ -2,7 +2,12 @@
 import { useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
+import { 
+  SidebarProvider, 
+  Sidebar, 
+  SidebarContent, 
+  SidebarTrigger 
+} from "@/components/ui/sidebar";
 import { MessageSquare, User, Settings, Bell, Search, Sun, Plus, Filter, Clock, PlusCircle, MessageCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
