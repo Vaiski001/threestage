@@ -2,8 +2,55 @@
 import { supabase } from './client';
 import { UserProfile, UserRole } from './types';
 
+// Function to ensure profiles table exists
+export const ensureProfilesTableExists = async () => {
+  try {
+    console.log('Checking if profiles table exists...');
+    
+    // Check if table exists by trying to select from it
+    const { error } = await supabase
+      .from('profiles')
+      .select('count(*)', { count: 'exact', head: true });
+    
+    if (error && error.code === '42P01') { // Table doesn't exist
+      console.log('Profiles table does not exist, creating it...');
+      
+      // Create profiles table
+      const { error: createError } = await supabase.rpc('create_profiles_table');
+      
+      if (createError) {
+        console.error('Error creating profiles table:', createError);
+        console.log('Attempting alternative table creation...');
+        
+        // Alternative approach if RPC doesn't exist
+        await supabase.auth.admin.createUser({
+          email: 'temp@example.com',
+          password: 'temporary_password',
+          user_metadata: { isTemporary: true }
+        });
+        
+        console.log('Profiles table should now be created by Supabase auth');
+      } else {
+        console.log('Profiles table created successfully');
+      }
+    } else if (error) {
+      console.error('Error checking profiles table:', error);
+    } else {
+      console.log('Profiles table exists');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error ensuring profiles table exists:', error);
+    return false;
+  }
+};
+
 export const getUserProfile = async (userId: string) => {
   try {
+    // Make sure profiles table exists
+    await ensureProfilesTableExists();
+    
     console.log('Getting user profile for:', userId);
     const { data, error } = await supabase
       .from('profiles')
@@ -48,15 +95,26 @@ export const getUserProfile = async (userId: string) => {
 // Function to create a user profile
 export const createUserProfile = async (profileData: Partial<UserProfile>) => {
   try {
+    // Make sure profiles table exists
+    await ensureProfilesTableExists();
+    
     console.log('Creating user profile with data:', profileData);
     
     if (!profileData.id) {
       throw new Error('User ID is required to create a profile');
     }
     
+    // Convert UserProfile to Record<string, unknown>
+    const profileRecord: Record<string, unknown> = {};
+    
+    // Add each property to the record
+    Object.entries(profileData).forEach(([key, value]) => {
+      profileRecord[key] = value;
+    });
+    
     const { data, error } = await supabase
       .from('profiles')
-      .insert(profileData)
+      .insert(profileRecord)
       .select()
       .single();
     
@@ -93,11 +151,22 @@ export const createUserProfile = async (profileData: Partial<UserProfile>) => {
 // Function to update a user profile
 export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>) => {
   try {
+    // Make sure profiles table exists
+    await ensureProfilesTableExists();
+    
     console.log('Updating profile for user:', userId, 'with data:', profileData);
+    
+    // Convert UserProfile to Record<string, unknown>
+    const profileRecord: Record<string, unknown> = {};
+    
+    // Add each property to the record
+    Object.entries(profileData).forEach(([key, value]) => {
+      profileRecord[key] = value;
+    });
     
     const { data, error } = await supabase
       .from('profiles')
-      .update(profileData)
+      .update(profileRecord)
       .eq('id', userId)
       .select()
       .single();

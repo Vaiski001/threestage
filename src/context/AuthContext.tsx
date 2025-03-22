@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, UserProfile, forceSignOut, handleOAuthSignIn } from '@/lib/supabase';
+import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -27,6 +27,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Initialize database tables if needed
+  useEffect(() => {
+    const initializeTables = async () => {
+      await ensureProfilesTableExists();
+    };
+    
+    initializeTables();
+  }, []);
 
   // Check for session on initial load
   useEffect(() => {
@@ -67,6 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const fetchProfile = async () => {
       try {
         console.log("Fetching profile for user:", user.id);
+        
+        // Ensure profiles table exists first
+        await ensureProfilesTableExists();
+        
         const { data, error } = await supabase
           .from('profiles')
           .select('*')

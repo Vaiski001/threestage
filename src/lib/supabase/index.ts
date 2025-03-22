@@ -31,5 +31,6 @@ export {
   getUserProfile,
   createUserProfile,
   updateUserProfile,
-  deleteUserAccount
+  deleteUserAccount,
+  ensureProfilesTableExists
 } from './profiles';
