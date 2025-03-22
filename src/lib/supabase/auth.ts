@@ -1,3 +1,4 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -292,7 +293,8 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
     if (!existingProfile) {
       console.log('No existing profile found, creating new profile');
       
-      const newProfile: UserProfile = {
+      // Create profile as Record<string, unknown> instead of UserProfile
+      const newProfileData: Record<string, unknown> = {
         id: user.id,
         email: user.email || '',
         name: user.user_metadata?.full_name as string || user.user_metadata?.name as string || '',
@@ -302,7 +304,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       
       const { error: insertError } = await supabase
         .from('profiles')
-        .insert(newProfile);
+        .insert(newProfileData);
       
       if (insertError) {
         console.error('Error creating profile:', insertError);
@@ -310,6 +312,15 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       }
       
       console.log('New profile created successfully');
+      
+      // Convert to UserProfile for return
+      const newProfile: UserProfile = {
+        id: user.id,
+        email: user.email || '',
+        name: user.user_metadata?.full_name as string || user.user_metadata?.name as string || '',
+        role: role,
+        created_at: new Date().toISOString()
+      };
       
       return newProfile;
     }
