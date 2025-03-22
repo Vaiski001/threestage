@@ -1,7 +1,7 @@
 
 import { createClient, User } from '@supabase/supabase-js';
 
-// For local development, use placeholders to prevent the app from crashing
+// For local development, use environment variables
 // In a production environment, these values should be properly configured as environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-project.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
