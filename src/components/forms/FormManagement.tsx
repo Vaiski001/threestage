@@ -18,11 +18,13 @@ export interface FormTemplate {
   id: string;
   name: string;
   description: string;
-  active: boolean;
+  active?: boolean;
   fields: FormFieldType[];
-  submissions: number;
-  dateCreated: string;
-  lastModified: string;
+  submissions?: number;
+  dateCreated?: string;
+  lastModified?: string;
+  createdAt?: string;
+  updatedAt?: string;
   branding: {
     logo?: string;
     primaryColor?: string;

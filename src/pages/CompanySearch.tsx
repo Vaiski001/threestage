@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -14,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormTemplate } from "@/components/forms/FormManagement";
 
-// Header with the main search functionality
 const CompanySearchHeader = ({ 
   searchQuery, 
   setSearchQuery, 
@@ -50,7 +48,6 @@ const CompanySearchHeader = ({
   );
 };
 
-// Company card component to display company info
 const CompanyCard = ({ company }: { company: UserProfile }) => {
   return (
     <Card className="h-full flex flex-col">
@@ -89,7 +86,6 @@ const CompanyCard = ({ company }: { company: UserProfile }) => {
   );
 };
 
-// Loading skeleton for companies
 const CompanyCardSkeleton = () => (
   <Card className="h-full">
     <CardHeader>
@@ -108,19 +104,16 @@ const CompanyCardSkeleton = () => (
   </Card>
 );
 
-// Main component
 const CompanySearch = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
   const itemsPerPage = 9;
 
-  // Execute the search
   const performSearch = () => {
     refetch();
   };
 
-  // Query to fetch companies
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['companies', searchQuery, currentPage, activeTab],
     queryFn: async () => {
@@ -130,12 +123,10 @@ const CompanySearch = () => {
         .eq('role', 'company')
         .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
 
-      // Apply search if provided
       if (searchQuery) {
         query = query.or(`company_name.ilike.%${searchQuery}%,industry.ilike.%${searchQuery}%`);
       }
 
-      // Filter by industry if tab is selected
       if (activeTab !== 'all') {
         query = query.eq('industry', activeTab);
       }
@@ -147,7 +138,6 @@ const CompanySearch = () => {
         throw error;
       }
 
-      // Also get the total count for pagination
       const { count, error: countError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -164,10 +154,8 @@ const CompanySearch = () => {
     }
   });
 
-  // Calculate total pages
   const totalPages = data ? Math.ceil(data.totalCount / itemsPerPage) : 0;
 
-  // Get unique industries for tabs
   const { data: industriesData } = useQuery({
     queryKey: ['industries'],
     queryFn: async () => {
@@ -182,15 +170,17 @@ const CompanySearch = () => {
         throw error;
       }
 
-      // Get unique industries
-      const industries = [...new Set(data.map(item => item.industry))].filter(Boolean);
+      const industries = [...new Set(data
+        .map(item => item.industry)
+        .filter((industry): industry is string => typeof industry === 'string')
+      )];
+
       return industries;
     }
   });
 
   return (
     <div className="min-h-screen pb-16">
-      {/* Search header */}
       <CompanySearchHeader 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery}
@@ -198,7 +188,6 @@ const CompanySearch = () => {
       />
       
       <div className="container mx-auto px-4 mt-8">
-        {/* Industry tabs */}
         {industriesData && industriesData.length > 0 && (
           <Tabs 
             value={activeTab} 
@@ -210,8 +199,8 @@ const CompanySearch = () => {
           >
             <TabsList className="mb-4 flex flex-wrap h-auto">
               <TabsTrigger value="all">All Industries</TabsTrigger>
-              {industriesData.map((industry) => (
-                <TabsTrigger key={industry} value={industry}>
+              {industriesData.map((industry, index) => (
+                <TabsTrigger key={index} value={industry}>
                   {industry}
                 </TabsTrigger>
               ))}
@@ -219,20 +208,16 @@ const CompanySearch = () => {
           </Tabs>
         )}
         
-        {/* Results */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {isLoading ? (
-            // Show loading skeletons
             Array.from({ length: itemsPerPage }).map((_, index) => (
               <CompanyCardSkeleton key={index} />
             ))
           ) : data && data.companies.length > 0 ? (
-            // Show company results
             data.companies.map((company) => (
               <CompanyCard key={company.id} company={company} />
             ))
           ) : (
-            // No results
             <div className="col-span-full text-center py-12">
               <h3 className="text-xl font-medium mb-2">No companies found</h3>
               <p className="text-muted-foreground">
@@ -242,7 +227,6 @@ const CompanySearch = () => {
           )}
         </div>
         
-        {/* Pagination */}
         {totalPages > 1 && (
           <Pagination>
             <PaginationContent>
@@ -254,7 +238,6 @@ const CompanySearch = () => {
               </PaginationItem>
               
               {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                // Show current page and 2 pages before and after
                 const pageToShow = 
                   totalPages <= 5 ? i + 1 :
                   currentPage <= 3 ? i + 1 :

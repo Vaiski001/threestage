@@ -103,14 +103,14 @@ const CompanyProfile = () => {
             },
             {
               id: 'service',
-              type: 'select',
+              type: 'dropdown',
               label: 'Service Interested In',
               options: ['Consulting', 'Development', 'Support'],
               required: true,
             },
             {
               id: 'budget',
-              type: 'select',
+              type: 'dropdown',
               label: 'Budget Range',
               options: ['$1,000 - $5,000', '$5,000 - $10,000', '$10,000+'],
               required: false,

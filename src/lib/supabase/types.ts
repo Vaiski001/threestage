@@ -13,4 +13,5 @@ export interface UserProfile {
   website?: string;
   integrations?: string[];
   created_at: string;
+  [key: string]: unknown; // Allow for additional properties from Supabase
 }
