@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw } from "lucide-react"; // Replaced UpdateIcon with RefreshCw from lucide-react
+import { RefreshCw } from "lucide-react";
 
 const profileFormSchema = z.object({
   name: z.string().min(2, {
@@ -84,8 +85,8 @@ const CompanySettings = () => {
     mode: "onChange",
   });
 
-  const updateProfileMutation = useMutation(
-    async (values: ProfileFormValues) => {
+  const updateProfileMutation = useMutation({
+    mutationFn: async (values: ProfileFormValues) => {
       const social_links = {
         facebook: values.facebook,
         twitter: values.twitter,
@@ -122,22 +123,20 @@ const CompanySettings = () => {
 
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["profile"]);
-        toast({
-          title: "Profile updated successfully!",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Something went wrong!",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast({
+        title: "Profile updated successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Something went wrong!",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const onSubmit = async (values: ProfileFormValues) => {
     updateProfileMutation.mutate(values);
@@ -329,8 +328,8 @@ const CompanySettings = () => {
                   </FormMessage>
                 </div>
 
-                <Button type="submit" disabled={!form.formState.isValid || updateProfileMutation.isLoading}>
-                  {updateProfileMutation.isLoading ? (
+                <Button type="submit" disabled={!form.formState.isValid || updateProfileMutation.isPending}>
+                  {updateProfileMutation.isPending ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                       Updating...
@@ -382,8 +381,8 @@ const CompanySettings = () => {
                   </FormMessage>
                 </div>
 
-                <Button type="submit" disabled={!form.formState.isValid || updateProfileMutation.isLoading}>
-                  {updateProfileMutation.isLoading ? (
+                <Button type="submit" disabled={!form.formState.isValid || updateProfileMutation.isPending}>
+                  {updateProfileMutation.isPending ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                       Updating...
@@ -449,8 +448,8 @@ const CompanySettings = () => {
                   </FormMessage>
                 </div>
 
-                <Button type="submit" disabled={!form.formState.isValid || updateProfileMutation.isLoading}>
-                  {updateProfileMutation.isLoading ? (
+                <Button type="submit" disabled={!form.formState.isValid || updateProfileMutation.isPending}>
+                  {updateProfileMutation.isPending ? (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                       Updating...
