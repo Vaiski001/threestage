@@ -1,13 +1,30 @@
 
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { SignUpDropdown } from "./SignUpDropdown";
 import { forceSignOut } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { signInWithGoogle } from "@/lib/supabase/auth";
 
 export function AuthButtons() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const handleGoogleAuth = async () => {
+    try {
+      await signInWithGoogle();
+      toast({
+        title: "Google Auth",
+        description: "Google authentication initiated."
+      });
+    } catch (error) {
+      console.error("Error with Google auth:", error);
+      toast({
+        title: "Auth Error",
+        description: "Could not initiate Google authentication.",
+        variant: "destructive"
+      });
+    }
+  };
   
   const handleForceSignOut = async () => {
     try {
@@ -16,35 +33,19 @@ export function AuthButtons() {
         title: "Authentication reset",
         description: "All auth data has been cleared."
       });
-      navigate("/login");
     } catch (error) {
       console.error("Error resetting auth:", error);
     }
   };
   
-  const handleNavigateToSignup = () => {
-    console.log("AuthButtons: Navigating to customer signup");
-    navigate("/signup-customer");
-    toast({
-      title: "Navigating to customer signup",
-      description: "Taking you to the customer signup page."
-    });
-  };
-  
   return (
     <div className="flex items-center gap-4">
-      <div className="hidden sm:block">
-        <Button variant="outline" onClick={() => navigate("/login")}>
-          Log in
-        </Button>
-      </div>
-      <SignUpDropdown />
-      <div className="hidden sm:block">
-        <Button variant="secondary" onClick={handleNavigateToSignup}>
-          Join as Customer
-        </Button>
-      </div>
-      {/* Adding debug button to clear auth state - remove in production */}
+      <Button onClick={() => navigate("/dashboard")}>
+        Dashboard
+      </Button>
+      <Button variant="outline" onClick={handleGoogleAuth}>
+        Google Auth (For Later)
+      </Button>
       {import.meta.env.DEV && (
         <Button 
           variant="ghost" 
