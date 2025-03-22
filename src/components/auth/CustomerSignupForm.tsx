@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +13,6 @@ import { supabase } from "@/lib/supabase/client";
 import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createUserProfile } from "@/lib/supabase/profiles";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -45,9 +43,7 @@ export function CustomerSignupForm() {
     setSignupError(null);
     
     try {
-      console.log("Starting customer signup process:", { ...values, password: "***" });
-      
-      // 1. Create the auth user with Supabase Auth
+      // Step 1: Create auth user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -60,63 +56,52 @@ export function CustomerSignupForm() {
       });
       
       if (authError) {
-        console.error("Auth error during signup:", authError);
         throw authError;
       }
       
       if (!authData.user) {
-        throw new Error("Failed to create user account - no user returned");
+        throw new Error("Failed to create user account");
       }
       
-      console.log("Auth signup successful for user:", authData.user.id);
-      
-      // 2. Create a profile record in the profiles table
-      try {
-        await createUserProfile({
+      // Step 2: Create the profile record
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
           id: authData.user.id,
           email: values.email,
           name: values.name,
           role: "customer",
           created_at: new Date().toISOString()
         });
-        
-        console.log("Profile created successfully");
-        
-        // 3. Show success message and log in the user
-        toast({
-          title: "Account created successfully!",
-          description: "You are now being redirected to your profile.",
-        });
-        
-        // Sign in automatically
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
-        });
-        
-        if (signInError) {
-          console.error("Error signing in after signup:", signInError);
-          // Still redirect to login if auto-sign in fails
-          navigate("/login?signup=success");
-          return;
-        }
-        
-        // Redirect to profile page
-        navigate("/profile");
-      } catch (profileError: any) {
-        console.error("Error creating profile:", profileError);
-        
-        // Continue anyway since the auth account was created
-        toast({
-          title: "Account created with warnings",
-          description: "Your account was created but profile setup had issues. Please try logging in.",
-          variant: "destructive",
-        });
-        
-        // Sign out and redirect to login
-        await supabase.auth.signOut();
-        navigate("/login?signup=success");
+      
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+        // Continue anyway since the auth user was created
       }
+      
+      // Step 3: Sign in automatically
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      
+      if (signInError) {
+        console.error("Auto sign-in error:", signInError);
+        toast({
+          title: "Account created",
+          description: "Your account has been created. Please sign in.",
+        });
+        navigate("/login");
+        return;
+      }
+      
+      // Success - redirect to profile page
+      toast({
+        title: "Welcome!",
+        description: "Your account has been created successfully.",
+      });
+      
+      navigate("/profile");
     } catch (error: any) {
       console.error("Signup error:", error);
       setSignupError(error.message || "Failed to create account. Please try again.");
@@ -136,10 +121,8 @@ export function CustomerSignupForm() {
     setSignupError(null);
     
     try {
-      console.log("Starting Google signup process");
       await signInWithGoogle();
-      console.log("Google signup initiated");
-      // The redirect to OAuth provider will happen
+      // The redirect to Google OAuth will happen automatically
     } catch (error: any) {
       console.error("Google signup error:", error);
       setSignupError(error.message || "Failed to sign up with Google. Please try again.");
