@@ -4,11 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Container } from "@/components/ui/Container";
 import { SignupForm } from "@/components/auth/SignupForm";
+import { CompanySignupForm } from "@/components/auth/CompanySignupForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserRole } from "@/lib/supabase";
 
 export default function Signup() {
   const [error, setError] = useState<string | null>(null);
+  const [accountType, setAccountType] = useState<UserRole>("customer");
   const navigate = useNavigate();
 
   return (
@@ -34,14 +38,38 @@ export default function Signup() {
               </Alert>
             )}
             
-            <SignupForm 
-              onSuccess={() => {
-                navigate("/dashboard");
-              }}
-              onError={(errorMessage) => {
-                setError(errorMessage);
-              }}
-            />
+            <Tabs
+              defaultValue="customer"
+              className="mb-6" 
+              onValueChange={(value) => setAccountType(value as UserRole)}
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="customer">Customer Account</TabsTrigger>
+                <TabsTrigger value="company">Company Account</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="customer">
+                <SignupForm 
+                  onSuccess={() => {
+                    navigate("/dashboard");
+                  }}
+                  onError={(errorMessage) => {
+                    setError(errorMessage);
+                  }}
+                />
+              </TabsContent>
+              
+              <TabsContent value="company">
+                <CompanySignupForm 
+                  onSuccess={() => {
+                    navigate("/dashboard");
+                  }}
+                  onError={(errorMessage) => {
+                    setError(errorMessage);
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
 
             <div className="mt-6 text-center text-sm">
               Already have an account?{" "}
