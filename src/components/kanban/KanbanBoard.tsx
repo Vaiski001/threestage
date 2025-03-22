@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { KanbanColumn } from "./KanbanColumn";
 import { Container } from "@/components/ui/Container";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Define the Enquiry type to match the type in KanbanColumn.tsx
@@ -16,8 +16,15 @@ interface Enquiry {
   priority: "high" | "medium" | "low";
 }
 
-// Sample data with correctly typed priorities
-const initialEnquiries: Record<string, Enquiry[]> = {
+// Empty initial state for new users
+const emptyEnquiries: Record<string, Enquiry[]> = {
+  new: [],
+  pending: [],
+  completed: []
+};
+
+// Sample data for demo purposes
+const sampleEnquiries: Record<string, Enquiry[]> = {
   new: [
     {
       id: "1",
@@ -98,8 +105,10 @@ const initialEnquiries: Record<string, Enquiry[]> = {
   ]
 };
 
-export function KanbanBoard() {
-  const [enquiries, setEnquiries] = useState(initialEnquiries);
+export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
+  // Use sample data for demo, empty for new users
+  const [enquiries, setEnquiries] = useState(isDemo ? sampleEnquiries : emptyEnquiries);
+  const isEmpty = Object.values(enquiries).every(column => column.length === 0);
 
   const handleDragStart = (e: React.DragEvent, id: string, fromColumn: string) => {
     e.dataTransfer.setData("id", id);
@@ -144,40 +153,56 @@ export function KanbanBoard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto">
-          <KanbanColumn
-            title="New"
-            count={enquiries.new.length}
-            color="stage-new"
-            enquiries={enquiries.new}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            columnId="new"
-          />
-          
-          <KanbanColumn
-            title="Pending"
-            count={enquiries.pending.length}
-            color="stage-pending"
-            enquiries={enquiries.pending}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            columnId="pending"
-          />
-          
-          <KanbanColumn
-            title="Completed"
-            count={enquiries.completed.length}
-            color="stage-completed"
-            enquiries={enquiries.completed}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            columnId="completed"
-          />
-        </div>
+        {isEmpty && !isDemo ? (
+          <div className="bg-card rounded-lg border shadow-sm p-8 text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <PlusCircle className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-xl font-medium mb-2">Your Kanban board is empty</h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Get started by adding your first enquiry. You can then drag and drop enquiries between different stages.
+            </p>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Enquiry
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto">
+            <KanbanColumn
+              title="New"
+              count={enquiries.new.length}
+              color="stage-new"
+              enquiries={enquiries.new}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              columnId="new"
+            />
+            
+            <KanbanColumn
+              title="Pending"
+              count={enquiries.pending.length}
+              color="stage-pending"
+              enquiries={enquiries.pending}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              columnId="pending"
+            />
+            
+            <KanbanColumn
+              title="Completed"
+              count={enquiries.completed.length}
+              color="stage-completed"
+              enquiries={enquiries.completed}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              columnId="completed"
+            />
+          </div>
+        )}
       </Container>
     </div>
   );

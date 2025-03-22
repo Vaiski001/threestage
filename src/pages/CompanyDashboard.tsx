@@ -4,7 +4,7 @@ import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
-import { MessageSquare, Users, BarChart, Settings, Bell, Search, Sun, User, FileText, CreditCard } from "lucide-react";
+import { MessageSquare, Users, BarChart, Settings, Bell, Search, Sun, User, FileText, CreditCard, PlusCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,6 +12,14 @@ const CompanyDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
   const { profile } = useAuth();
   const { toast } = useToast();
+
+  // Empty stats for new users
+  const emptyStats = [
+    { label: "Total Enquiries", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Pending", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Response Time", value: "0h", change: "0h", changeType: "neutral" },
+    { label: "Conversion Rate", value: "0%", change: "0%", changeType: "neutral" }
+  ];
 
   return (
     <SidebarProvider>
@@ -102,12 +110,7 @@ const CompanyDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {[
-                    { label: "Total Enquiries", value: "164", change: "+12%", changeType: "positive" },
-                    { label: "Pending", value: "21", change: "-5%", changeType: "positive" },
-                    { label: "Response Time", value: "1.8h", change: "+0.3h", changeType: "negative" },
-                    { label: "Conversion Rate", value: "26%", change: "+2%", changeType: "positive" }
-                  ].map((card, i) => (
+                  {emptyStats.map((card, i) => (
                     <div key={i} className="glass-card rounded-lg p-6">
                       <div className="text-muted-foreground mb-2">{card.label}</div>
                       <div className="flex items-baseline justify-between">
@@ -115,13 +118,30 @@ const CompanyDashboard = () => {
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           card.changeType === "positive" 
                             ? "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30" 
-                            : "text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-950/30"
+                            : card.changeType === "negative"
+                              ? "text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-950/30"
+                              : "text-gray-700 bg-gray-100 dark:text-gray-400 dark:bg-gray-800/30"
                         }`}>
                           {card.change}
                         </span>
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Empty state for new users */}
+                <div className="bg-card rounded-lg border shadow-sm p-8 text-center mb-8">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <PlusCircle className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-medium mb-2">No enquiries yet</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                    Start managing your customer enquiries by adding your first enquiry or integrating our form to your website.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button>Add First Enquiry</Button>
+                    <Button variant="outline">Get Integration Code</Button>
+                  </div>
                 </div>
               </Container>
             </div>
