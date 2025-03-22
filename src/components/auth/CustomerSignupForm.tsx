@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { supabase } from "@/lib/supabase/client";
 import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createUserProfile } from "@/lib/supabase/profiles";
 
 const formSchema = z.object({
@@ -26,10 +26,8 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function CustomerSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [signupStage, setSignupStage] = useState<string>("initial");
   const [showPassword, setShowPassword] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -45,14 +43,11 @@ export function CustomerSignupForm() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setSignupError(null);
-    setDebugInfo(null);
-    setSignupStage("starting");
     
     try {
       console.log("Starting customer signup process:", { ...values, password: "***" });
       
       // 1. Create the auth user with Supabase Auth
-      setSignupStage("creating_auth_user");
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -66,20 +61,16 @@ export function CustomerSignupForm() {
       
       if (authError) {
         console.error("Auth error during signup:", authError);
-        setDebugInfo(`Auth error: ${authError.message}`);
         throw authError;
       }
       
       if (!authData.user) {
-        const errorMsg = "Failed to create user account - no user returned";
-        setDebugInfo(errorMsg);
-        throw new Error(errorMsg);
+        throw new Error("Failed to create user account - no user returned");
       }
       
       console.log("Auth signup successful for user:", authData.user.id);
       
       // 2. Create a profile record in the profiles table
-      setSignupStage("creating_profile");
       try {
         await createUserProfile({
           id: authData.user.id,
@@ -90,30 +81,42 @@ export function CustomerSignupForm() {
         });
         
         console.log("Profile created successfully");
+        
+        // 3. Show success message and log in the user
+        toast({
+          title: "Account created successfully!",
+          description: "You are now being redirected to your profile.",
+        });
+        
+        // Sign in automatically
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+        
+        if (signInError) {
+          console.error("Error signing in after signup:", signInError);
+          // Still redirect to login if auto-sign in fails
+          navigate("/login?signup=success");
+          return;
+        }
+        
+        // Redirect to profile page
+        navigate("/profile");
       } catch (profileError: any) {
         console.error("Error creating profile:", profileError);
-        setDebugInfo(`Profile creation error: ${profileError.message}`);
         
         // Continue anyway since the auth account was created
         toast({
           title: "Account created with warnings",
-          description: "Your account was created but profile setup had issues. Please contact support if you encounter problems.",
+          description: "Your account was created but profile setup had issues. Please try logging in.",
           variant: "destructive",
         });
+        
+        // Sign out and redirect to login
+        await supabase.auth.signOut();
+        navigate("/login?signup=success");
       }
-      
-      // 3. Show success message and redirect to login
-      setSignupStage("completed");
-      toast({
-        title: "Account created successfully!",
-        description: "You can now login with your credentials.",
-      });
-      
-      // Sign out the user so they can sign in with their new credentials
-      await supabase.auth.signOut();
-      
-      // Redirect to login page with a success parameter
-      navigate("/login?signup=success");
     } catch (error: any) {
       console.error("Signup error:", error);
       setSignupError(error.message || "Failed to create account. Please try again.");
@@ -131,13 +134,12 @@ export function CustomerSignupForm() {
   const handleGoogleSignup = async () => {
     setIsLoading(true);
     setSignupError(null);
-    setDebugInfo(null);
     
     try {
       console.log("Starting Google signup process");
-      const result = await signInWithGoogle();
-      console.log("Google signup initiated:", result);
-      // The redirect to OAuth provider will happen, and AuthCallback.tsx will handle the response
+      await signInWithGoogle();
+      console.log("Google signup initiated");
+      // The redirect to OAuth provider will happen
     } catch (error: any) {
       console.error("Google signup error:", error);
       setSignupError(error.message || "Failed to sign up with Google. Please try again.");
@@ -219,18 +221,7 @@ export function CustomerSignupForm() {
             
             {signupError && (
               <Alert variant="destructive">
-                <AlertTitle>Signup Error</AlertTitle>
                 <AlertDescription>{signupError}</AlertDescription>
-              </Alert>
-            )}
-            
-            {debugInfo && import.meta.env.DEV && (
-              <Alert variant="default" className="bg-yellow-50 border-yellow-200">
-                <AlertTitle>Debug Info (DEV only)</AlertTitle>
-                <AlertDescription className="text-xs font-mono">
-                  Stage: {signupStage}<br/>
-                  {debugInfo}
-                </AlertDescription>
               </Alert>
             )}
             
@@ -238,13 +229,7 @@ export function CustomerSignupForm() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {signupStage === "initial" 
-                    ? "Creating account..." 
-                    : signupStage === "creating_auth_user" 
-                      ? "Creating user..." 
-                      : signupStage === "creating_profile" 
-                        ? "Setting up profile..." 
-                        : "Processing..."}
+                  Setting up profile...
                 </>
               ) : (
                 "Create Account"

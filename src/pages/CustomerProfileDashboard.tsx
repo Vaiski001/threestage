@@ -19,6 +19,7 @@ export default function CustomerProfileDashboard() {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log("No user found, redirecting to login");
       navigate("/login");
     }
     
@@ -27,6 +28,14 @@ export default function CustomerProfileDashboard() {
       console.log("Customer profile loaded:", profile);
     }
   }, [user, profile, loading, navigate]);
+
+  useEffect(() => {
+    // Try to refresh profile when component loads
+    if (user && !profile) {
+      console.log("Profile not loaded initially, trying to refresh");
+      refreshProfile();
+    }
+  }, [user, profile, refreshProfile]);
 
   if (loading) {
     return (
@@ -71,9 +80,9 @@ export default function CustomerProfileDashboard() {
         <Container size="sm">
           <Card className="w-full max-w-md mx-auto">
             <CardHeader>
-              <CardTitle>Edit Your Profile</CardTitle>
+              <CardTitle>Your Profile</CardTitle>
               <CardDescription>
-                Update your personal information
+                Manage your personal information
               </CardDescription>
             </CardHeader>
             <CardContent>

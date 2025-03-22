@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
@@ -23,6 +24,7 @@ const companyFormSchema = z.object({
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().optional(),
 });
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>;
@@ -242,18 +244,50 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
       name: "",
+      phone: "",
     },
   });
+
+  // Try to get the existing profile data
+  React.useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+          
+        if (error) {
+          console.error("Error loading profile data:", error);
+          return;
+        }
+        
+        if (data) {
+          console.log("Loaded profile data:", data);
+          form.setValue('name', data.name || '');
+          form.setValue('phone', data.phone || '');
+        }
+      } catch (error) {
+        console.error("Failed to load profile data:", error);
+      }
+    };
+    
+    loadProfileData();
+  }, [currentUser.id, form]);
 
   const handleSubmit = async (values: CustomerFormValues) => {
     if (!currentUser) return;
     
     setIsProcessing(true);
     try {
+      console.log("Updating customer profile with:", values);
+      
       const { error } = await supabase
         .from('profiles')
         .update({
           name: values.name,
+          phone: values.phone || null,
           role: 'customer',
         })
         .eq('id', currentUser.id);
@@ -262,7 +296,7 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
       
       toast({
         title: "Profile updated",
-        description: "Your account has been set up successfully.",
+        description: "Your profile has been updated successfully.",
       });
       
       navigate("/profile");
@@ -294,8 +328,21 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone Number (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your phone number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <Button type="submit" className="w-full" disabled={isProcessing}>
-          {isProcessing ? "Processing..." : "Complete Sign Up"}
+          {isProcessing ? "Saving..." : "Save Profile"}
         </Button>
       </form>
     </Form>
