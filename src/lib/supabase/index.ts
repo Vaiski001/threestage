@@ -1,6 +1,6 @@
 
 // Export the client
-export { supabase } from './client';
+export { supabase, createSupabaseClient } from './client';
 
 // Export types properly with 'export type'
 export type { UserRole, UserProfile } from './types';

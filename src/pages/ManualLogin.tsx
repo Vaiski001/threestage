@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, getUserProfile, deleteUserAccount } from '@/lib/supabase';
@@ -57,27 +56,16 @@ export default function ManualLogin() {
         setProgressMessage('Preparing to set session');
         setProgress(50);
         
-        // Create a new supabase client instance just for this operation
-        // This helps prevent conflicts with the global instance
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: {
-            autoRefreshToken: true,
-            persistSession: true,
-            storageKey: 'manual-login-temp-token'
-          }
-        });
-        
+        // Instead of creating a new client instance, we'll use the existing one
+        // with a clean slate after sign out
         setProgressMessage('Setting session token');
         setProgress(60);
         
-        // Set the session manually with a shorter timeout
+        // Set the session with a shorter timeout
         let sessionResult;
         try {
           sessionResult = await Promise.race([
-            tempClient.auth.setSession({
+            supabase.auth.setSession({
               access_token: tokenData.access_token,
               refresh_token: tokenData.refresh_token || '',
             }),
@@ -109,15 +97,6 @@ export default function ManualLogin() {
         setProgress(70);
         console.log("Session set successfully:", sessionResult.data.session.user.id);
         
-        // Copy the session to the main supabase client
-        await supabase.auth.setSession({
-          access_token: sessionResult.data.session.access_token,
-          refresh_token: sessionResult.data.session.refresh_token || '',
-        });
-        
-        setProgressMessage('Session synchronized');
-        setProgress(80);
-        
         // Store the user ID for potential account deletion
         setUserId(sessionResult.data.session.user.id);
         
@@ -128,7 +107,6 @@ export default function ManualLogin() {
         
         // Clear temporary token data
         localStorage.removeItem('supabase_manual_token');
-        localStorage.removeItem('manual-login-temp-token');
         
         setProgressMessage('Login complete');
         setProgress(100);

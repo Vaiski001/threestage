@@ -19,12 +19,38 @@ if (supabaseUrl === 'https://placeholder-project.supabase.co' || supabaseAnonKey
   );
 }
 
-// Create a single supabase client instance for the entire application
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false, // We'll handle this manually
-    storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`
+// Use a singleton pattern to ensure only one instance is created
+let supabaseInstance: ReturnType<typeof createClient> | null = null;
+
+// Function to get the Supabase client instance
+const getSupabaseClient = () => {
+  if (!supabaseInstance) {
+    console.log('Creating new Supabase client instance');
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false, // We'll handle this manually
+        storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`
+      }
+    });
   }
-});
+  return supabaseInstance;
+};
+
+// Export the singleton instance
+export const supabase = getSupabaseClient();
+
+// Export a function to get a fresh client with different options if needed
+// This should be used very sparingly and only for specific use cases
+export const createSupabaseClient = (options = {}) => {
+  console.warn('Creating a secondary Supabase client. This should be used with caution.');
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+      ...options
+    }
+  });
+};
