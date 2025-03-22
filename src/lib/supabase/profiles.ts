@@ -4,48 +4,41 @@ import { UserProfile } from './types';
 
 export const getUserProfile = async (userId: string) => {
   try {
+    console.log('Getting user profile for:', userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting profile:', error);
+      throw error;
+    }
     
     if (!data) {
       console.log('No profile found for user:', userId);
       return null;
     }
     
-    // Verify the data has the required properties before returning it as UserProfile
-    if (typeof data === 'object' &&
-        'id' in data && 
-        'email' in data && 
-        'role' in data && 
-        'name' in data && 
-        'created_at' in data) {
-      
-      // Create the profile object with required fields
-      const profile: UserProfile = {
-        id: data.id as string,
-        email: data.email as string,
-        role: data.role as UserProfile['role'],
-        name: data.name as string,
-        created_at: data.created_at as string,
-      };
-      
-      // Add optional fields if they exist
-      if ('company_name' in data) profile.company_name = data.company_name as string;
-      if ('phone' in data) profile.phone = data.phone as string;
-      if ('industry' in data) profile.industry = data.industry as string;
-      if ('website' in data) profile.website = data.website as string;
-      if ('integrations' in data) profile.integrations = data.integrations as string[];
-      
-      return profile;
-    }
+    // Convert the data to a proper UserProfile object
+    const profile: UserProfile = {
+      id: data.id as string,
+      email: data.email as string,
+      role: data.role as UserProfile['role'],
+      name: data.name as string,
+      created_at: data.created_at as string,
+    };
     
-    console.error('Retrieved profile data is missing required fields:', data);
-    return null;
+    // Add optional fields if they exist
+    if ('company_name' in data && data.company_name) profile.company_name = data.company_name as string;
+    if ('phone' in data && data.phone) profile.phone = data.phone as string;
+    if ('industry' in data && data.industry) profile.industry = data.industry as string;
+    if ('website' in data && data.website) profile.website = data.website as string;
+    if ('integrations' in data && data.integrations) profile.integrations = data.integrations as string[];
+    
+    console.log('Profile retrieved successfully:', profile);
+    return profile;
   } catch (error) {
     console.error('Error getting user profile:', error);
     return null;

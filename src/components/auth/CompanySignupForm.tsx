@@ -55,6 +55,7 @@ const integrationOptions = [
 export function CompanySignupForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [signupError, setSignupError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -73,11 +74,13 @@ export function CompanySignupForm() {
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
+    setSignupError(null);
+    
     try {
-      console.log("Form values:", { ...values, password: "***" });
+      console.log("📝 Form values:", { ...values, password: "***" });
       
       const userData: Record<string, unknown> = {
-        name: "",
+        name: "", // Company users can add their name later
         email: values.email,
         role: "company",
         company_name: values.companyName,
@@ -87,10 +90,10 @@ export function CompanySignupForm() {
         integrations: values.integrations,
       };
       
-      console.log("Signup data:", { ...userData, password: "***" });
+      console.log("📝 Signup data:", { ...userData, password: "***" });
       
       const result = await signUpWithEmail(values.email, values.password, userData);
-      console.log("Signup success:", result);
+      console.log("✅ Signup success:", result);
 
       toast({
         title: "Company account created!",
@@ -99,7 +102,8 @@ export function CompanySignupForm() {
       
       navigate("/login");
     } catch (error: any) {
-      console.error("Signup error:", error);
+      console.error("❌ Signup error:", error);
+      setSignupError(error.message || "Failed to create account. Please try again.");
       toast({
         title: "Error",
         description: error.message || "Failed to create account. Please try again.",
@@ -114,7 +118,7 @@ export function CompanySignupForm() {
     try {
       await signInWithGoogle("company");
     } catch (error: any) {
-      console.error("Google signup error:", error);
+      console.error("❌ Google signup error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to sign up with Google. Please try again.",
@@ -285,6 +289,11 @@ export function CompanySignupForm() {
                 </FormItem>
               )}
             />
+            {signupError && (
+              <div className="text-destructive text-sm font-medium p-2 bg-destructive/10 rounded-md">
+                {signupError}
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>

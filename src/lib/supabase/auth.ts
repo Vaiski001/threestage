@@ -9,9 +9,9 @@ export const signUpWithEmail = async (
   password: string, 
   userData: Record<string, unknown>
 ) => {
+  console.log("📝 Starting signUpWithEmail process:", { email, userData });
+  
   try {
-    console.log("Starting signUpWithEmail process with:", email);
-    
     // First, create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -26,19 +26,19 @@ export const signUpWithEmail = async (
     });
 
     if (authError) {
-      console.error("Auth error during signup:", authError);
+      console.error("❌ Auth error during signup:", authError);
       throw authError;
     }
     
     if (!authData.user) {
-      console.error("No user returned from auth signup");
-      throw new Error("Failed to create user");
+      console.error("❌ No user returned from auth signup");
+      throw new Error("Failed to create user account");
     }
     
-    console.log("Auth successful, creating profile for:", authData.user.id);
+    console.log("✅ Auth signup successful for:", authData.user.id);
     
-    // Create a record with properly typed fields for Supabase
-    const profileRecord: Record<string, unknown> = {
+    // Create a profile record
+    const profileData: Record<string, unknown> = {
       id: authData.user.id,
       email,
       role: userData.role,
@@ -47,27 +47,27 @@ export const signUpWithEmail = async (
     };
     
     // Add optional fields if they exist and are not undefined
-    if (userData.company_name) profileRecord.company_name = userData.company_name;
-    if (userData.phone) profileRecord.phone = userData.phone;
-    if (userData.industry) profileRecord.industry = userData.industry;
-    if (userData.website) profileRecord.website = userData.website;
-    if (userData.integrations) profileRecord.integrations = userData.integrations;
+    if (userData.company_name) profileData.company_name = userData.company_name;
+    if (userData.phone) profileData.phone = userData.phone;
+    if (userData.industry) profileData.industry = userData.industry;
+    if (userData.website) profileData.website = userData.website;
+    if (userData.integrations) profileData.integrations = userData.integrations;
     
-    console.log("Creating profile with data:", profileRecord);
+    console.log("📝 Creating profile with data:", profileData);
     
     const { error: profileError } = await supabase
       .from('profiles')
-      .insert(profileRecord);
+      .insert(profileData);
 
     if (profileError) {
-      console.error("Profile creation error:", profileError);
+      console.error("❌ Profile creation error:", profileError);
       throw profileError;
     }
     
-    console.log("Profile created successfully");
+    console.log("✅ Profile created successfully");
     return { user: authData.user, session: authData.session };
   } catch (error) {
-    console.error('Error signing up:', error);
+    console.error('❌ Error signing up:', error);
     throw error;
   }
 };
