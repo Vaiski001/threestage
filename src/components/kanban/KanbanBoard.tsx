@@ -5,8 +5,19 @@ import { Container } from "@/components/ui/Container";
 import { Plus, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Sample data
-const initialEnquiries = {
+// Define the Enquiry type to match the type in KanbanColumn.tsx
+interface Enquiry {
+  id: string;
+  title: string;
+  customer: string;
+  date: string;
+  channel: string;
+  content: string;
+  priority: "high" | "medium" | "low";
+}
+
+// Sample data with correctly typed priorities
+const initialEnquiries: Record<string, Enquiry[]> = {
   new: [
     {
       id: "1",
