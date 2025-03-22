@@ -6,9 +6,10 @@ import { MainNavigation } from "./MainNavigation";
 import { AccountDropdown } from "./AccountDropdown";
 import { AuthButtons } from "./AuthButtons";
 import { MobileMenu } from "./MobileMenu";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated, profile, resetAuth } = useAuth();
 
   return (
     <header className="py-4 border-b">
@@ -22,10 +23,21 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-4">
-            {isAuthenticated ? (
+            {isAuthenticated && profile ? (
               <AccountDropdown profile={profile} />
             ) : (
               <AuthButtons />
+            )}
+            {/* Add debug button in development only */}
+            {import.meta.env.DEV && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={resetAuth}
+                className="text-xs hidden md:block"
+              >
+                Debug: Reset Auth
+              </Button>
             )}
             <MobileMenu isAuthenticated={isAuthenticated} />
           </div>

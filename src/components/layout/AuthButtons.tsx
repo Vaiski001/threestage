@@ -2,9 +2,25 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { SignUpDropdown } from "./SignUpDropdown";
+import { forceSignOut } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 export function AuthButtons() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handleForceSignOut = async () => {
+    try {
+      await forceSignOut();
+      toast({
+        title: "Authentication reset",
+        description: "All auth data has been cleared."
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error("Error resetting auth:", error);
+    }
+  };
   
   return (
     <div className="flex items-center gap-4">
@@ -14,6 +30,17 @@ export function AuthButtons() {
         </Button>
       </div>
       <SignUpDropdown />
+      {/* Adding debug button to clear auth state - remove in production */}
+      {import.meta.env.DEV && (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleForceSignOut} 
+          className="text-xs text-red-500"
+        >
+          Reset Auth
+        </Button>
+      )}
     </div>
   );
 }

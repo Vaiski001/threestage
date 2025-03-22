@@ -2,8 +2,9 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, ChevronDown } from "lucide-react";
-import { signOut } from "@/lib/supabase";
+import { signOut, forceSignOut } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,10 +21,15 @@ interface AccountDropdownProps {
 export function AccountDropdown({ profile }: AccountDropdownProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { resetAuth } = useAuth();
 
   const handleSignOut = async () => {
     try {
+      // First try normal sign out
       await signOut();
+      // Then force clear all auth data to be sure
+      await forceSignOut();
+      
       toast({
         title: "Signed out",
         description: "You have been successfully signed out.",
@@ -31,11 +37,14 @@ export function AccountDropdown({ profile }: AccountDropdownProps) {
       navigate("/");
     } catch (error) {
       console.error("Sign out error:", error);
+      // If regular sign out fails, use the reset auth function
+      await resetAuth();
+      
       toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
+        title: "Signed out",
+        description: "You have been signed out with force reset.",
       });
+      navigate("/");
     }
   };
 
