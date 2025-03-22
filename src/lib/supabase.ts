@@ -106,12 +106,16 @@ export const signInWithEmail = async (email: string, password: string) => {
 
 export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedin', role: UserRole = 'customer') => {
   try {
-    // Get the current origin for the redirect URL
-    // Use window.location.origin to ensure it matches exactly where the app is hosted
-    const redirectTo = `${window.location.origin}/auth/callback?role=${role}`;
+    // Get the current domain for the redirect URL
+    // We need to make sure this matches EXACTLY what's configured in Supabase
+    const domain = window.location.origin;
+    // Use the exact path that's configured in Supabase
+    const redirectPath = '/auth/callback';
+    const redirectTo = `${domain}${redirectPath}?role=${role}`;
     
     console.log(`OAuth sign-in initiated with ${provider}`);
     console.log(`Redirect URL: ${redirectTo}`);
+    console.log(`Current domain: ${domain}`);
     
     // Store the role in local storage so we can retrieve it after redirect
     localStorage.setItem('oauth_role', role);
@@ -136,8 +140,6 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     
     if (error) throw error;
     
-    // The user will be redirected to the OAuth provider here,
-    // so we won't actually reach the code below until they return
     console.log("OAuth redirect initiated successfully");
     return data;
   } catch (error: any) {

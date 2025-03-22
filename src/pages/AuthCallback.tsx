@@ -71,6 +71,7 @@ export default function AuthCallback() {
   const [processingTimeElapsed, setProcessingTimeElapsed] = useState(0);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [manualRedirect, setManualRedirect] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState<string>('');
 
   const companyForm = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -361,6 +362,20 @@ export default function AuthCallback() {
   };
 
   useEffect(() => {
+    const currentUrl = window.location.href;
+    setRedirectUrl(currentUrl);
+    console.log("Current URL:", currentUrl);
+    console.log("Location origin:", window.location.origin);
+    console.log("Location pathname:", window.location.pathname);
+    console.log("Location search:", window.location.search);
+    console.log("Location hash:", window.location.hash);
+    
+    console.log("OAuth role from localStorage:", localStorage.getItem('oauth_role'));
+    console.log("OAuth provider from localStorage:", localStorage.getItem('oauth_provider'));
+    console.log("OAuth timestamp from localStorage:", localStorage.getItem('oauth_timestamp'));
+  }, []);
+
+  useEffect(() => {
     if (isProcessing && authStage === 'processing_hash') {
       const timer = setInterval(() => {
         setProcessingTimeElapsed(prev => {
@@ -452,7 +467,8 @@ export default function AuthCallback() {
       <p><strong>Needs Additional Info:</strong> {needsAdditionalInfo ? 'Yes' : 'No'}</p>
       <p><strong>Has URL Hash:</strong> {window.location.hash ? 'Yes' : 'No'}</p>
       <p><strong>User ID:</strong> {currentUser?.id || 'None'}</p>
-      <p><strong>URL:</strong> {window.location.href}</p>
+      <p><strong>Current URL:</strong> {redirectUrl}</p>
+      <p><strong>Expected Callback URL:</strong> {window.location.origin}/auth/callback</p>
       <p><strong>Processing Time:</strong> {processingTimeElapsed} seconds</p>
       <p><strong>localStorage:</strong></p>
       <pre className="mt-1 p-2 bg-slate-200 rounded text-xs overflow-x-auto">
