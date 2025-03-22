@@ -36,26 +36,24 @@ export default function CustomerSignup() {
         } else {
           // Explicitly handle the case where there's no session
           console.log("CustomerSignup: No existing session found, showing signup form");
+          setIsCheckingAuth(false);
         }
       } catch (error) {
         console.error("Error checking session:", error);
-      } finally {
-        // Always set isCheckingAuth to false regardless of outcome
-        console.log("CustomerSignup: Setting isCheckingAuth to false");
         setIsCheckingAuth(false);
       }
     };
     
     console.log("CustomerSignup: Component mounted");
+    
+    // Check session immediately
     checkExistingSession();
     
     // Add a safety timeout to ensure the loader doesn't get stuck
     const timeoutId = setTimeout(() => {
-      if (isCheckingAuth) {
-        console.log("CustomerSignup: Safety timeout triggered, forcing isCheckingAuth to false");
-        setIsCheckingAuth(false);
-      }
-    }, 3000); // 3 seconds timeout
+      console.log("CustomerSignup: Safety timeout triggered, forcing isCheckingAuth to false");
+      setIsCheckingAuth(false);
+    }, 2000); // Reduced to 2 seconds
     
     return () => clearTimeout(timeoutId);
   }, [navigate, toast]);

@@ -89,20 +89,26 @@ export function CustomerSignupForm() {
         console.log("[CustomerSignup] Profile created successfully");
       }
       
-      // Step 3: Show success message and redirect to login
+      // Step 3: Show success message
       toast({
         title: "Account created successfully!",
         description: "Please check your email to confirm your account, then sign in."
       });
       
-      // Clear form and redirect
+      // Clear form
       form.reset();
       
-      // Add a small delay to allow toast to show before redirect
+      // Force the page state to update before redirecting
+      setIsLoading(false);
+      
+      // Add a delay and then navigate to login page
+      console.log("[CustomerSignup] Preparing to redirect to login page...");
       setTimeout(() => {
-        console.log("[CustomerSignup] Redirecting to login page");
-        navigate("/login");
-      }, 500);
+        console.log("[CustomerSignup] Now redirecting to login page");
+        window.location.href = "/login"; // Use direct navigation instead of React Router for complete reset
+      }, 1000); // Increased delay to ensure all state updates and UI changes are complete
+      
+      return; // Exit early to prevent the finally block from running
       
     } catch (error: any) {
       console.error("[CustomerSignup] Signup error:", error);
@@ -117,6 +123,7 @@ export function CustomerSignupForm() {
         variant: "destructive",
       });
     } finally {
+      // Only set isLoading to false if we didn't redirect (i.e., there was an error)
       setIsLoading(false);
     }
   };
@@ -136,23 +143,13 @@ export function CustomerSignupForm() {
   };
 
   const handleGoogleSignup = async () => {
-    setIsLoading(true);
-    setSignupError(null);
-    
     try {
       console.log("[CustomerSignup] Starting Google signup process");
       await signInWithGoogle();
       // The redirect to Google OAuth will happen automatically
     } catch (error: any) {
       console.error("[CustomerSignup] Google signup error:", error);
-      setSignupError(error.message || "Failed to sign up with Google. Please try again.");
-      
-      toast({
-        title: "Google Signup Error",
-        description: error.message || "Failed to sign up with Google. Please try again.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
+      return error.message || "Failed to sign up with Google. Please try again.";
     }
   };
 
