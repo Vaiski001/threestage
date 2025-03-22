@@ -1,5 +1,7 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { User, Session } from "@supabase/supabase-js";
 import { 
   supabase, 
   handleOAuthSignIn, 
@@ -10,54 +12,10 @@ import {
   deleteUserAccount
 } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Container } from "@/components/ui/Container";
-import { Checkbox } from "@/components/ui/checkbox";
-import { User, Session } from "@supabase/supabase-js";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw, Trash } from "lucide-react";
-
-const companyFormSchema = z.object({
-  companyName: z.string().min(2, "Company name must be at least 2 characters"),
-  phone: z.string().optional(),
-  industry: z.string().min(1, "Please select an industry"),
-  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  integrations: z.array(z.string()).optional(),
-});
-
-const customerFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-});
-
-type CompanyFormValues = z.infer<typeof companyFormSchema>;
-type CustomerFormValues = z.infer<typeof customerFormSchema>;
-
-const industries = [
-  "Technology",
-  "Healthcare",
-  "Finance",
-  "Education",
-  "Retail",
-  "Manufacturing",
-  "Hospitality",
-  "Construction",
-  "Real Estate",
-  "Other",
-];
-
-const integrationOptions = [
-  { id: "whatsapp", label: "WhatsApp" },
-  { id: "facebook", label: "Facebook Messenger" },
-  { id: "instagram", label: "Instagram DM" },
-  { id: "email", label: "Email" },
-];
+import { CompanyProfileForm, CustomerProfileForm } from "@/components/auth/ProfileForms";
+import { DebugInfo, AuthLoading, AuthError, AuthSuccess } from "@/components/auth/AuthCallbackUtils";
 
 export default function AuthCallback() {
   const { toast } = useToast();
@@ -73,93 +31,16 @@ export default function AuthCallback() {
   const [manualRedirect, setManualRedirect] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState<string>('');
 
-  const companyForm = useForm<CompanyFormValues>({
-    resolver: zodResolver(companyFormSchema),
-    defaultValues: {
-      companyName: "",
-      phone: "",
-      industry: "",
-      website: "",
-      integrations: [],
-    },
-  });
-
-  const customerForm = useForm<CustomerFormValues>({
-    resolver: zodResolver(customerFormSchema),
-    defaultValues: {
-      name: "",
-    },
-  });
-
-  const handleCompanySubmit = async (values: CompanyFormValues) => {
-    if (!currentUser) return;
-    
-    setIsProcessing(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          company_name: values.companyName,
-          phone: values.phone || undefined,
-          industry: values.industry,
-          website: values.website || undefined,
-          integrations: values.integrations,
-          role: 'company',
-        })
-        .eq('id', currentUser.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Profile updated",
-        description: "Your company account has been set up successfully.",
-      });
-      
-      navigate("/dashboard");
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCustomerSubmit = async (values: CustomerFormValues) => {
-    if (!currentUser) return;
-    
-    setIsProcessing(true);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: values.name,
-          role: 'customer',
-        })
-        .eq('id', currentUser.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Profile updated",
-        description: "Your account has been set up successfully.",
-      });
-      
-      navigate("/enquiries");
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const debugInfoComponent = (
+    <DebugInfo 
+      authStage={authStage}
+      userRole={userRole}
+      needsAdditionalInfo={needsAdditionalInfo}
+      currentUser={currentUser}
+      redirectUrl={redirectUrl}
+      processingTimeElapsed={processingTimeElapsed}
+    />
+  );
 
   const handleReset = async () => {
     setIsProcessing(true);
@@ -296,7 +177,10 @@ export default function AuthCallback() {
         session = await Promise.race([
           processAccessToken(accessToken, refreshToken),
           new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error("Session setup timed out after 10 seconds")), 10000)
+            setTimeout(() => {
+              console.log("Session setup timed out, attempting manual redirect");
+              reject(new Error("Session setup timed out after 5 seconds"))
+            }, 5000)
           )
         ]);
       } catch (error) {
@@ -402,6 +286,7 @@ export default function AuthCallback() {
         setIsProcessing(true);
         setAuthStage('started');
         
+        // First, check if we have a hash fragment with an access token
         if (window.location.hash && window.location.hash.includes('access_token')) {
           try {
             await Promise.race([
@@ -411,7 +296,7 @@ export default function AuthCallback() {
                   console.log("Authentication process timed out, switching to manual mode");
                   parseHashAndRedirect();
                   reject(new Error("Authentication process timed out, switching to manual mode"));
-                }, 15000)
+                }, 8000) // Reduced timeout from 15s to 8s for faster fallback
               )
             ]);
           } catch (error: any) {
@@ -425,6 +310,7 @@ export default function AuthCallback() {
           return;
         }
         
+        // If no hash fragment, try to get the session normally
         console.log("No hash fragment, getting session from supabase");
         setAuthStage('checking_session');
         const { data, error } = await supabase.auth.getSession();
@@ -471,32 +357,6 @@ export default function AuthCallback() {
     handleAuthCallback();
   }, [navigate, toast, handleHashFragment]);
 
-  const DebugInfo = () => (
-    <div className="mt-4 p-4 bg-slate-100 rounded-md text-xs text-slate-700">
-      <p><strong>Auth Stage:</strong> {authStage}</p>
-      <p><strong>Role:</strong> {userRole}</p>
-      <p><strong>Needs Additional Info:</strong> {needsAdditionalInfo ? 'Yes' : 'No'}</p>
-      <p><strong>Has URL Hash:</strong> {window.location.hash ? 'Yes' : 'No'}</p>
-      <p><strong>User ID:</strong> {currentUser?.id || 'None'}</p>
-      <p><strong>Current URL:</strong> {redirectUrl}</p>
-      <p><strong>Expected Callback URL:</strong> {window.location.origin}/auth/callback</p>
-      <p><strong>Processing Time:</strong> {processingTimeElapsed} seconds</p>
-      <p><strong>localStorage:</strong></p>
-      <pre className="mt-1 p-2 bg-slate-200 rounded text-xs overflow-x-auto">
-        {JSON.stringify(
-          Object.keys(localStorage).reduce((acc, key) => {
-            if (key.startsWith('supabase.') || key.startsWith('sb-') || key.startsWith('oauth_')) {
-              acc[key] = localStorage.getItem(key);
-            }
-            return acc;
-          }, {} as Record<string, string | null>),
-          null,
-          2
-        )}
-      </pre>
-    </div>
-  );
-
   if (needsAdditionalInfo && currentUser) {
     return (
       <div className="min-h-screen bg-background py-12">
@@ -510,147 +370,20 @@ export default function AuthCallback() {
             </CardHeader>
             <CardContent>
               {userRole === 'company' ? (
-                <Form {...companyForm}>
-                  <form onSubmit={companyForm.handleSubmit(handleCompanySubmit)} className="space-y-4">
-                    <FormField
-                      control={companyForm.control}
-                      name="companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter your company name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={companyForm.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter your phone number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={companyForm.control}
-                      name="industry"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Industry</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select your industry" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {industries.map((industry) => (
-                                <SelectItem key={industry} value={industry}>
-                                  {industry}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={companyForm.control}
-                      name="website"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Website (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="https://your-company.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={companyForm.control}
-                      name="integrations"
-                      render={() => (
-                        <FormItem>
-                          <div className="mb-2">
-                            <FormLabel>Messaging Integrations (Optional)</FormLabel>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            {integrationOptions.map((option) => (
-                              <FormField
-                                key={option.id}
-                                control={companyForm.control}
-                                name="integrations"
-                                render={({ field }) => {
-                                  return (
-                                    <FormItem
-                                      key={option.id}
-                                      className="flex flex-row items-start space-x-3 space-y-0"
-                                    >
-                                      <FormControl>
-                                        <Checkbox
-                                          checked={field.value?.includes(option.id)}
-                                          onCheckedChange={(checked) => {
-                                            return checked
-                                              ? field.onChange([...field.value || [], option.id])
-                                              : field.onChange(
-                                                  field.value?.filter(
-                                                    (value) => value !== option.id
-                                                  )
-                                                );
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <FormLabel className="font-normal">
-                                        {option.label}
-                                      </FormLabel>
-                                    </FormItem>
-                                  );
-                                }}
-                              />
-                            ))}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={isProcessing}>
-                      {isProcessing ? "Processing..." : "Complete Sign Up"}
-                    </Button>
-                  </form>
-                </Form>
+                <CompanyProfileForm 
+                  currentUser={currentUser} 
+                  isProcessing={isProcessing} 
+                  setIsProcessing={setIsProcessing} 
+                />
               ) : (
-                <Form {...customerForm}>
-                  <form onSubmit={customerForm.handleSubmit(handleCustomerSubmit)} className="space-y-4">
-                    <FormField
-                      control={customerForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter your full name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={isProcessing}>
-                      {isProcessing ? "Processing..." : "Complete Sign Up"}
-                    </Button>
-                  </form>
-                </Form>
+                <CustomerProfileForm 
+                  currentUser={currentUser} 
+                  isProcessing={isProcessing} 
+                  setIsProcessing={setIsProcessing} 
+                />
               )}
             </CardContent>
-            {import.meta.env.DEV && <CardFooter><DebugInfo /></CardFooter>}
+            {import.meta.env.DEV && <CardFooter>{debugInfoComponent}</CardFooter>}
           </Card>
         </Container>
       </div>
@@ -661,116 +394,33 @@ export default function AuthCallback() {
     <div className="h-screen flex items-center justify-center bg-background">
       <div className="text-center max-w-md p-8 rounded-lg shadow-sm border bg-card">
         {isProcessing ? (
-          <>
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold mb-2">Completing authentication...</h2>
-            <p className="text-muted-foreground mb-2">Please wait while we log you in.</p>
-            <p className="text-sm text-muted-foreground">Auth stage: {authStage}</p>
-            
-            {processingTimeElapsed > 8 && !manualRedirect && (
-              <Alert variant="destructive" className="mt-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Taking longer than expected</AlertTitle>
-                <AlertDescription>
-                  Authentication is taking longer than usual. 
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="ml-2" 
-                    onClick={() => setShowDebugInfo(!showDebugInfo)}
-                  >
-                    {showDebugInfo ? "Hide Details" : "Show Details"}
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {processingTimeElapsed > 12 && !manualRedirect && (
-              <div className="mt-4 flex flex-col gap-2">
-                <Button 
-                  variant="secondary" 
-                  onClick={handleReset}
-                  className="flex items-center"
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Reset & Try Again
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  onClick={parseHashAndRedirect}
-                  className="flex items-center"
-                >
-                  Try Manual Login
-                </Button>
-              </div>
-            )}
-            
-            {(showDebugInfo || import.meta.env.DEV) && <DebugInfo />}
-          </>
+          <AuthLoading 
+            processingTimeElapsed={processingTimeElapsed}
+            manualRedirect={manualRedirect}
+            showDebugInfo={showDebugInfo}
+            setShowDebugInfo={setShowDebugInfo}
+            authStage={authStage}
+            handleReset={handleReset}
+            parseHashAndRedirect={parseHashAndRedirect}
+            debugInfo={debugInfoComponent}
+          />
         ) : errorMessage ? (
-          <>
-            <div className="w-16 h-16 mx-auto mb-4 text-red-500">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold mb-2 text-destructive">Authentication Failed</h2>
-            <p className="text-muted-foreground mb-4">{errorMessage}</p>
-            <div className="flex flex-col gap-2">
-              <Button 
-                variant="default" 
-                className="w-full"
-                onClick={handleReset}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Reset & Try Again
-              </Button>
-              
-              <Button 
-                variant="destructive" 
-                className="w-full"
-                onClick={handleDeleteAccount}
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Delete Account & Try Again
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => navigate("/login")}
-              >
-                Return to Login
-              </Button>
-              
-              {window.location.hash && window.location.hash.includes('access_token') && (
-                <Button
-                  variant="outline"
-                  className="w-full mt-2"
-                  onClick={parseHashAndRedirect}
-                >
-                  Try Manual Login
-                </Button>
-              )}
-            </div>
-            {(showDebugInfo || import.meta.env.DEV) && <DebugInfo />}
-          </>
+          <AuthError 
+            errorMessage={errorMessage}
+            handleReset={handleReset}
+            handleDeleteAccount={handleDeleteAccount}
+            navigateToLogin={() => navigate("/login")}
+            parseHashAndRedirect={parseHashAndRedirect}
+            debugInfo={debugInfoComponent}
+            showDebugInfo={showDebugInfo || import.meta.env.DEV}
+          />
         ) : (
-          <>
-            <div className="w-16 h-16 mx-auto mb-4 text-green-500">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold mb-2 text-primary">Authentication Successful</h2>
-            <p className="text-muted-foreground mb-4">You've been successfully authenticated.</p>
-            <p className="text-sm text-muted-foreground">Redirecting you to your dashboard...</p>
-            {(showDebugInfo || import.meta.env.DEV) && <DebugInfo />}
-          </>
+          <AuthSuccess 
+            debugInfo={debugInfoComponent} 
+            showDebugInfo={showDebugInfo || import.meta.env.DEV} 
+          />
         )}
       </div>
     </div>
   );
 }
-

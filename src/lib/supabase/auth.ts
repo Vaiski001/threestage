@@ -1,4 +1,3 @@
-
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -138,7 +137,7 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
         refresh_token: refreshToken || '',
       }),
       new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Session setup timed out after 10 seconds")), 10000)
+        setTimeout(() => reject(new Error("Session setup timed out after 5 seconds")), 5000)
       )
     ]);
     
@@ -159,7 +158,7 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
     const { data: verifyData, error: verifyError } = await Promise.race([
       supabase.auth.getSession(),
       new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Session verification timed out after 5 seconds")), 5000)
+        setTimeout(() => reject(new Error("Session verification timed out after 3 seconds")), 3000)
       )
     ]);
     
