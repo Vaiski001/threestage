@@ -40,13 +40,14 @@ export function CustomerSignupForm() {
   });
 
   const onSubmit = async (values: FormValues) => {
+    // Reset state
     setIsLoading(true);
     setSignupError(null);
     
     try {
-      console.log("Starting customer signup process...");
+      console.log("[CustomerSignup] Starting signup process with email:", values.email);
       
-      // Step 1: Create auth user with Supabase Auth
+      // Step 1: Create auth user with Supabase Auth - ONLY this step, no auto login
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -54,23 +55,24 @@ export function CustomerSignupForm() {
           data: {
             name: values.name,
             role: "customer"
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/login`
         }
       });
       
       if (authError) {
-        console.error("Auth error during signup:", authError);
+        console.error("[CustomerSignup] Auth error during signup:", authError);
         throw authError;
       }
       
       if (!authData.user) {
-        console.error("No user returned from auth signup");
+        console.error("[CustomerSignup] No user returned from auth signup");
         throw new Error("Failed to create user account");
       }
       
-      console.log("Auth signup successful for user:", authData.user.id);
+      console.log("[CustomerSignup] Auth signup successful for user:", authData.user.id);
       
-      // Step 2: Create the profile record
+      // Step 2: Create the profile record in the database
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -82,26 +84,32 @@ export function CustomerSignupForm() {
         });
       
       if (profileError) {
-        console.error("Profile creation error:", profileError);
+        console.error("[CustomerSignup] Profile creation error:", profileError);
         // Continue anyway since the auth user was created
       } else {
-        console.log("Profile created successfully");
+        console.log("[CustomerSignup] Profile created successfully");
       }
       
-      // Step 3: Redirect to the login page with a success message
+      // Step 3: Show success message and redirect to login
       toast({
         title: "Account created successfully!",
-        description: "Please sign in with your credentials",
+        description: "Please check your email to confirm your account, then sign in."
       });
       
+      // Clear form and redirect
+      form.reset();
       navigate("/login");
+      
     } catch (error: any) {
-      console.error("Signup error:", error);
-      setSignupError(error.message || "Failed to create account. Please try again.");
+      console.error("[CustomerSignup] Signup error:", error);
+      
+      // Display user-friendly error message
+      const errorMessage = getErrorMessage(error);
+      setSignupError(errorMessage);
       
       toast({
         title: "Signup Error",
-        description: error.message || "Failed to create account. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -109,16 +117,30 @@ export function CustomerSignupForm() {
     }
   };
 
+  const getErrorMessage = (error: any): string => {
+    // Handle specific Supabase error codes
+    if (error.code === "23505") {
+      return "This email is already registered. Please log in instead.";
+    }
+    
+    if (error.message?.includes("duplicate key")) {
+      return "This email is already registered. Please log in instead.";
+    }
+    
+    // Return user-friendly message or fallback to original error message
+    return error.message || "Failed to create account. Please try again.";
+  };
+
   const handleGoogleSignup = async () => {
     setIsLoading(true);
     setSignupError(null);
     
     try {
-      console.log("Starting Google signup process...");
+      console.log("[CustomerSignup] Starting Google signup process");
       await signInWithGoogle();
       // The redirect to Google OAuth will happen automatically
     } catch (error: any) {
-      console.error("Google signup error:", error);
+      console.error("[CustomerSignup] Google signup error:", error);
       setSignupError(error.message || "Failed to sign up with Google. Please try again.");
       
       toast({
