@@ -67,7 +67,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        setProfile(data as UserProfile);
+        if (!data) {
+          console.log("No profile found for user:", user.id);
+          return;
+        }
+        
+        // Properly type cast the data to UserProfile
+        const profileData: UserProfile = {
+          id: data.id as string,
+          email: data.email as string,
+          role: data.role as UserProfile['role'],
+          name: data.name as string,
+          created_at: data.created_at as string,
+        };
+        
+        // Add optional fields if they exist
+        if (data.company_name) profileData.company_name = data.company_name as string;
+        if (data.phone) profileData.phone = data.phone as string;
+        if (data.industry) profileData.industry = data.industry as string;
+        if (data.website) profileData.website = data.website as string;
+        if (data.integrations) profileData.integrations = data.integrations as string[];
+
+        setProfile(profileData);
       } catch (error) {
         console.error("Error in profile fetch:", error);
       }

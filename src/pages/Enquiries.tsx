@@ -14,7 +14,7 @@ export default function Enquiries() {
         <div className="pt-8 pb-20">
           <h1 className="text-3xl font-bold mb-8">Enquiries</h1>
           
-          <KanbanBoard isLoading={isLoading} />
+          <KanbanBoard />
         </div>
       </Container>
     </div>
