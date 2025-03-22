@@ -12,15 +12,20 @@ export const getUserProfile = async (userId: string) => {
     
     if (error) throw error;
     
+    if (!data) {
+      console.log('No profile found for user:', userId);
+      return null;
+    }
+    
     // Verify the data has the required properties before returning it as UserProfile
-    if (data && 
-        typeof data === 'object' &&
+    if (typeof data === 'object' &&
         'id' in data && 
         'email' in data && 
         'role' in data && 
         'name' in data && 
         'created_at' in data) {
-      // Safely construct UserProfile with type checking
+      
+      // Create the profile object with required fields
       const profile: UserProfile = {
         id: data.id as string,
         email: data.email as string,
@@ -60,14 +65,11 @@ export const deleteUserAccount = async (userId: string) => {
     
     if (profileError) {
       console.error("Error deleting user profile:", profileError);
-      // Continue with deletion even if profile deletion fails
     } else {
       console.log("Successfully deleted user profile");
     }
     
     // Then try to delete from auth.users using admin privileges
-    // Note: This might fail if you don't have admin rights, but that's okay
-    // The user can always create a new account with the same email
     const { error: authError } = await supabase.auth.admin.deleteUser(userId);
     
     if (authError) {
@@ -76,8 +78,6 @@ export const deleteUserAccount = async (userId: string) => {
       // Fallback: Sign the user out and remove from local storage
       await supabase.auth.signOut({ scope: 'global' });
       
-      // If we can't delete the user directly, at least clear all their data
-      // This allows them to sign up again with the same account
       return false;
     }
     

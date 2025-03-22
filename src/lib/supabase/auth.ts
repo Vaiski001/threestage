@@ -1,4 +1,3 @@
-
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -12,6 +11,8 @@ export const signUpWithEmail = async (
 ) => {
   try {
     console.log("Starting signUpWithEmail process with:", email);
+    
+    // First, create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -29,31 +30,42 @@ export const signUpWithEmail = async (
       throw authError;
     }
     
-    if (authData.user) {
-      console.log("Auth successful, creating profile for:", authData.user.id);
-      
-      // Create the profile record with proper shape for Supabase
-      const profileData: Record<string, unknown> = {
-        id: authData.user.id,
-        email,
-        ...userData,
-        created_at: new Date().toISOString(),
-      };
-      
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert(profileData);
-
-      if (profileError) {
-        console.error("Profile creation error:", profileError);
-        throw profileError;
-      }
-      
-      console.log("Profile created successfully");
-      return { user: authData.user, session: authData.session };
+    if (!authData.user) {
+      console.error("No user returned from auth signup");
+      throw new Error("Failed to create user");
     }
     
-    return authData;
+    console.log("Auth successful, creating profile for:", authData.user.id);
+    
+    // Create a record with properly typed fields for Supabase
+    const profileRecord: Record<string, unknown> = {
+      id: authData.user.id,
+      email,
+      role: userData.role,
+      name: userData.name || "",
+      created_at: new Date().toISOString(),
+    };
+    
+    // Add optional fields if they exist and are not undefined
+    if (userData.company_name) profileRecord.company_name = userData.company_name;
+    if (userData.phone) profileRecord.phone = userData.phone;
+    if (userData.industry) profileRecord.industry = userData.industry;
+    if (userData.website) profileRecord.website = userData.website;
+    if (userData.integrations) profileRecord.integrations = userData.integrations;
+    
+    console.log("Creating profile with data:", profileRecord);
+    
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert(profileRecord);
+
+    if (profileError) {
+      console.error("Profile creation error:", profileError);
+      throw profileError;
+    }
+    
+    console.log("Profile created successfully");
+    return { user: authData.user, session: authData.session };
   } catch (error) {
     console.error('Error signing up:', error);
     throw error;
@@ -280,8 +292,9 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
     
     if (!existingProfile) {
       console.log('No existing profile found, creating new profile');
-      // Create object as Record<string, unknown> to satisfy TypeScript
-      const newProfileData: Record<string, unknown> = {
+      
+      // Create a record with properly typed fields for Supabase
+      const newProfileRecord: Record<string, unknown> = {
         id: user.id,
         email: user.email || '',
         name: user.user_metadata?.full_name || user.user_metadata?.name || '',
@@ -291,7 +304,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       
       const { error } = await supabase
         .from('profiles')
-        .insert(newProfileData);
+        .insert(newProfileRecord);
         
       if (error) {
         console.error('Error creating profile:', error);
@@ -300,7 +313,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       
       console.log('New profile created successfully');
       
-      // Return constructed UserProfile with validated fields
+      // Return a properly constructed UserProfile object
       const newProfile: UserProfile = {
         id: user.id,
         email: user.email || '',
@@ -323,7 +336,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       
       console.log('Existing profile found:', existingProfile);
       
-      // Safely construct UserProfile with validated fields
+      // Construct a valid UserProfile object
       const profile: UserProfile = {
         id: existingProfile.id as string,
         email: existingProfile.email as string,

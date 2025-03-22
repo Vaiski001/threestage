@@ -39,17 +39,19 @@ export function CustomerSignupForm() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     try {
-      // We're using Record<string,unknown> to match what Supabase expects
+      console.log("Form values:", { ...values, password: "***" });
+      
+      // Create a properly typed userData object for Supabase
       const userData: Record<string, unknown> = {
         name: values.name,
         email: values.email,
         role: "customer",
       };
       
-      console.log("Attempting to create customer account with:", { ...userData, password: "***" });
+      console.log("Signup data:", { ...userData, password: "***" });
       
       const result = await signUpWithEmail(values.email, values.password, userData);
-      console.log("Signup result:", result);
+      console.log("Signup success:", result);
 
       toast({
         title: "Account created!",
