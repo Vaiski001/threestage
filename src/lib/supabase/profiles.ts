@@ -1,7 +1,6 @@
 
 import { supabase } from './client';
 import { UserProfile } from './types';
-import { User } from '@supabase/supabase-js';
 
 export const getUserProfile = async (userId: string) => {
   try {
@@ -22,18 +21,22 @@ export const getUserProfile = async (userId: string) => {
         'name' in data && 
         'created_at' in data) {
       // Safely construct UserProfile with type checking
-      return {
+      const profile: UserProfile = {
         id: data.id as string,
         email: data.email as string,
         role: data.role as UserProfile['role'],
         name: data.name as string,
         created_at: data.created_at as string,
-        company_name: data.company_name as string | undefined,
-        phone: data.phone as string | undefined,
-        industry: data.industry as string | undefined,
-        website: data.website as string | undefined,
-        integrations: data.integrations as string[] | undefined,
       };
+      
+      // Add optional fields if they exist
+      if ('company_name' in data) profile.company_name = data.company_name as string;
+      if ('phone' in data) profile.phone = data.phone as string;
+      if ('industry' in data) profile.industry = data.industry as string;
+      if ('website' in data) profile.website = data.website as string;
+      if ('integrations' in data) profile.integrations = data.integrations as string[];
+      
+      return profile;
     }
     
     console.error('Retrieved profile data is missing required fields:', data);

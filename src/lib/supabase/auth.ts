@@ -299,7 +299,8 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       }
       
       console.log('New profile created successfully');
-      // Return constructed UserProfile
+      
+      // Return constructed UserProfile with validated fields
       const newProfile: UserProfile = {
         id: user.id,
         email: user.email || '',
@@ -307,6 +308,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
         role: role,
         created_at: new Date().toISOString(),
       };
+      
       return newProfile;
     }
     
@@ -318,20 +320,36 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
         'role' in existingProfile && 
         'name' in existingProfile && 
         'created_at' in existingProfile) {
+      
       console.log('Existing profile found:', existingProfile);
-      // Safe to cast to UserProfile now that we've verified the structure
-      return {
+      
+      // Safely construct UserProfile with validated fields
+      const profile: UserProfile = {
         id: existingProfile.id as string,
         email: existingProfile.email as string,
-        role: existingProfile.role as UserRole,
+        role: existingProfile.role as UserProfile['role'],
         name: existingProfile.name as string,
         created_at: existingProfile.created_at as string,
-        company_name: existingProfile.company_name as string | undefined,
-        phone: existingProfile.phone as string | undefined,
-        industry: existingProfile.industry as string | undefined,
-        website: existingProfile.website as string | undefined,
-        integrations: existingProfile.integrations as string[] | undefined,
       };
+      
+      // Add optional fields if they exist
+      if ('company_name' in existingProfile) {
+        profile.company_name = existingProfile.company_name as string;
+      }
+      if ('phone' in existingProfile) {
+        profile.phone = existingProfile.phone as string;
+      }
+      if ('industry' in existingProfile) {
+        profile.industry = existingProfile.industry as string;
+      }
+      if ('website' in existingProfile) {
+        profile.website = existingProfile.website as string;
+      }
+      if ('integrations' in existingProfile) {
+        profile.integrations = existingProfile.integrations as string[];
+      }
+      
+      return profile;
     }
     
     console.error('Retrieved profile data is missing required fields:', existingProfile);

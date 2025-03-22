@@ -48,7 +48,8 @@ export function CustomerSignupForm() {
       
       console.log("Attempting to create customer account with:", { ...userData, password: "***" });
       
-      await signUpWithEmail(values.email, values.password, userData);
+      const result = await signUpWithEmail(values.email, values.password, userData);
+      console.log("Signup result:", result);
 
       toast({
         title: "Account created!",
