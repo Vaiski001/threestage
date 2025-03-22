@@ -266,7 +266,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
     
     if (!existingProfile) {
       console.log('No existing profile found, creating new profile');
-      const newProfile: Partial<UserProfile> = {
+      const newProfile: UserProfile = {
         id: user.id,
         email: user.email || '',
         name: user.user_metadata?.full_name || user.user_metadata?.name || '',
@@ -284,11 +284,21 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       }
       
       console.log('New profile created successfully');
-      return newProfile as UserProfile;
+      return newProfile;
     }
     
-    console.log('Existing profile found:', existingProfile);
-    return existingProfile as UserProfile;
+    if (existingProfile && 
+        'id' in existingProfile && 
+        'email' in existingProfile && 
+        'role' in existingProfile && 
+        'name' in existingProfile && 
+        'created_at' in existingProfile) {
+      console.log('Existing profile found:', existingProfile);
+      return existingProfile as UserProfile;
+    }
+    
+    console.error('Retrieved profile data is missing required fields:', existingProfile);
+    return null;
   } catch (error) {
     console.error('Error handling OAuth sign-in:', error);
     return null;

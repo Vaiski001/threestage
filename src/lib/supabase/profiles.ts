@@ -12,7 +12,14 @@ export const getUserProfile = async (userId: string) => {
       .single();
     
     if (error) throw error;
-    return data as UserProfile;
+    
+    // Verify the data has the required properties before returning it as UserProfile
+    if (data && 'id' in data && 'email' in data && 'role' in data && 'name' in data && 'created_at' in data) {
+      return data as UserProfile;
+    }
+    
+    console.error('Retrieved profile data is missing required fields:', data);
+    return null;
   } catch (error) {
     console.error('Error getting user profile:', error);
     return null;
