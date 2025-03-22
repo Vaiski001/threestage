@@ -69,6 +69,7 @@ export default function AuthCallback() {
   const [authStage, setAuthStage] = useState<string>('initializing');
   const [processingTimeElapsed, setProcessingTimeElapsed] = useState(0);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [manualRedirect, setManualRedirect] = useState(false);
 
   const companyForm = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -165,13 +166,48 @@ export default function AuthCallback() {
       await forceSignOut();
       toast({
         title: "Authentication reset",
-        description: "All authentication data has been cleared. Redirecting to login page...",
+        description: "All authentication data has been cleared.",
       });
       window.location.href = "/login";
     } catch (error) {
       console.error("Error during reset:", error);
       setIsProcessing(false);
       setErrorMessage("Failed to reset authentication. Please try again.");
+    }
+  };
+
+  const parseHashAndRedirect = () => {
+    setManualRedirect(true);
+    
+    try {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const expiresIn = params.get('expires_in');
+      const tokenType = params.get('token_type');
+      
+      if (!accessToken) {
+        throw new Error("No access token found in URL");
+      }
+      
+      console.log("Found access token, attempting manual login");
+      
+      localStorage.setItem('supabase_manual_token', JSON.stringify({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_in: expiresIn,
+        token_type: tokenType,
+        timestamp: Date.now()
+      }));
+      
+      window.location.href = "/auth/manual-login";
+      
+    } catch (error) {
+      console.error("Error parsing hash for manual redirect:", error);
+      setErrorMessage("Failed to process authentication data. Please try logging in again.");
+      setIsProcessing(false);
     }
   };
 
@@ -191,20 +227,28 @@ export default function AuthCallback() {
       
       console.log("Access token found in hash, setting session");
       
-      const session = await Promise.race([
-        processAccessToken(accessToken, refreshToken),
-        new Promise<Session>((_, reject) => 
-          setTimeout(() => reject(new Error("Session setup timed out after 15 seconds. This may be due to network issues or Supabase service unavailability.")), 15000)
-        )
-      ]);
-      
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      
-      if (!session) {
-        throw new Error("Failed to establish session from access token");
+      let session: Session;
+      try {
+        session = await Promise.race([
+          processAccessToken(accessToken, refreshToken),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error("Session setup timed out after 20 seconds")), 20000)
+          )
+        ]);
+      } catch (error) {
+        console.error("Timeout or error in processAccessToken:", error);
+        throw error;
       }
       
+      console.log("Successfully set session, clearing hash");
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      
       setAuthStage('session_established');
+      
+      if (!session || !session.user) {
+        throw new Error("Invalid session after processing token");
+      }
+      
       const user = session.user;
       setCurrentUser(user);
       console.log("User set from hash token:", user.id);
@@ -284,12 +328,12 @@ export default function AuthCallback() {
             await Promise.race([
               handleHashFragment(),
               new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Authentication process timed out after 25 seconds")), 25000)
+                setTimeout(() => reject(new Error("Authentication process timed out after 30 seconds")), 30000)
               )
             ]);
           } catch (error: any) {
             console.error("Timeout or error in hash processing:", error);
-            setErrorMessage("Authentication timed out or failed. Please try again.");
+            setErrorMessage(`Authentication failed: ${error.message}`);
             setIsProcessing(false);
             return;
           }
@@ -537,7 +581,7 @@ export default function AuthCallback() {
             <p className="text-muted-foreground mb-2">Please wait while we log you in.</p>
             <p className="text-sm text-muted-foreground">Auth stage: {authStage}</p>
             
-            {processingTimeElapsed > 10 && (
+            {processingTimeElapsed > 8 && !manualRedirect && (
               <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Taking longer than expected</AlertTitle>
@@ -555,8 +599,8 @@ export default function AuthCallback() {
               </Alert>
             )}
             
-            {processingTimeElapsed > 20 && (
-              <div className="mt-4">
+            {processingTimeElapsed > 12 && !manualRedirect && (
+              <div className="mt-4 flex flex-col gap-2">
                 <Button 
                   variant="secondary" 
                   onClick={handleReset}
@@ -564,6 +608,14 @@ export default function AuthCallback() {
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Reset & Try Again
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={parseHashAndRedirect}
+                  className="flex items-center"
+                >
+                  Try Manual Login
                 </Button>
               </div>
             )}
@@ -595,6 +647,15 @@ export default function AuthCallback() {
               >
                 Return to Login
               </Button>
+              {window.location.hash && window.location.hash.includes('access_token') && (
+                <Button
+                  variant="outline"
+                  className="w-full mt-2"
+                  onClick={parseHashAndRedirect}
+                >
+                  Try Manual Login
+                </Button>
+              )}
             </div>
             {(showDebugInfo || import.meta.env.DEV) && <DebugInfo />}
           </>

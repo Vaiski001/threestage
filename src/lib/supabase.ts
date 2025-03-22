@@ -1,4 +1,4 @@
-import { createClient, User } from '@supabase/supabase-js';
+import { createClient, User, Session } from '@supabase/supabase-js';
 
 // For local development, use environment variables
 // In a production environment, these values should be properly configured as environment variables
@@ -18,8 +18,15 @@ if (supabaseUrl === 'https://placeholder-project.supabase.co' || supabaseAnonKey
   );
 }
 
-// Create the supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create a single supabase client instance for the entire application
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false, // We'll handle this manually
+    storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`
+  }
+});
 
 // Define types for auth
 export type UserRole = 'customer' | 'company';
@@ -155,21 +162,26 @@ export const signOut = async () => {
 // New function to force clear all auth data from localStorage and supabase client
 export const forceSignOut = async () => {
   try {
+    console.log("Force sign out initiated");
+    
     // Clear Supabase auth
     await supabase.auth.signOut({ scope: 'global' });
     
     // Clear all auth-related localStorage items
     clearAuthStorage();
     
-    // Force reload the page to ensure all state is reset
-    window.location.href = '/';
+    console.log("Force sign out completed");
+    return true;
   } catch (error) {
     console.error('Error during force sign out:', error);
+    throw error;
   }
 };
 
 // Helper to clear all auth-related localStorage items
 const clearAuthStorage = () => {
+  console.log("Clearing auth storage");
+  
   // Clear OAuth related items
   localStorage.removeItem('oauth_role');
   localStorage.removeItem('oauth_provider');
@@ -180,8 +192,11 @@ const clearAuthStorage = () => {
     const key = localStorage.key(i);
     if (key && (key.startsWith('supabase.') || key.startsWith('sb-'))) {
       localStorage.removeItem(key);
+      console.log(`Removed item: ${key}`);
     }
   }
+  
+  console.log("Auth storage cleared");
 };
 
 export const resetPassword = async (email: string) => {
@@ -301,12 +316,15 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
   try {
     console.log('Processing access token from hash fragment');
     
-    // Clear any previous session first to avoid conflicts
-    await supabase.auth.signOut({ scope: 'local' });
+    // First, clear all auth data to start fresh
+    console.log('Clearing previous auth state');
+    await forceSignOut();
     
-    // Add delay before setting session to avoid race conditions
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait longer to ensure everything is cleared
+    console.log('Waiting to ensure clean state');
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
+    console.log('Setting new session with token');
     // Set the session using the access token
     const { data, error } = await supabase.auth.setSession({
       access_token: accessToken,
@@ -324,10 +342,22 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
     }
     
     // Add delay after setting session to allow Supabase to process
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Log successful session creation
-    console.log('Session set successfully:', data.session.user.id);
+    // Verify the session was set correctly
+    const { data: verifyData, error: verifyError } = await supabase.auth.getSession();
+    
+    if (verifyError) {
+      console.error('Error verifying session:', verifyError);
+      throw verifyError;
+    }
+    
+    if (!verifyData.session) {
+      console.error('Session verification failed - no session found after setting');
+      throw new Error('Session verification failed');
+    }
+    
+    console.log('Session verified successfully:', verifyData.session.user.id);
     
     return data.session;
   } catch (error) {

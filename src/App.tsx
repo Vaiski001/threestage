@@ -15,6 +15,7 @@ import CustomerSignup from "./pages/CustomerSignup";
 import CompanySignup from "./pages/CompanySignup";
 import PasswordReset from "./pages/PasswordReset";
 import AuthCallback from "./pages/AuthCallback";
+import ManualLogin from "./pages/ManualLogin";
 import Unauthorized from "./pages/Unauthorized";
 import Enquiries from "./pages/Enquiries";
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/signup-company" element={<CompanySignup />} />
             <Route path="/reset-password" element={<PasswordReset />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/auth/manual-login" element={<ManualLogin />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             
             {/* Protected routes */}
