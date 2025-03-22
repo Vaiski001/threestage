@@ -1,4 +1,3 @@
-
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -11,7 +10,6 @@ export const signUpWithEmail = async (
   userData: Omit<UserProfile, 'id' | 'created_at'>
 ) => {
   try {
-    // Register user with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -27,7 +25,6 @@ export const signUpWithEmail = async (
     if (authError) throw authError;
     
     if (authData.user) {
-      // Create profile in profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -66,10 +63,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 
 export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedin', role: UserRole = 'customer') => {
   try {
-    // Get the current domain for the redirect URL
-    // We need to make sure this matches EXACTLY what's configured in Supabase
     const domain = window.location.origin;
-    // Use the exact path that's configured in Supabase
     const redirectPath = '/auth/callback';
     const redirectTo = `${domain}${redirectPath}?role=${role}`;
     
@@ -77,12 +71,10 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     console.log(`Redirect URL: ${redirectTo}`);
     console.log(`Current domain: ${domain}`);
     
-    // Store the role in local storage so we can retrieve it after redirect
     localStorage.setItem('oauth_role', role);
     localStorage.setItem('oauth_provider', provider);
     localStorage.setItem('oauth_timestamp', Date.now().toString());
     
-    // Clear any existing hash fragment to prevent conflicts
     if (window.location.hash) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
@@ -108,38 +100,31 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
   }
 };
 
-// Enhanced Google OAuth sign-in function
 export const signInWithGoogle = async (role: UserRole = 'customer') => {
   return signInWithOAuth('google', role);
 };
 
-// Improved processAccessToken with retry mechanism and better error handling
 export const processAccessToken = async (accessToken: string, refreshToken: string | null) => {
   let retryCount = 0;
-  const maxRetries = 3;
-  const initialBackoff = 200; // Start with 200ms backoff
+  const maxRetries = 4;
+  const initialBackoff = 150;
   
   const attemptTokenProcessing = async (): Promise<Session> => {
     try {
       console.log(`Processing access token attempt ${retryCount + 1}/${maxRetries + 1}`);
       
-      // Clear previous auth state
-      console.log('Clearing previous auth state');
       clearAuthStorage();
       
-      // Force sign out but don't wait for it to complete
-      supabase.auth.signOut({ scope: 'global' }).catch(e => 
+      supabase.auth.signOut({ scope: 'local' }).catch(e => 
         console.error("Non-blocking error during force sign out:", e)
       );
       
-      // Gradually increase wait time between operations based on retry count
-      const waitTime = Math.min(100 * Math.pow(2, retryCount), 1000);
+      const waitTime = Math.min(50 * Math.pow(1.5, retryCount), 500);
       console.log(`Waiting ${waitTime}ms before setting session`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
       
       console.log('Setting new session with token');
-      // Set the session using the access token with a shorter, adaptive timeout
-      const timeoutDuration = 3000 + (retryCount * 1000); // Increase timeout with each retry
+      const timeoutDuration = 1500 + (retryCount * 500);
       
       const { data, error } = await Promise.race([
         supabase.auth.setSession({
@@ -162,15 +147,12 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
         throw new Error('Failed to create session from access token');
       }
       
-      // Shorter verification delay
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Verify the session was set correctly with a shorter timeout
-      console.log('Verifying session');
       const { data: verifyData, error: verifyError } = await Promise.race([
         supabase.auth.getSession(),
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("Session verification timed out after 2 seconds")), 2000)
+          setTimeout(() => reject(new Error("Session verification timed out after 1 second")), 1000)
         )
       ]);
       
@@ -188,20 +170,32 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
       
       return verifyData.session;
     } catch (error: any) {
-      // Determine if we should retry based on the error and retry count
       if (retryCount < maxRetries) {
         retryCount++;
         console.log(`Retrying token processing (${retryCount}/${maxRetries}). Error: ${error.message}`);
         
-        // Exponential backoff
-        const backoffTime = initialBackoff * Math.pow(2, retryCount - 1);
+        const backoffTime = initialBackoff * Math.pow(1.5, retryCount - 1);
         console.log(`Waiting ${backoffTime}ms before retry`);
         await new Promise(resolve => setTimeout(resolve, backoffTime));
+        
+        clearAuthStorage();
         
         return attemptTokenProcessing();
       }
       
       console.error('Maximum retries reached. Giving up token processing.');
+      
+      try {
+        localStorage.setItem('supabase_manual_token', JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          timestamp: Date.now()
+        }));
+        console.log('Stored token data for manual login fallback');
+      } catch (e) {
+        console.error('Failed to store token data for fallback:', e);
+      }
+      
       throw error;
     }
   };
@@ -253,14 +247,12 @@ export const updatePassword = async (newPassword: string) => {
   }
 };
 
-// Helper to handle the OAuth callback and create/update profile
 export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer') => {
   if (!user) return null;
   
   try {
     console.log(`Handling OAuth sign-in for user ${user.id} with role ${role}`);
     
-    // Check if profile exists
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
@@ -268,14 +260,12 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       .single();
     
     if (profileError && profileError.code !== 'PGRST116') {
-      // If it's not a "not found" error, log and throw it
       console.error('Error checking existing profile:', profileError);
       throw profileError;
     }
     
     if (!existingProfile) {
       console.log('No existing profile found, creating new profile');
-      // Create new profile if it doesn't exist
       const newProfile: Partial<UserProfile> = {
         id: user.id,
         email: user.email || '',
@@ -305,7 +295,6 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
   }
 };
 
-// Function to check if user has complete profile
 export const hasCompleteProfile = async (user: User, role: UserRole): Promise<boolean> => {
   try {
     const profile = await getUserProfile(user.id);

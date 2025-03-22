@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, CheckCircle, RefreshCw, Trash } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 export default function ManualLogin() {
   const { toast } = useToast();
@@ -15,10 +16,14 @@ export default function ManualLogin() {
   const [success, setSuccess] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('Initializing...');
 
   useEffect(() => {
     const processManualLogin = async () => {
       try {
+        setProgressMessage('Starting manual login process');
+        setProgress(10);
         console.log("Manual login process started");
         
         // Get token data from localStorage
@@ -28,42 +33,68 @@ export default function ManualLogin() {
         }
         
         const tokenData = JSON.parse(tokenDataStr);
+        setProgressMessage('Found token data');
+        setProgress(20);
         console.log("Found token data");
         
-        // Check if token is fresh (less than 2 minutes old)
+        // Check if token is fresh (less than 5 minutes old - increased from 2)
         const timestamp = tokenData.timestamp || 0;
         const now = Date.now();
-        if (now - timestamp > 120000) { // 2 minutes
+        if (now - timestamp > 300000) { // 5 minutes
           throw new Error("Token data is too old, please try again");
         }
         
         // Reset auth state before setting new session
-        await supabase.auth.signOut({ scope: 'global' });
+        setProgressMessage('Clearing previous auth state');
+        setProgress(30);
+        await supabase.auth.signOut({ scope: 'local' });
         
         // Wait a moment for auth state to reset
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setProgress(40);
         
-        // Set the session manually with a timeout
+        // Split the token setting process into smaller steps
+        setProgressMessage('Preparing to set session');
+        setProgress(50);
+        
+        // Create a new supabase client instance just for this operation
+        // This helps prevent conflicts with the global instance
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            storageKey: 'manual-login-temp-token'
+          }
+        });
+        
+        setProgressMessage('Setting session token');
+        setProgress(60);
+        
+        // Set the session manually with a shorter timeout
         let sessionResult;
         try {
           sessionResult = await Promise.race([
-            supabase.auth.setSession({
+            tempClient.auth.setSession({
               access_token: tokenData.access_token,
               refresh_token: tokenData.refresh_token || '',
             }),
             new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error("Session setup timed out after 10 seconds")), 10000)
+              setTimeout(() => reject(new Error("Session setup timed out after 5 seconds")), 5000)
             )
           ]);
         } catch (error: any) {
           console.error("Session setup timed out:", error);
           
           // If this is not the first attempt, try again with a different approach
-          if (attempts < 2) {
+          if (attempts < 3) {
             setAttempts(prev => prev + 1);
+            setProgressMessage(`Retrying manual login (attempt ${attempts + 1})`);
             console.log(`Retrying manual login (attempt ${attempts + 1})`);
             // Wait before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 800));
             processManualLogin();
             return;
           } else {
@@ -74,17 +105,33 @@ export default function ManualLogin() {
         if (sessionResult.error) throw sessionResult.error;
         if (!sessionResult.data.session) throw new Error("No session returned");
         
+        setProgressMessage('Session set successfully');
+        setProgress(70);
         console.log("Session set successfully:", sessionResult.data.session.user.id);
+        
+        // Copy the session to the main supabase client
+        await supabase.auth.setSession({
+          access_token: sessionResult.data.session.access_token,
+          refresh_token: sessionResult.data.session.refresh_token || '',
+        });
+        
+        setProgressMessage('Session synchronized');
+        setProgress(80);
         
         // Store the user ID for potential account deletion
         setUserId(sessionResult.data.session.user.id);
         
         // Get user profile
+        setProgressMessage('Fetching user profile');
+        setProgress(90);
         const profile = await getUserProfile(sessionResult.data.session.user.id);
         
         // Clear temporary token data
         localStorage.removeItem('supabase_manual_token');
+        localStorage.removeItem('manual-login-temp-token');
         
+        setProgressMessage('Login complete');
+        setProgress(100);
         setSuccess(true);
         
         // Redirect based on role
@@ -94,7 +141,7 @@ export default function ManualLogin() {
           } else {
             navigate('/enquiries');
           }
-        }, 1500);
+        }, 1000);
         
       } catch (error: any) {
         console.error("Manual login failed:", error);
@@ -141,24 +188,29 @@ export default function ManualLogin() {
           <CardTitle>Manual Authentication</CardTitle>
           <CardDescription>Processing your authentication data</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center">
+        <CardContent className="flex flex-col items-center space-y-4">
           {isProcessing && !success && !error && (
             <>
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p>Setting up your session... {attempts > 0 ? `(Attempt ${attempts + 1})` : ''}</p>
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-2"></div>
+              <p className="text-center">{progressMessage}</p>
+              <Progress value={progress} className="w-full" />
+              <p className="text-xs text-muted-foreground">
+                Attempt {attempts + 1}{attempts > 0 ? ` (previous attempts failed)` : ''}
+              </p>
             </>
           )}
           
           {success && (
             <>
-              <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
+              <CheckCircle className="w-12 h-12 text-green-500 mb-2" />
               <p className="text-center">Authentication successful! Redirecting you now...</p>
+              <Progress value={100} className="w-full" />
             </>
           )}
           
           {error && (
             <>
-              <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+              <AlertCircle className="w-12 h-12 text-red-500 mb-2" />
               <p className="text-center text-destructive">{error}</p>
             </>
           )}
