@@ -109,7 +109,7 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     
     if (error) throw error;
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error signing in with ${provider}:`, error);
     throw error;
   }
@@ -181,12 +181,16 @@ export const getUserProfile = async (userId: string) => {
 };
 
 // Enhanced Google OAuth sign-in function
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (role: 'customer' | 'company' = 'customer') => {
   try {
+    const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+    // Add role parameter to the redirect URL
+    redirectUrl.searchParams.append('role', role);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: redirectUrl.toString(),
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -196,7 +200,7 @@ export const signInWithGoogle = async () => {
     
     if (error) throw error;
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing in with Google:', error);
     throw error;
   }
@@ -219,7 +223,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       const newProfile: Partial<UserProfile> = {
         id: user.id,
         email: user.email || '',
-        name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
         role: role,
         created_at: new Date().toISOString(),
       };

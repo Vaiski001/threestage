@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { signUpWithEmail } from "@/lib/supabase";
+import { signUpWithEmail, signInWithGoogle, signInWithOAuth } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
@@ -101,6 +100,23 @@ export function CompanySignupForm() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      const baseUrl = `${window.location.origin}/auth/callback`;
+      const callbackUrl = `${baseUrl}?role=company`;
+      
+      await signInWithGoogle();
+      navigate(callbackUrl);
+    } catch (error: any) {
+      console.error("Google signup error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign up with Google. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -297,7 +313,7 @@ export function CompanySignupForm() {
           </div>
         </div>
         <div className="flex flex-col space-y-2">
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignup}>
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -319,7 +335,7 @@ export function CompanySignupForm() {
             </svg>
             Sign up with Google
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button variant="outline" className="w-full" onClick={() => signInWithOAuth('linkedin')}>
             <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-2 16h-2v-6h2v6zm-1-6.891c-.607 0-1.1-.496-1.1-1.109 0-.612.492-1.109 1.1-1.109s1.1.497 1.1 1.109c0 .613-.493 1.109-1.1 1.109zm8 6.891h-1.998v-2.861c0-1.881-2.002-1.722-2.002 0v2.861h-2v-6h2v1.093c.872-1.616 4-1.736 4 1.548v3.359z" />
             </svg>

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { signUpWithEmail } from "@/lib/supabase";
+import { signUpWithEmail, signInWithGoogle } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
@@ -60,6 +60,20 @@ export function CustomerSignupForm() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    try {
+      await signInWithGoogle();
+      // The redirect to OAuth provider will happen, and AuthCallback.tsx will handle the response
+    } catch (error: any) {
+      console.error("Google signup error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign up with Google. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -158,7 +172,7 @@ export function CustomerSignupForm() {
             <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={() => signUpWithEmail}>
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignup}>
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
