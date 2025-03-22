@@ -31,7 +31,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Initialize database tables if needed
   useEffect(() => {
     const initializeTables = async () => {
-      await ensureProfilesTableExists();
+      try {
+        const success = await ensureProfilesTableExists();
+        if (!success) {
+          console.warn("Could not ensure profiles table exists. Some functionality may not work correctly.");
+        }
+      } catch (error) {
+        console.error("Error initializing tables:", error);
+      }
     };
     
     initializeTables();
@@ -78,7 +85,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("Fetching profile for user:", user.id);
         
         // Ensure profiles table exists first
-        await ensureProfilesTableExists();
+        const tableExists = await ensureProfilesTableExists();
+        if (!tableExists) {
+          console.warn("Profiles table may not exist. Will attempt to create profile anyway.");
+        }
         
         const { data, error } = await supabase
           .from('profiles')
@@ -100,6 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 console.log("Created new profile during fetch:", createdProfile);
                 setProfile(createdProfile);
                 return;
+              } else {
+                console.error("Failed to create profile during fetch");
               }
             } catch (createError) {
               console.error("Error creating profile during fetch:", createError);

@@ -7,49 +7,104 @@ export const ensureProfilesTableExists = async () => {
   try {
     console.log('Checking if profiles table exists...');
     
-    // Check if table exists by trying to select from it
-    const { error } = await supabase
-      .from('profiles')
-      .select('count(*)', { count: 'exact', head: true });
+    // Check if table exists
+    const { error } = await supabase.from('profiles').select('id').limit(1);
     
-    if (error && error.code === '42P01') { // Table doesn't exist
+    if (error && error.code === '42P01') { // Table doesn't exist error code
       console.log('Profiles table does not exist, creating it...');
       
-      // Create profiles table
-      const { error: createError } = await supabase.rpc('create_profiles_table');
+      // Create the profiles table using raw SQL
+      const { error: createError } = await supabase.rpc(
+        'create_profiles_table_if_not_exists', 
+        {}
+      ).single();
       
       if (createError) {
-        console.error('Error creating profiles table:', createError);
-        console.log('Attempting alternative table creation...');
+        console.error('Error with RPC method, trying direct SQL:', createError);
         
-        // Alternative approach if RPC doesn't exist
-        await supabase.auth.admin.createUser({
-          email: 'temp@example.com',
-          password: 'temporary_password',
-          user_metadata: { isTemporary: true }
-        });
+        // Try direct SQL if RPC fails
+        const { error: sqlError } = await supabase.auth.admin.executeSql(`
+          CREATE TABLE IF NOT EXISTS public.profiles (
+            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+            email TEXT NOT NULL,
+            role TEXT NOT NULL CHECK (role IN ('customer', 'company')),
+            name TEXT,
+            company_name TEXT,
+            phone TEXT,
+            industry TEXT,
+            website TEXT,
+            integrations TEXT[],
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          );
+          
+          -- Set up Row Level Security
+          ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+          
+          -- Create policies
+          CREATE POLICY "Users can view their own profile"
+            ON public.profiles FOR SELECT
+            USING (auth.uid() = id);
+          
+          CREATE POLICY "Users can update their own profile"
+            ON public.profiles FOR UPDATE
+            USING (auth.uid() = id);
+        `);
         
-        console.log('Profiles table should now be created by Supabase auth');
+        if (sqlError) {
+          console.error('Direct SQL approach failed:', sqlError);
+          
+          // Last resort: Use a simpler approach that might work with limited permissions
+          console.log('Attempting to create profile directly by inserting sample row...');
+          
+          // Get the current user
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData && userData.user) {
+            await createUserProfile({
+              id: userData.user.id,
+              email: userData.user.email || 'unknown@example.com',
+              role: 'customer',
+              name: '',
+              created_at: new Date().toISOString()
+            });
+            console.log('Created sample profile, table should now exist');
+          }
+        } else {
+          console.log('Profiles table created successfully via direct SQL');
+        }
       } else {
-        console.log('Profiles table created successfully');
+        console.log('Profiles table created successfully via RPC');
       }
+      
+      // Verify the table was created
+      const { error: verifyError } = await supabase.from('profiles').select('id').limit(1);
+      if (verifyError) {
+        console.error('Failed to verify table creation:', verifyError);
+        return false;
+      }
+      
+      console.log('Profiles table verified to exist');
+      return true;
     } else if (error) {
       console.error('Error checking profiles table:', error);
+      return false;
     } else {
-      console.log('Profiles table exists');
+      console.log('Profiles table already exists');
+      return true;
     }
-    
-    return true;
   } catch (error) {
     console.error('Error ensuring profiles table exists:', error);
     return false;
   }
 };
 
+// Function to get a user profile
 export const getUserProfile = async (userId: string) => {
   try {
     // Make sure profiles table exists
-    await ensureProfilesTableExists();
+    const tableExists = await ensureProfilesTableExists();
+    if (!tableExists) {
+      console.error('Failed to ensure profiles table exists');
+    }
     
     console.log('Getting user profile for:', userId);
     const { data, error } = await supabase
@@ -96,7 +151,10 @@ export const getUserProfile = async (userId: string) => {
 export const createUserProfile = async (profileData: Partial<UserProfile>) => {
   try {
     // Make sure profiles table exists
-    await ensureProfilesTableExists();
+    const tableExists = await ensureProfilesTableExists();
+    if (!tableExists) {
+      console.error('Failed to ensure profiles table exists before creating profile');
+    }
     
     console.log('Creating user profile with data:', profileData);
     

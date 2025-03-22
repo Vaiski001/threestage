@@ -1,4 +1,3 @@
-
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -273,77 +272,105 @@ export const updatePassword = async (newPassword: string) => {
   }
 };
 
-export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer') => {
-  if (!user) return null;
-  
+export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 'customer'): Promise<UserProfile | null> => {
   try {
-    console.log(`Handling OAuth sign-in for user ${user.id} with role ${role}`);
+    console.log("Handling OAuth sign-in for user:", user.id, "with role:", role);
     
+    // Check if profile already exists
     const { data: existingProfile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
     
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Error checking existing profile:', profileError);
-      throw profileError;
-    }
-    
-    if (!existingProfile) {
-      console.log('No existing profile found, creating new profile');
+    if (profileError) {
+      console.error("Error checking profile:", profileError);
       
-      // Create profile as Record<string, unknown> instead of UserProfile
-      const newProfileData: Record<string, unknown> = {
-        id: user.id,
-        email: user.email || '',
-        name: user.user_metadata?.full_name as string || user.user_metadata?.name as string || '',
-        role: role,
-        created_at: new Date().toISOString()
-      };
-      
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert(newProfileData);
-      
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
-        throw insertError;
+      if (profileError.code === 'PGRST116') {
+        console.log("Profile doesn't exist, creating new one");
+        
+        // Extract name from user metadata if available
+        const firstName = user.user_metadata?.first_name as string || '';
+        const lastName = user.user_metadata?.last_name as string || '';
+        let name = '';
+        
+        if (firstName || lastName) {
+          name = [firstName, lastName].filter(Boolean).join(' ');
+        } else if (user.user_metadata?.full_name) {
+          name = user.user_metadata.full_name as string;
+        } else if (user.user_metadata?.name) {
+          name = user.user_metadata.name as string;
+        }
+        
+        // Create profile record with proper typing
+        const newProfileData: Record<string, unknown> = {
+          id: user.id,
+          email: user.email || '',
+          role: role,
+          name: name,
+          created_at: new Date().toISOString()
+        };
+        
+        console.log("Creating profile with data:", newProfileData);
+        
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .insert(newProfileData)
+            .select('*')
+            .single();
+          
+          if (error) {
+            console.error("Error creating profile:", error);
+            return null;
+          }
+          
+          console.log("Profile created successfully:", data);
+          
+          // Convert to UserProfile type
+          const createdProfile: UserProfile = {
+            id: data.id as string,
+            email: data.email as string,
+            role: data.role as UserRole,
+            name: data.name as string,
+            created_at: data.created_at as string
+          };
+          
+          return createdProfile;
+        } catch (error) {
+          console.error("Error handling profile creation:", error);
+          return null;
+        }
       }
       
-      console.log('New profile created successfully');
-      
-      // Convert to UserProfile for return
-      const newProfile: UserProfile = {
-        id: user.id,
-        email: user.email || '',
-        name: user.user_metadata?.full_name as string || user.user_metadata?.name as string || '',
-        role: role,
-        created_at: new Date().toISOString()
-      };
-      
-      return newProfile;
+      return null;
     }
     
-    console.log('Existing profile found:', existingProfile);
+    if (existingProfile) {
+      console.log("Existing profile found:", existingProfile);
+      
+      // Convert to UserProfile type
+      const profile: UserProfile = {
+        id: existingProfile.id as string,
+        email: existingProfile.email as string,
+        role: existingProfile.role as UserRole,
+        name: existingProfile.name as string,
+        created_at: existingProfile.created_at as string
+      };
+      
+      // Add optional fields if they exist
+      if (existingProfile.company_name) profile.company_name = existingProfile.company_name as string;
+      if (existingProfile.phone) profile.phone = existingProfile.phone as string;
+      if (existingProfile.industry) profile.industry = existingProfile.industry as string;
+      if (existingProfile.website) profile.website = existingProfile.website as string;
+      if (existingProfile.integrations) profile.integrations = existingProfile.integrations as string[] || [];
+      
+      return profile;
+    }
     
-    const profile: UserProfile = {
-      id: existingProfile.id as string,
-      email: existingProfile.email as string,
-      role: existingProfile.role as UserRole,
-      name: existingProfile.name as string,
-      created_at: existingProfile.created_at as string,
-    };
-    
-    if (existingProfile.company_name) profile.company_name = existingProfile.company_name as string;
-    if (existingProfile.phone) profile.phone = existingProfile.phone as string;
-    if (existingProfile.industry) profile.industry = existingProfile.industry as string;
-    if (existingProfile.website) profile.website = existingProfile.website as string;
-    if (existingProfile.integrations) profile.integrations = existingProfile.integrations as string[] || [];
-    
-    return profile;
+    return null;
   } catch (error) {
-    console.error('Error handling OAuth sign-in:', error);
+    console.error("Error in handleOAuthSignIn:", error);
     return null;
   }
 };
