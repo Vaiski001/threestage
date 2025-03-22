@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmail } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -128,7 +128,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   };
 
   // Clean up timeout when component unmounts
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
