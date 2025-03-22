@@ -14,6 +14,7 @@ export default function ManualLogin() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
 
   useEffect(() => {
     const processManualLogin = async () => {
@@ -29,29 +30,57 @@ export default function ManualLogin() {
         const tokenData = JSON.parse(tokenDataStr);
         console.log("Found token data");
         
-        // Check if token is fresh (less than 1 minute old)
+        // Check if token is fresh (less than 2 minutes old)
         const timestamp = tokenData.timestamp || 0;
         const now = Date.now();
-        if (now - timestamp > 60000) {
+        if (now - timestamp > 120000) { // 2 minutes
           throw new Error("Token data is too old, please try again");
         }
         
-        // Set the session manually
-        const { data, error } = await supabase.auth.setSession({
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token || '',
-        });
+        // Reset auth state before setting new session
+        await supabase.auth.signOut({ scope: 'global' });
         
-        if (error) throw error;
-        if (!data.session) throw new Error("No session returned");
+        // Wait a moment for auth state to reset
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        console.log("Session set successfully:", data.session.user.id);
+        // Set the session manually with a timeout
+        let sessionResult;
+        try {
+          sessionResult = await Promise.race([
+            supabase.auth.setSession({
+              access_token: tokenData.access_token,
+              refresh_token: tokenData.refresh_token || '',
+            }),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error("Session setup timed out after 10 seconds")), 10000)
+            )
+          ]);
+        } catch (error: any) {
+          console.error("Session setup timed out:", error);
+          
+          // If this is not the first attempt, try again with a different approach
+          if (attempts < 2) {
+            setAttempts(prev => prev + 1);
+            console.log(`Retrying manual login (attempt ${attempts + 1})`);
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            processManualLogin();
+            return;
+          } else {
+            throw new Error("Failed to set up session after multiple attempts. Please try logging in again.");
+          }
+        }
+        
+        if (sessionResult.error) throw sessionResult.error;
+        if (!sessionResult.data.session) throw new Error("No session returned");
+        
+        console.log("Session set successfully:", sessionResult.data.session.user.id);
         
         // Store the user ID for potential account deletion
-        setUserId(data.session.user.id);
+        setUserId(sessionResult.data.session.user.id);
         
         // Get user profile
-        const profile = await getUserProfile(data.session.user.id);
+        const profile = await getUserProfile(sessionResult.data.session.user.id);
         
         // Clear temporary token data
         localStorage.removeItem('supabase_manual_token');
@@ -75,7 +104,7 @@ export default function ManualLogin() {
     };
     
     processManualLogin();
-  }, [navigate, toast]);
+  }, [navigate, toast, attempts]);
   
   const handleDeleteAccount = async () => {
     if (!userId) {
@@ -116,7 +145,7 @@ export default function ManualLogin() {
           {isProcessing && !success && !error && (
             <>
               <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p>Setting up your session...</p>
+              <p>Setting up your session... {attempts > 0 ? `(Attempt ${attempts + 1})` : ''}</p>
             </>
           )}
           

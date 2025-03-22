@@ -262,7 +262,11 @@ export default function AuthCallback() {
         timestamp: Date.now()
       }));
       
-      window.location.href = "/auth/manual-login";
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      
+      setTimeout(() => {
+        window.location.href = "/auth/manual-login";
+      }, 500);
       
     } catch (error) {
       console.error("Error parsing hash for manual redirect:", error);
@@ -292,12 +296,13 @@ export default function AuthCallback() {
         session = await Promise.race([
           processAccessToken(accessToken, refreshToken),
           new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error("Session setup timed out after 20 seconds")), 20000)
+            setTimeout(() => reject(new Error("Session setup timed out after 10 seconds")), 10000)
           )
         ]);
       } catch (error) {
         console.error("Timeout or error in processAccessToken:", error);
-        throw error;
+        parseHashAndRedirect();
+        return;
       }
       
       console.log("Successfully set session, clearing hash");
@@ -402,13 +407,19 @@ export default function AuthCallback() {
             await Promise.race([
               handleHashFragment(),
               new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Authentication process timed out after 30 seconds")), 30000)
+                setTimeout(() => {
+                  console.log("Authentication process timed out, switching to manual mode");
+                  parseHashAndRedirect();
+                  reject(new Error("Authentication process timed out, switching to manual mode"));
+                }, 15000)
               )
             ]);
           } catch (error: any) {
-            console.error("Timeout or error in hash processing:", error);
-            setErrorMessage(`Authentication failed: ${error.message}`);
-            setIsProcessing(false);
+            if (!error.message.includes("switching to manual mode")) {
+              console.error("Timeout or error in hash processing:", error);
+              setErrorMessage(`Authentication failed: ${error.message}`);
+              setIsProcessing(false);
+            }
             return;
           }
           return;
@@ -762,3 +773,4 @@ export default function AuthCallback() {
     </div>
   );
 }
+

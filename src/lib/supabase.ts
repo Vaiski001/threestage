@@ -325,25 +325,35 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
   }
 };
 
-// Function to process access token from hash fragment
+// Function to process access token from hash fragment with reduced timeouts
 export const processAccessToken = async (accessToken: string, refreshToken: string | null) => {
   try {
     console.log('Processing access token from hash fragment');
     
-    // First, clear all auth data to start fresh
+    // First, clear all auth data to start fresh - but do it faster
     console.log('Clearing previous auth state');
-    await forceSignOut();
     
-    // Wait longer to ensure everything is cleared
-    console.log('Waiting to ensure clean state');
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Clear localStorage items immediately
+    clearAuthStorage();
+    
+    // Force sign out but don't wait for it to complete
+    supabase.auth.signOut({ scope: 'global' }).catch(e => console.error("Error during force sign out:", e));
+    
+    // Much shorter waiting time before continuing
+    console.log('Preparing to set new session');
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     console.log('Setting new session with token');
-    // Set the session using the access token
-    const { data, error } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken || '',
-    });
+    // Set the session using the access token with a timeout
+    const { data, error } = await Promise.race([
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      }),
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error("Session setup timed out after 10 seconds")), 10000)
+      )
+    ]);
     
     if (error) {
       console.error('Error setting session from access token:', error);
@@ -355,11 +365,16 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
       throw new Error('Failed to create session from access token');
     }
     
-    // Add delay after setting session to allow Supabase to process
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Shorter delay after setting session
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Verify the session was set correctly
-    const { data: verifyData, error: verifyError } = await supabase.auth.getSession();
+    const { data: verifyData, error: verifyError } = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error("Session verification timed out after 5 seconds")), 5000)
+      )
+    ]);
     
     if (verifyError) {
       console.error('Error verifying session:', verifyError);
