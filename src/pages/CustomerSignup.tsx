@@ -33,19 +33,29 @@ export default function CustomerSignup() {
           } else {
             navigate("/profile");
           }
-        } else {
-          console.log("CustomerSignup: No existing session found, showing signup form");
-          setIsCheckingAuth(false);
         }
       } catch (error) {
         console.error("Error checking session:", error);
+      } finally {
+        // Always set isCheckingAuth to false regardless of outcome
+        console.log("CustomerSignup: Setting isCheckingAuth to false");
         setIsCheckingAuth(false);
       }
     };
     
     console.log("CustomerSignup: Component mounted");
     checkExistingSession();
-  }, [navigate, toast]);
+    
+    // Add a safety timeout to ensure the loader doesn't get stuck
+    const timeoutId = setTimeout(() => {
+      if (isCheckingAuth) {
+        console.log("CustomerSignup: Safety timeout triggered, forcing isCheckingAuth to false");
+        setIsCheckingAuth(false);
+      }
+    }, 3000); // 3 seconds timeout
+    
+    return () => clearTimeout(timeoutId);
+  }, [navigate, toast, isCheckingAuth]);
   
   if (isCheckingAuth) {
     console.log("CustomerSignup: Showing loading state");
@@ -54,8 +64,9 @@ export default function CustomerSignup() {
         <Header />
         <main className="py-16">
           <Container size="sm">
-            <div className="flex justify-center items-center">
+            <div className="flex flex-col items-center justify-center gap-4">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-sm text-muted-foreground">Loading...</p>
             </div>
           </Container>
         </main>
