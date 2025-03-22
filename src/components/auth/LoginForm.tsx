@@ -6,9 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -26,6 +27,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [timeoutId, setTimeoutId] = useState<number | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Form state
   const [email, setEmail] = useState("");
@@ -54,6 +57,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setErrorMessage(null);
+    
     if (!validateForm()) {
       return;
     }
@@ -68,6 +73,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         description: "The login request is taking longer than expected. Please try again.",
         variant: "destructive",
       });
+      setErrorMessage("Login timeout. Please try again.");
       if (onError) onError("Login timeout. Please try again.");
     }, 10000); // 10 seconds timeout
     
@@ -83,6 +89,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       }
       
       if (user) {
+        console.log("Login successful for user:", user.id);
+        
         toast({
           title: "Login successful",
           description: "You have been successfully logged in.",
@@ -107,9 +115,11 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       
       if (error.message) {
         if (error.message.includes("Invalid login")) {
-          errorMessage = "Invalid email or password. Please try again.";
+          errorMessage = "Invalid email or password. Please double-check your credentials and try again.";
         } else if (error.message.includes("Email not confirmed")) {
           errorMessage = "Please confirm your email before logging in.";
+        } else if (error.message.includes("rate limit")) {
+          errorMessage = "Too many login attempts. Please wait a minute and try again.";
         } else {
           errorMessage = error.message;
         }
@@ -120,6 +130,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         description: errorMessage,
         variant: "destructive",
       });
+      
+      setErrorMessage(errorMessage);
       
       if (onError) {
         onError(errorMessage);
@@ -148,6 +160,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         variant: "destructive",
       });
       
+      setErrorMessage(errorMessage);
+      
       if (onError) {
         onError(errorMessage);
       }
@@ -166,6 +180,13 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
   return (
     <div className="space-y-6">
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -185,15 +206,26 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
-            aria-invalid={!!errors.password}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              aria-invalid={!!errors.password}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-0 h-full"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </Button>
+          </div>
           {errors.password && (
             <p className="text-sm font-medium text-destructive">{errors.password}</p>
           )}
@@ -209,6 +241,15 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
             "Log in"
           )}
         </Button>
+        
+        <div className="flex justify-between items-center">
+          <Button variant="link" className="px-0 text-sm" onClick={() => navigate("/reset-password")}>
+            Forgot password?
+          </Button>
+          <Button variant="link" className="px-0 text-sm" onClick={() => navigate("/signup")}>
+            Need an account?
+          </Button>
+        </div>
       </form>
 
       <div className="relative">
