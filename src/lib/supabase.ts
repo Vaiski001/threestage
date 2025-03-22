@@ -148,11 +148,15 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
 
 export const signOut = async () => {
   try {
-    const { error } = await supabase.auth.signOut();
+    // Sign out from Supabase Auth
+    const { error } = await supabase.auth.signOut({ scope: 'global' });
     if (error) throw error;
     
-    // Also clear any OAuth-related items from localStorage
+    // Clear all auth-related localStorage items
     clearAuthStorage();
+    
+    console.log("User has been successfully signed out and all credentials cleared");
+    return true;
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;
@@ -186,6 +190,7 @@ const clearAuthStorage = () => {
   localStorage.removeItem('oauth_role');
   localStorage.removeItem('oauth_provider');
   localStorage.removeItem('oauth_timestamp');
+  localStorage.removeItem('manual_login_attempted');
   
   // Clear any supabase items
   for (let i = 0; i < localStorage.length; i++) {
@@ -196,7 +201,14 @@ const clearAuthStorage = () => {
     }
   }
   
-  console.log("Auth storage cleared");
+  // Force a session clear
+  try {
+    supabase.auth.signOut({ scope: 'global' });
+  } catch (error) {
+    console.error("Error in force session clear:", error);
+  }
+  
+  console.log("Auth storage cleared completely");
 };
 
 export const resetPassword = async (email: string) => {

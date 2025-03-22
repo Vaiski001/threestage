@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
@@ -31,14 +30,14 @@ export function Header() {
       await signOut();
       toast({
         title: "Signed out",
-        description: "You have been successfully signed out.",
+        description: "You have been successfully signed out and all credentials have been cleared.",
       });
       navigate("/");
     } catch (error) {
       console.error("Sign out error:", error);
       toast({
         title: "Error",
-        description: "Failed to sign out. Please try again.",
+        description: "Failed to sign out completely. Please try again.",
         variant: "destructive",
       });
     }
