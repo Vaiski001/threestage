@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { supabase } from "@/lib/supabase/client";
-import { createUserProfile } from "@/lib/supabase/profiles";
 import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { createUserProfile } from "@/lib/supabase/profiles";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,8 +26,10 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function CustomerSignupForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [signupStage, setSignupStage] = useState<string>("initial");
   const [showPassword, setShowPassword] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -42,11 +45,14 @@ export function CustomerSignupForm() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setSignupError(null);
+    setDebugInfo(null);
+    setSignupStage("starting");
     
     try {
       console.log("Starting customer signup process:", { ...values, password: "***" });
       
       // 1. Create the auth user with Supabase Auth
+      setSignupStage("creating_auth_user");
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -60,41 +66,60 @@ export function CustomerSignupForm() {
       
       if (authError) {
         console.error("Auth error during signup:", authError);
+        setDebugInfo(`Auth error: ${authError.message}`);
         throw authError;
       }
       
       if (!authData.user) {
-        throw new Error("Failed to create user account");
+        const errorMsg = "Failed to create user account - no user returned";
+        setDebugInfo(errorMsg);
+        throw new Error(errorMsg);
       }
       
       console.log("Auth signup successful for user:", authData.user.id);
       
       // 2. Create a profile record in the profiles table
-      await createUserProfile({
-        id: authData.user.id,
-        email: values.email,
-        name: values.name,
-        role: "customer",
-        created_at: new Date().toISOString()
-      });
+      setSignupStage("creating_profile");
+      try {
+        await createUserProfile({
+          id: authData.user.id,
+          email: values.email,
+          name: values.name,
+          role: "customer",
+          created_at: new Date().toISOString()
+        });
+        
+        console.log("Profile created successfully");
+      } catch (profileError: any) {
+        console.error("Error creating profile:", profileError);
+        setDebugInfo(`Profile creation error: ${profileError.message}`);
+        
+        // Continue anyway since the auth account was created
+        toast({
+          title: "Account created with warnings",
+          description: "Your account was created but profile setup had issues. Please contact support if you encounter problems.",
+          variant: "destructive",
+        });
+      }
       
       // 3. Show success message and redirect to login
+      setSignupStage("completed");
       toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
+        title: "Account created successfully!",
+        description: "You can now login with your credentials.",
       });
       
       // Sign out the user so they can sign in with their new credentials
       await supabase.auth.signOut();
       
-      // Redirect to login page
-      navigate("/login");
+      // Redirect to login page with a success parameter
+      navigate("/login?signup=success");
     } catch (error: any) {
       console.error("Signup error:", error);
       setSignupError(error.message || "Failed to create account. Please try again.");
       
       toast({
-        title: "Error",
+        title: "Signup Error",
         description: error.message || "Failed to create account. Please try again.",
         variant: "destructive",
       });
@@ -104,16 +129,25 @@ export function CustomerSignupForm() {
   };
 
   const handleGoogleSignup = async () => {
+    setIsLoading(true);
+    setSignupError(null);
+    setDebugInfo(null);
+    
     try {
-      await signInWithGoogle();
+      console.log("Starting Google signup process");
+      const result = await signInWithGoogle();
+      console.log("Google signup initiated:", result);
       // The redirect to OAuth provider will happen, and AuthCallback.tsx will handle the response
     } catch (error: any) {
-      console.error("❌ Google signup error:", error);
+      console.error("Google signup error:", error);
+      setSignupError(error.message || "Failed to sign up with Google. Please try again.");
+      
       toast({
-        title: "Error",
+        title: "Google Signup Error",
         description: error.message || "Failed to sign up with Google. Please try again.",
         variant: "destructive",
       });
+      setIsLoading(false);
     }
   };
 
@@ -184,16 +218,33 @@ export function CustomerSignupForm() {
             />
             
             {signupError && (
-              <div className="text-destructive text-sm font-medium p-2 bg-destructive/10 rounded-md">
-                {signupError}
-              </div>
+              <Alert variant="destructive">
+                <AlertTitle>Signup Error</AlertTitle>
+                <AlertDescription>{signupError}</AlertDescription>
+              </Alert>
+            )}
+            
+            {debugInfo && import.meta.env.DEV && (
+              <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+                <AlertTitle>Debug Info (DEV only)</AlertTitle>
+                <AlertDescription className="text-xs font-mono">
+                  Stage: {signupStage}<br/>
+                  {debugInfo}
+                </AlertDescription>
+              </Alert>
             )}
             
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
+                  {signupStage === "initial" 
+                    ? "Creating account..." 
+                    : signupStage === "creating_auth_user" 
+                      ? "Creating user..." 
+                      : signupStage === "creating_profile" 
+                        ? "Setting up profile..." 
+                        : "Processing..."}
                 </>
               ) : (
                 "Create Account"
@@ -219,7 +270,7 @@ export function CustomerSignupForm() {
             <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignup}>
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignup} disabled={isLoading}>
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Session } from "@supabase/supabase-js";
@@ -241,7 +240,7 @@ export default function AuthCallback() {
       if (profile?.role === "company") {
         navigate("/dashboard");
       } else {
-        navigate("/enquiries");
+        navigate("/profile");
       }
       return true;
     } catch (error) {

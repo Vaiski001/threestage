@@ -18,6 +18,7 @@ import AuthCallback from "./pages/AuthCallback";
 import ManualLogin from "./pages/ManualLogin";
 import Unauthorized from "./pages/Unauthorized";
 import Enquiries from "./pages/Enquiries";
+import CustomerProfileDashboard from "./pages/CustomerProfileDashboard";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["company"]}>
                   <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute allowedRoles={["customer"]}>
+                  <CustomerProfileDashboard />
                 </ProtectedRoute>
               } 
             />
