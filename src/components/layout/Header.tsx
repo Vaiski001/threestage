@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { signOut, forceSignOut } from "@/lib/supabase";
+import { signOut } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, User, LogOut, ChevronDown, RefreshCcw } from "lucide-react";
+import { Menu, User, LogOut, ChevronDown } from "lucide-react";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -24,9 +24,6 @@ export function Header() {
   
   // Check if we're on the homepage
   const isHomePage = location.pathname === "/";
-  
-  // Only show account dropdown if authenticated and not on home page
-  const showAccountMenu = isAuthenticated && !isHomePage;
 
   const handleSignOut = async () => {
     try {
@@ -71,7 +68,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-4">
-            {showAccountMenu ? (
+            {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
@@ -101,31 +98,29 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              !isAuthenticated && (
-                <div className="flex items-center gap-4">
-                  <div className="hidden sm:block">
-                    <Button variant="outline" onClick={() => navigate("/login")}>
-                      Log in
-                    </Button>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button>
-                        Sign up
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => navigate("/signup-customer")}>
-                        As Customer
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/signup-company")}>
-                        As Company
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:block">
+                  <Button variant="outline" onClick={() => navigate("/login")}>
+                    Log in
+                  </Button>
                 </div>
-              )
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      Sign up
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => navigate("/signup-customer")}>
+                      As Customer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/signup-company")}>
+                      As Company
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
 
             <button
