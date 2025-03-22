@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
@@ -266,7 +265,7 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
         description: "Your account has been set up successfully.",
       });
       
-      navigate("/enquiries");
+      navigate("/profile");
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({

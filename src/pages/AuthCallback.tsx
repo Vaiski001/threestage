@@ -238,8 +238,10 @@ export default function AuthCallback() {
 
       const profile = await getUserProfile(user.id);
       if (profile?.role === "company") {
+        console.log("Redirecting company user to dashboard");
         navigate("/dashboard");
       } else {
+        console.log("Redirecting customer user to profile dashboard");
         navigate("/profile");
       }
       return true;

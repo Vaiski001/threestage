@@ -21,7 +21,12 @@ export default function CustomerProfileDashboard() {
     if (!loading && !user) {
       navigate("/login");
     }
-  }, [user, loading, navigate]);
+    
+    // Log profile information for debugging
+    if (profile) {
+      console.log("Customer profile loaded:", profile);
+    }
+  }, [user, profile, loading, navigate]);
 
   if (loading) {
     return (
