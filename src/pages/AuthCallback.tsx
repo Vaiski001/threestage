@@ -160,6 +160,78 @@ export default function AuthCallback() {
       try {
         setIsProcessing(true);
         
+        // Parse hash fragment for access token - this handles OAuth redirects that might 
+        // come directly to the page without going through the router
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          // We have a hash fragment with tokens - need to exchange it for a session
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          
+          if (accessToken) {
+            // Set the session using the access token
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: hashParams.get('refresh_token') || '',
+            });
+            
+            if (error) throw error;
+            
+            if (data.session) {
+              // Clear the hash to avoid issues with reload
+              window.history.replaceState(null, '', window.location.pathname);
+              
+              // Continue with the regular flow
+              const user = data.session.user;
+              setCurrentUser(user);
+              
+              // Determine role from URL params - default to customer if not specified
+              const urlParams = new URLSearchParams(window.location.search);
+              const role = urlParams.get('role') === 'company' ? 'company' : 'customer';
+              setUserRole(role);
+              
+              // Check if the user has a profile
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+              
+              if (!profile) {
+                // No profile yet, we need to collect additional information
+                await handleOAuthSignIn(user, role);
+                setNeedsAdditionalInfo(true);
+                setIsProcessing(false);
+                return;
+              } else if (!profile.name && role === 'customer') {
+                // Customer profile exists but missing name
+                setNeedsAdditionalInfo(true);
+                setIsProcessing(false);
+                return;
+              } else if (!profile.company_name && role === 'company') {
+                // Company profile exists but missing company details
+                setNeedsAdditionalInfo(true);
+                setIsProcessing(false);
+                return;
+              }
+              
+              // Profile exists and has required info
+              toast({
+                title: "Authentication successful",
+                description: "You have been successfully logged in.",
+              });
+
+              // Redirect based on user role
+              if (profile.role === "company") {
+                navigate("/dashboard");
+              } else {
+                navigate("/enquiries");
+              }
+              return;
+            }
+          }
+        }
+        
+        // Normal OAuth callback through React Router
         // Get the current session
         const { data, error } = await supabase.auth.getSession();
         

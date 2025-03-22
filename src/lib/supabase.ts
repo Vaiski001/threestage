@@ -1,4 +1,3 @@
-
 import { createClient, User } from '@supabase/supabase-js';
 
 // For local development, use environment variables
@@ -98,12 +97,23 @@ export const signInWithEmail = async (email: string, password: string) => {
   }
 };
 
-export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedin') => {
+export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedin', role: UserRole = 'customer') => {
   try {
+    // Get the current origin - this handles both local and deployed environments
+    const origin = window.location.origin;
+    
+    // Create a redirect URL with the role parameter
+    const redirectUrl = new URL(`${origin}/auth/callback`);
+    redirectUrl.searchParams.append('role', role);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: redirectUrl.toString(),
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
     
@@ -181,29 +191,8 @@ export const getUserProfile = async (userId: string) => {
 };
 
 // Enhanced Google OAuth sign-in function
-export const signInWithGoogle = async (role: 'customer' | 'company' = 'customer') => {
-  try {
-    const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
-    // Add role parameter to the redirect URL
-    redirectUrl.searchParams.append('role', role);
-    
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUrl.toString(),
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        }
-      }
-    });
-    
-    if (error) throw error;
-    return data;
-  } catch (error: any) {
-    console.error('Error signing in with Google:', error);
-    throw error;
-  }
+export const signInWithGoogle = async (role: UserRole = 'customer') => {
+  return signInWithOAuth('google', role);
 };
 
 // Helper to handle the OAuth callback and create/update profile
