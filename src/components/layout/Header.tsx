@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
@@ -21,9 +22,16 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Hide auth status on homepage
+  // Check if we're on the homepage
   const isHomePage = location.pathname === "/";
+  
+  // Show auth buttons if:
+  // 1. User is NOT authenticated, OR
+  // 2. User IS authenticated but we're NOT on the homepage
   const showAuthButtons = !isAuthenticated || !isHomePage;
+  
+  // For the homepage, we always want to show login/signup if not authenticated
+  const showLoginSignup = isHomePage && !isAuthenticated;
 
   const handleSignOut = async () => {
     try {
@@ -150,6 +158,33 @@ export function Header() {
               )
             )}
 
+            {/* For homepage only: Always show login/signup if not authenticated */}
+            {showLoginSignup && (
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:block">
+                  <Button variant="outline" onClick={() => navigate("/login")}>
+                    Log in
+                  </Button>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      Sign up
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => navigate("/signup-customer")}>
+                      As Customer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/signup-company")}>
+                      As Company
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
             <button
               className="md:hidden"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -191,16 +226,8 @@ export function Header() {
               >
                 Contact
               </Link>
-              {showAuthButtons && !isAuthenticated && (
+              {!isAuthenticated && (
                 <>
-                  <Button 
-                    variant="ghost" 
-                    className="justify-start px-0 text-sm font-medium hover:text-primary transition-colors"
-                    onClick={handleForceSignOut}
-                  >
-                    <RefreshCcw className="h-4 w-4 mr-2" />
-                    Reset Auth
-                  </Button>
                   <Link
                     to="/login"
                     className="py-2 text-sm font-medium hover:text-primary transition-colors"
@@ -208,7 +235,31 @@ export function Header() {
                   >
                     Log in
                   </Link>
+                  <Link
+                    to="/signup-customer"
+                    className="py-2 text-sm font-medium hover:text-primary transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign up as Customer
+                  </Link>
+                  <Link
+                    to="/signup-company"
+                    className="py-2 text-sm font-medium hover:text-primary transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign up as Company
+                  </Link>
                 </>
+              )}
+              {!isAuthenticated && (
+                <Button 
+                  variant="ghost" 
+                  className="justify-start px-0 text-sm font-medium hover:text-primary transition-colors"
+                  onClick={handleForceSignOut}
+                >
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  Reset Auth
+                </Button>
               )}
             </nav>
           </div>
