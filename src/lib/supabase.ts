@@ -302,7 +302,10 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
     console.log('Processing access token from hash fragment');
     
     // Clear any previous session first to avoid conflicts
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
+    
+    // Add delay before setting session to avoid race conditions
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Set the session using the access token
     const { data, error } = await supabase.auth.setSession({
@@ -315,15 +318,17 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
       throw error;
     }
     
-    // Verify that we have a valid session
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !sessionData.session) {
-      console.error('Failed to verify session after setting:', sessionError || 'No session found');
-      throw new Error('Session verification failed');
+    if (!data.session) {
+      console.error('No session returned after setting access token');
+      throw new Error('Failed to create session from access token');
     }
     
-    console.log('Session set successfully from access token');
+    // Add delay after setting session to allow Supabase to process
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Log successful session creation
+    console.log('Session set successfully:', data.session.user.id);
+    
     return data.session;
   } catch (error) {
     console.error('Error processing access token:', error);

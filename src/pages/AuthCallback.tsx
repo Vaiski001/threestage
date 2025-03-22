@@ -159,12 +159,20 @@ export default function AuthCallback() {
   };
 
   const handleReset = async () => {
-    await forceSignOut();
-    toast({
-      title: "Authentication reset",
-      description: "All authentication data has been cleared. Redirecting to login page...",
-    });
-    setTimeout(() => navigate("/login"), 1000);
+    setIsProcessing(true);
+    setErrorMessage("Resetting authentication state...");
+    try {
+      await forceSignOut();
+      toast({
+        title: "Authentication reset",
+        description: "All authentication data has been cleared. Redirecting to login page...",
+      });
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Error during reset:", error);
+      setIsProcessing(false);
+      setErrorMessage("Failed to reset authentication. Please try again.");
+    }
   };
 
   const handleHashFragment = useCallback(async () => {
@@ -182,17 +190,21 @@ export default function AuthCallback() {
       }
       
       console.log("Access token found in hash, setting session");
+      
       const session = await Promise.race([
         processAccessToken(accessToken, refreshToken),
-        new Promise<Session>((_, reject) => setTimeout(() => reject(new Error("Session setup timeout")), 10000))
+        new Promise<Session>((_, reject) => 
+          setTimeout(() => reject(new Error("Session setup timed out after 15 seconds. This may be due to network issues or Supabase service unavailability.")), 15000)
+        )
       ]);
+      
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
       
       if (!session) {
         throw new Error("Failed to establish session from access token");
       }
       
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      
+      setAuthStage('session_established');
       const user = session.user;
       setCurrentUser(user);
       console.log("User set from hash token:", user.id);
@@ -272,7 +284,7 @@ export default function AuthCallback() {
             await Promise.race([
               handleHashFragment(),
               new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Authentication process timed out")), 20000)
+                setTimeout(() => reject(new Error("Authentication process timed out after 25 seconds")), 25000)
               )
             ]);
           } catch (error: any) {
