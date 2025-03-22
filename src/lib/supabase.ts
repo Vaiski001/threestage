@@ -99,17 +99,16 @@ export const signInWithEmail = async (email: string, password: string) => {
 
 export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedin', role: UserRole = 'customer') => {
   try {
-    // Get the current origin - this handles both local and deployed environments
-    const origin = window.location.origin;
+    // Get the current origin for the redirect URL
+    // Use window.location.origin to ensure it matches exactly where the app is hosted
+    const redirectTo = `${window.location.origin}/auth/callback?role=${role}`;
     
-    // Create a redirect URL with the role parameter
-    const redirectUrl = new URL(`${origin}/auth/callback`);
-    redirectUrl.searchParams.append('role', role);
+    console.log(`OAuth redirect URL: ${redirectTo}`);
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: redirectUrl.toString(),
+        redirectTo: redirectTo,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

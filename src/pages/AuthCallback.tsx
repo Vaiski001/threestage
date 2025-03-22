@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase, handleOAuthSignIn, getUserProfile } from "@/lib/supabase";
@@ -158,133 +157,71 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        console.log("Auth callback started");
         setIsProcessing(true);
         
-        // Parse hash fragment for access token - this handles OAuth redirects that might 
-        // come directly to the page without going through the router
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-          // We have a hash fragment with tokens - need to exchange it for a session
+        // Get role from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const role = urlParams.get('role') === 'company' ? 'company' : 'customer';
+        setUserRole(role);
+        console.log(`User role from URL: ${role}`);
+        
+        // Check if we have hash fragments from OAuth provider
+        if (window.location.hash) {
+          console.log("Hash fragment detected", window.location.hash);
+          
+          // Parse hash fragment for access token
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
           const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
           
           if (accessToken) {
+            console.log("Access token found in hash");
+            
             // Set the session using the access token
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
-              refresh_token: hashParams.get('refresh_token') || '',
+              refresh_token: refreshToken || '',
             });
             
-            if (error) throw error;
+            if (error) {
+              console.error("Error setting session:", error);
+              throw error;
+            }
             
             if (data.session) {
               // Clear the hash to avoid issues with reload
-              window.history.replaceState(null, '', window.location.pathname);
+              window.history.replaceState(null, '', window.location.pathname + window.location.search);
               
-              // Continue with the regular flow
               const user = data.session.user;
               setCurrentUser(user);
+              console.log("User set from hash token:", user.id);
               
-              // Determine role from URL params - default to customer if not specified
-              const urlParams = new URLSearchParams(window.location.search);
-              const role = urlParams.get('role') === 'company' ? 'company' : 'customer';
-              setUserRole(role);
-              
-              // Check if the user has a profile
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-              
-              if (!profile) {
-                // No profile yet, we need to collect additional information
-                await handleOAuthSignIn(user, role);
-                setNeedsAdditionalInfo(true);
-                setIsProcessing(false);
-                return;
-              } else if (!profile.name && role === 'customer') {
-                // Customer profile exists but missing name
-                setNeedsAdditionalInfo(true);
-                setIsProcessing(false);
-                return;
-              } else if (!profile.company_name && role === 'company') {
-                // Company profile exists but missing company details
-                setNeedsAdditionalInfo(true);
-                setIsProcessing(false);
-                return;
-              }
-              
-              // Profile exists and has required info
-              toast({
-                title: "Authentication successful",
-                description: "You have been successfully logged in.",
-              });
-
-              // Redirect based on user role
-              if (profile.role === "company") {
-                navigate("/dashboard");
-              } else {
-                navigate("/enquiries");
-              }
+              // Check if user has a profile
+              await processUserProfile(user, role);
               return;
             }
           }
         }
         
-        // Normal OAuth callback through React Router
-        // Get the current session
+        // No hash fragments, try to get session normally
+        console.log("Getting session from supabase");
         const { data, error } = await supabase.auth.getSession();
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error getting session:", error);
+          throw error;
+        }
         
         if (data.session) {
           const user = data.session.user;
           setCurrentUser(user);
+          console.log("User set from session:", user.id);
           
-          // Determine role from URL params
-          const urlParams = new URLSearchParams(window.location.search);
-          const role = urlParams.get('role') === 'company' ? 'company' : 'customer';
-          setUserRole(role);
-          
-          // Check if the user has a profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          if (!profile) {
-            // No profile yet, we need to collect additional information
-            await handleOAuthSignIn(user, role);
-            setNeedsAdditionalInfo(true);
-            setIsProcessing(false);
-            return;
-          } else if (!profile.name && role === 'customer') {
-            // Customer profile exists but missing name
-            setNeedsAdditionalInfo(true);
-            setIsProcessing(false);
-            return;
-          } else if (!profile.company_name && role === 'company') {
-            // Company profile exists but missing company details
-            setNeedsAdditionalInfo(true);
-            setIsProcessing(false);
-            return;
-          }
-          
-          // Profile exists and has required info
-          toast({
-            title: "Authentication successful",
-            description: "You have been successfully logged in.",
-          });
-
-          // Redirect based on user role
-          if (profile.role === "company") {
-            navigate("/dashboard");
-          } else {
-            navigate("/enquiries");
-          }
+          // Process user profile
+          await processUserProfile(user, role);
         } else {
-          // No session, redirect to login
+          console.log("No session found");
           setErrorMessage("Authentication failed. No session was created.");
           toast({
             title: "Authentication failed",
@@ -304,6 +241,52 @@ export default function AuthCallback() {
         setTimeout(() => navigate("/login"), 2000);
       } finally {
         setIsProcessing(false);
+      }
+    };
+    
+    // Helper function to process user profile
+    const processUserProfile = async (user: User, role: string) => {
+      try {
+        // Check if the user has a profile
+        const profile = await getUserProfile(user.id);
+        
+        if (!profile) {
+          // No profile yet, we need to collect additional information
+          console.log("No profile found, creating basic profile");
+          await handleOAuthSignIn(user, role as 'customer' | 'company');
+          setNeedsAdditionalInfo(true);
+          setIsProcessing(false);
+          return;
+        } else if (!profile.name && role === 'customer') {
+          // Customer profile exists but missing name
+          console.log("Customer profile missing name");
+          setNeedsAdditionalInfo(true);
+          setIsProcessing(false);
+          return;
+        } else if (!profile.company_name && role === 'company') {
+          // Company profile exists but missing company details
+          console.log("Company profile missing company_name");
+          setNeedsAdditionalInfo(true);
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Profile exists and has required info
+        console.log("Complete profile found, redirecting");
+        toast({
+          title: "Authentication successful",
+          description: "You have been successfully logged in.",
+        });
+
+        // Redirect based on user role
+        if (profile.role === "company") {
+          navigate("/dashboard");
+        } else {
+          navigate("/enquiries");
+        }
+      } catch (error) {
+        console.error("Error processing user profile:", error);
+        throw error;
       }
     };
 
