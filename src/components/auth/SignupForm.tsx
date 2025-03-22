@@ -1,12 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseAvailable } from "@/lib/supabase";
 import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 import {
   Form,
@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Validation schema
 const signupSchema = z.object({
@@ -44,7 +45,33 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   const { toast } = useToast();
+  
+  // Check Supabase availability on component mount
+  useEffect(() => {
+    const checkSupabaseAvailability = async () => {
+      setIsCheckingConnection(true);
+      try {
+        const isAvailable = await isSupabaseAvailable();
+        if (!isAvailable) {
+          setSupabaseError("Supabase services are currently unavailable. Please try again later.");
+          onError("Supabase services are currently unavailable. Please try again later.");
+        } else {
+          setSupabaseError(null);
+        }
+      } catch (error) {
+        console.error("Error checking Supabase availability:", error);
+        setSupabaseError("Unable to connect to authentication services. Please try again later.");
+        onError("Unable to connect to authentication services. Please try again later.");
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    
+    checkSupabaseAvailability();
+  }, [onError]);
   
   // Initialize form
   const form = useForm<SignupFormValues>({
@@ -58,6 +85,22 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
 
   const handleSubmit = async (values: SignupFormValues) => {
     if (isLoading) return;
+    
+    // Check Supabase availability again before submitting
+    try {
+      const isAvailable = await isSupabaseAvailable();
+      if (!isAvailable) {
+        toast({
+          title: "Service Unavailable",
+          description: "Authentication services are temporarily unavailable. Please try again later.",
+          variant: "destructive",
+        });
+        onError("Authentication services are temporarily unavailable. Please try again later.");
+        return;
+      }
+    } catch (error) {
+      // Continue anyway, the actual signup will catch any errors
+    }
     
     setIsLoading(true);
     
@@ -158,6 +201,8 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         errorMessage = "The request timed out. Please check your internet connection and try again.";
       } else if (error.message?.includes("network") || error.status === 404 || error.status === 429) {
         errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (error.message?.includes("unavailable") || error.message?.includes("maintenance")) {
+        errorMessage = "Supabase services are currently unavailable. Please try again later.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -175,6 +220,22 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
   };
 
   const handleGoogleSignup = async () => {
+    // Check Supabase availability before proceeding
+    try {
+      const isAvailable = await isSupabaseAvailable();
+      if (!isAvailable) {
+        toast({
+          title: "Service Unavailable",
+          description: "Authentication services are temporarily unavailable. Please try again later.",
+          variant: "destructive",
+        });
+        onError("Authentication services are temporarily unavailable. Please try again later.");
+        return;
+      }
+    } catch (error) {
+      // Continue anyway as the actual Google sign in will catch errors
+    }
+    
     setIsGoogleLoading(true);
     try {
       // Store role in localStorage for post-OAuth processing
@@ -186,7 +247,9 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       console.error("Google signup error:", error);
       
       let errorMessage = "Failed to initiate Google signup. Please try again.";
-      if (error.message) {
+      if (error.message?.includes("unavailable") || error.message?.includes("maintenance")) {
+        errorMessage = "Supabase services are currently unavailable. Please try again later.";
+      } else if (error.message) {
         errorMessage = error.message;
       }
       
@@ -203,6 +266,13 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
 
   return (
     <div className="space-y-6">
+      {supabaseError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{supabaseError}</AlertDescription>
+        </Alert>
+      )}
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <FormField
@@ -212,7 +282,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
               <FormItem>
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" {...field} disabled={isLoading} />
+                  <Input placeholder="John Doe" {...field} disabled={isLoading || isCheckingConnection} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -230,7 +300,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
                     type="email" 
                     placeholder="you@example.com" 
                     {...field} 
-                    disabled={isLoading}
+                    disabled={isLoading || isCheckingConnection}
                   />
                 </FormControl>
                 <FormMessage />
@@ -250,7 +320,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       {...field}
-                      disabled={isLoading}
+                      disabled={isLoading || isCheckingConnection}
                     />
                     <Button
                       type="button"
@@ -268,11 +338,16 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
             )}
           />
           
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || isCheckingConnection}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating Account...
+              </>
+            ) : isCheckingConnection ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Checking Services...
               </>
             ) : (
               "Create Account"
@@ -295,7 +370,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading}
+        disabled={isGoogleLoading || isCheckingConnection}
         className="w-full"
         onClick={handleGoogleSignup}
       >

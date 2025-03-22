@@ -5,19 +5,41 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { Header } from "@/components/layout/Header";
 import { Container } from "@/components/ui/Container";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { isSupabaseAvailable } from "@/lib/supabase/client";
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [serviceStatus, setServiceStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile, user } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check Supabase service status when the component mounts
+    const checkServiceStatus = async () => {
+      try {
+        const isAvailable = await isSupabaseAvailable();
+        setServiceStatus(isAvailable ? 'available' : 'unavailable');
+      } catch (error) {
+        console.error('Error checking service status:', error);
+        setServiceStatus('unavailable');
+      }
+    };
+    
+    checkServiceStatus();
+    
+    // Set up interval to check periodically (every 30 seconds)
+    const statusInterval = setInterval(checkServiceStatus, 30000);
+    
+    return () => clearInterval(statusInterval);
+  }, []);
 
   useEffect(() => {
     // Check for success message passed via location state (from signup or unauthorized page)
@@ -97,6 +119,15 @@ export default function Login() {
         <Container size="sm">
           <div className="max-w-md mx-auto">
             <h1 className="text-2xl font-bold mb-6 text-center">Log In</h1>
+            
+            {serviceStatus === 'unavailable' && (
+              <Alert className="mb-6 border-orange-200 bg-orange-50">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-700">
+                  Supabase authentication services may be experiencing issues. Login functionality might be limited.
+                </AlertDescription>
+              </Alert>
+            )}
             
             {successMessage && (
               <Alert className="mb-6 border-green-200 bg-green-50">

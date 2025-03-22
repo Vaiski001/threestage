@@ -26,33 +26,65 @@ console.log("Supabase configuration:", {
 
 // Use a singleton pattern to ensure only one instance is created
 let supabaseInstance: ReturnType<typeof createClient> | null = null;
+let connectionError: Error | null = null;
 
 // Function to get the Supabase client instance
 const getSupabaseClient = () => {
+  if (connectionError) {
+    console.warn('Using Supabase client despite previous connection error:', connectionError.message);
+  }
+  
   if (!supabaseInstance) {
     console.log('Creating new Supabase client instance');
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true, // Enable automatic session detection
-        storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`,
-      },
-      global: {
-        fetch: (url: RequestInfo | URL, init?: RequestInit) => {
-          return fetch(url, init).catch(err => {
-            console.error('Fetch error in Supabase client:', err);
-            throw err;
-          });
+    try {
+      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true, // Enable automatic session detection
+          storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`,
+        },
+        global: {
+          fetch: (url: RequestInfo | URL, init?: RequestInit) => {
+            return fetch(url, init).catch(err => {
+              console.error('Fetch error in Supabase client:', err);
+              connectionError = err;
+              throw err;
+            });
+          }
         }
-      }
-    });
+      });
+      
+      // Test connection by making a simple request
+      supabaseInstance.auth.getSession()
+        .catch(err => {
+          console.error('Error connecting to Supabase:', err);
+          connectionError = err;
+        });
+        
+    } catch (err) {
+      console.error('Error creating Supabase client:', err);
+      connectionError = err instanceof Error ? err : new Error(String(err));
+      // Create a dummy client that will handle errors gracefully
+      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+    }
   }
   return supabaseInstance;
 };
 
 // Export the singleton instance
 export const supabase = getSupabaseClient();
+
+// Export a check function to verify if Supabase is currently available
+export const isSupabaseAvailable = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('profiles').select('id').limit(1);
+    return !error;
+  } catch (error) {
+    console.error('Supabase availability check failed:', error);
+    return false;
+  }
+};
 
 // Export a function to get a fresh client with different options if needed
 // This should be used very sparingly and only for specific use cases

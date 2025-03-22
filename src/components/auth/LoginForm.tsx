@@ -6,10 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff, AlertCircle, Info } from "lucide-react";
 import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isSupabaseAvailable } from "@/lib/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -28,12 +29,40 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   
   // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Check Supabase availability on component mount
+  useEffect(() => {
+    const checkSupabaseAvailability = async () => {
+      setIsCheckingConnection(true);
+      try {
+        const isAvailable = await isSupabaseAvailable();
+        if (!isAvailable) {
+          const errorMsg = "Supabase services are currently unavailable. Please try again later.";
+          setSupabaseError(errorMsg);
+          if (onError) onError(errorMsg);
+        } else {
+          setSupabaseError(null);
+        }
+      } catch (error) {
+        console.error("Error checking Supabase availability:", error);
+        const errorMsg = "Unable to connect to authentication services. Please try again later.";
+        setSupabaseError(errorMsg);
+        if (onError) onError(errorMsg);
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    
+    checkSupabaseAvailability();
+  }, [onError]);
 
   // Clean up timeout when component unmounts
   useEffect(() => {
@@ -72,15 +101,34 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       return;
     }
     
+    // Check Supabase availability before submitting
+    try {
+      const isAvailable = await isSupabaseAvailable();
+      if (!isAvailable) {
+        const errorMsg = "Authentication services are temporarily unavailable. Please try again later.";
+        toast({
+          title: "Service Unavailable",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        setErrorMessage(errorMsg);
+        if (onError) onError(errorMsg);
+        return;
+      }
+    } catch (error) {
+      // Continue anyway, the actual login will catch any errors
+    }
+    
     setIsLoading(true);
     
     // Set a login timeout to prevent UI from being stuck
     const timeout = setTimeout(() => {
       setIsLoading(false);
-      setErrorMessage("Login request timed out. Please try again.");
+      const timeoutMsg = "Login request timed out. Please try again.";
+      setErrorMessage(timeoutMsg);
       
       if (onError) {
-        onError("Login request timed out. Please try again.");
+        onError(timeoutMsg);
       }
       
       toast({
@@ -104,23 +152,25 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       
       if (error) {
         console.error("Login error from Supabase:", error);
-        let errorMessage = "Invalid email or password. Please double-check your credentials and try again.";
+        let errorMsg = "Invalid email or password. Please double-check your credentials and try again.";
         
         if (error.message.includes("Email not confirmed")) {
-          errorMessage = "Please confirm your email before logging in.";
+          errorMsg = "Please confirm your email before logging in.";
         } else if (error.message.includes("rate limit")) {
-          errorMessage = "Too many login attempts. Please wait a minute and try again.";
+          errorMsg = "Too many login attempts. Please wait a minute and try again.";
+        } else if (error.message.includes("unavailable") || error.message.includes("maintenance")) {
+          errorMsg = "Supabase services are currently unavailable. Please try again later.";
         }
         
-        setErrorMessage(errorMessage);
+        setErrorMessage(errorMsg);
         
         if (onError) {
-          onError(errorMessage);
+          onError(errorMsg);
         }
         
         toast({
           title: "Login failed",
-          description: errorMessage,
+          description: errorMsg,
           variant: "destructive",
         });
         
@@ -143,10 +193,11 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       } else {
         // Handle the case where login succeeded but no user was returned
         console.error("No user returned after successful login");
-        setErrorMessage("Login succeeded but user data couldn't be retrieved. Please try again.");
+        const noUserMsg = "Login succeeded but user data couldn't be retrieved. Please try again.";
+        setErrorMessage(noUserMsg);
         
         if (onError) {
-          onError("Login succeeded but user data couldn't be retrieved. Please try again.");
+          onError(noUserMsg);
         }
       }
     } catch (error: any) {
@@ -158,30 +209,32 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       
       console.error("Login error:", error);
       
-      let errorMessage = "An error occurred during login. Please try again.";
+      let errorMsg = "An error occurred during login. Please try again.";
       
       if (error.message) {
         if (error.message.includes("Invalid login")) {
-          errorMessage = "Invalid email or password. Please double-check your credentials and try again.";
+          errorMsg = "Invalid email or password. Please double-check your credentials and try again.";
         } else if (error.message.includes("Email not confirmed")) {
-          errorMessage = "Please confirm your email before logging in.";
+          errorMsg = "Please confirm your email before logging in.";
         } else if (error.message.includes("rate limit")) {
-          errorMessage = "Too many login attempts. Please wait a minute and try again.";
+          errorMsg = "Too many login attempts. Please wait a minute and try again.";
+        } else if (error.message.includes("unavailable") || error.message.includes("maintenance")) {
+          errorMsg = "Supabase services are currently unavailable. Please try again later.";
         } else {
-          errorMessage = error.message;
+          errorMsg = error.message;
         }
       }
       
       toast({
         title: "Login failed",
-        description: errorMessage,
+        description: errorMsg,
         variant: "destructive",
       });
       
-      setErrorMessage(errorMessage);
+      setErrorMessage(errorMsg);
       
       if (onError) {
-        onError(errorMessage);
+        onError(errorMsg);
       }
     } finally {
       setIsLoading(false);
@@ -189,6 +242,24 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   };
 
   const handleGoogleLogin = async () => {
+    // Check Supabase availability before proceeding
+    try {
+      const isAvailable = await isSupabaseAvailable();
+      if (!isAvailable) {
+        const errorMsg = "Authentication services are temporarily unavailable. Please try again later.";
+        toast({
+          title: "Service Unavailable",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        setErrorMessage(errorMsg);
+        if (onError) onError(errorMsg);
+        return;
+      }
+    } catch (error) {
+      // Continue anyway, the actual Google login will catch errors
+    }
+    
     setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
@@ -196,21 +267,23 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     } catch (error: any) {
       console.error("Google login error:", error);
       
-      let errorMessage = "Failed to initiate Google login. Please try again.";
-      if (error.message) {
-        errorMessage = error.message;
+      let errorMsg = "Failed to initiate Google login. Please try again.";
+      if (error.message?.includes("unavailable") || error.message?.includes("maintenance")) {
+        errorMsg = "Supabase services are currently unavailable. Please try again later.";
+      } else if (error.message) {
+        errorMsg = error.message;
       }
       
       toast({
         title: "Google login failed",
-        description: errorMessage,
+        description: errorMsg,
         variant: "destructive",
       });
       
-      setErrorMessage(errorMessage);
+      setErrorMessage(errorMsg);
       
       if (onError) {
-        onError(errorMessage);
+        onError(errorMsg);
       }
       setIsGoogleLoading(false);
     }
@@ -218,7 +291,14 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
   return (
     <div className="space-y-6">
-      {errorMessage && (
+      {supabaseError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{supabaseError}</AlertDescription>
+        </Alert>
+      )}
+      
+      {errorMessage && !supabaseError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{errorMessage}</AlertDescription>
@@ -234,7 +314,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || isCheckingConnection}
             aria-invalid={!!errors.email}
           />
           {errors.email && (
@@ -251,7 +331,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
+              disabled={isLoading || isCheckingConnection}
               aria-invalid={!!errors.password}
             />
             <Button
@@ -269,11 +349,16 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           )}
         </div>
         
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-full" disabled={isLoading || isCheckingConnection}>
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Logging in...
+            </>
+          ) : isCheckingConnection ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Checking Services...
             </>
           ) : (
             "Log in"
@@ -304,7 +389,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading}
+        disabled={isGoogleLoading || isCheckingConnection}
         className="w-full"
         onClick={handleGoogleLogin}
       >
@@ -320,6 +405,15 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         )}
         Continue with Google
       </Button>
+      
+      {(supabaseError || isCheckingConnection) && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-700">
+            Supabase may be experiencing issues or maintenance. If login problems persist, please try again later.
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }
