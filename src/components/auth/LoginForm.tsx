@@ -26,7 +26,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<number | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
@@ -34,6 +33,16 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Clean up timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+      }
+    };
+  }, [loginTimeout]);
 
   const validateForm = () => {
     try {
@@ -65,9 +74,33 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     
     setIsLoading(true);
     
+    // Set a login timeout to prevent UI from being stuck
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+      setErrorMessage("Login request timed out. Please try again.");
+      
+      if (onError) {
+        onError("Login request timed out. Please try again.");
+      }
+      
+      toast({
+        title: "Login timed out",
+        description: "The login request took too long to complete. Please try again.",
+        variant: "destructive",
+      });
+    }, 15000); // 15 second timeout
+    
+    setLoginTimeout(timeout);
+    
     try {
       console.log("Attempting login with:", { email });
       const { data, error } = await signInWithEmail(email, password);
+      
+      // Clear the timeout since we got a response
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+        setLoginTimeout(null);
+      }
       
       if (error) {
         console.error("Login error from Supabase:", error);
@@ -107,8 +140,22 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         } else {
           navigate("/dashboard");
         }
+      } else {
+        // Handle the case where login succeeded but no user was returned
+        console.error("No user returned after successful login");
+        setErrorMessage("Login succeeded but user data couldn't be retrieved. Please try again.");
+        
+        if (onError) {
+          onError("Login succeeded but user data couldn't be retrieved. Please try again.");
+        }
       }
     } catch (error: any) {
+      // Clear the timeout since we got a response
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+        setLoginTimeout(null);
+      }
+      
       console.error("Login error:", error);
       
       let errorMessage = "An error occurred during login. Please try again.";
@@ -138,12 +185,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       }
     } finally {
       setIsLoading(false);
-      
-      // Clear any existing timeout
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
-      }
     }
   };
 
@@ -174,15 +215,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       setIsGoogleLoading(false);
     }
   };
-
-  // Clean up timeout when component unmounts
-  useEffect(() => {
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [timeoutId]);
 
   return (
     <div className="space-y-6">

@@ -1,3 +1,4 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -75,6 +76,14 @@ export const signUpWithEmail = async (
 export const signInWithEmail = async (email: string, password: string) => {
   try {
     console.log("Signing in with email:", email);
+    
+    // Add additional logging for debugging
+    console.log("Auth state before sign in:", 
+      await supabase.auth.getSession().then(res => 
+        `Has session: ${!!res.data.session}, Error: ${res.error ? res.error.message : 'none'}`
+      )
+    );
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -85,7 +94,24 @@ export const signInWithEmail = async (email: string, password: string) => {
       return { error };
     }
     
-    console.log("Sign in successful:", data.user?.id);
+    // Additional verification that we got valid data
+    if (!data?.user) {
+      console.error('No user returned from auth.signInWithPassword');
+      return { 
+        error: { message: "Authentication failed - no user returned" } 
+      };
+    }
+    
+    console.log("Sign in successful:", data.user.id);
+    
+    // Verify the session was created properly
+    const sessionCheck = await supabase.auth.getSession();
+    console.log("Session after login:", 
+      `Has session: ${!!sessionCheck.data.session}, ` +
+      `User ID: ${sessionCheck.data.session?.user?.id || 'none'}, ` +
+      `Error: ${sessionCheck.error ? sessionCheck.error.message : 'none'}`
+    );
+    
     return { data };
   } catch (error) {
     console.error('Exception during sign in:', error);

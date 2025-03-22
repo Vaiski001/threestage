@@ -8,13 +8,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check for success message passed via location state (from signup or unauthorized page)
@@ -33,14 +36,54 @@ export default function Login() {
     }
   }, [location]);
 
+  // If user is already logged in, redirect to dashboard
+  useEffect(() => {
+    if (user) {
+      console.log("User already logged in, redirecting to dashboard");
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
   const handleLoginSuccess = async () => {
     // Ensure we have the latest profile data before redirecting
     try {
-      await refreshProfile();
+      console.log("Login successful, refreshing profile before redirect");
+      setIsRefreshing(true);
+      
+      // Try to refresh profile up to 3 times with a short delay
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        attempts++;
+        console.log(`Refreshing profile attempt ${attempts}/${maxAttempts}`);
+        
+        try {
+          await refreshProfile();
+          console.log("Profile refreshed successfully");
+          break;
+        } catch (err) {
+          console.error(`Profile refresh attempt ${attempts} failed:`, err);
+          
+          if (attempts < maxAttempts) {
+            // Wait a moment before trying again
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+        }
+      }
+      
+      console.log("Redirecting to dashboard");
       navigate("/dashboard");
     } catch (error) {
-      console.error("Error refreshing profile after login:", error);
+      console.error("Error during post-login process:", error);
+      toast({
+        title: "Warning",
+        description: "Logged in but had trouble loading your profile data. Some features may not work correctly.",
+        variant: "default",
+      });
       navigate("/dashboard");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -90,6 +133,12 @@ export default function Login() {
               onSuccess={handleLoginSuccess}
               onError={(message) => setError(message)}
             />
+            
+            {isRefreshing && (
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                <p>Preparing your dashboard...</p>
+              </div>
+            )}
           </div>
         </Container>
       </main>
