@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+
+import { createClient, User } from '@supabase/supabase-js';
 
 // For local development, use placeholders to prevent the app from crashing
 // In a production environment, these values should be properly configured as environment variables
