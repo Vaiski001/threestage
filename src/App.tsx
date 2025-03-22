@@ -6,9 +6,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { RoleRouter } from "@/components/auth/RoleRouter";
 
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard"; // Now used as legacy/demo
+import DemoDashboard from "./pages/DemoDashboard";
+import CompanyDashboard from "./pages/CompanyDashboard";
+import CustomerDashboard from "./pages/CustomerDashboard";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -33,9 +37,31 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/demo" element={<DemoDashboard />} />
             
-            {/* Protected routes */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            {/* Role router - redirects based on user role */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <RoleRouter>
+                  <Dashboard />
+                </RoleRouter>
+              </ProtectedRoute>
+            } />
+            
+            {/* Role-specific routes */}
+            <Route path="/company/dashboard" element={
+              <ProtectedRoute>
+                <CompanyDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/dashboard" element={
+              <ProtectedRoute>
+                <CustomerDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Legacy/shared routes */}
             <Route path="/profile" element={<ProtectedRoute><CustomerProfileDashboard /></ProtectedRoute>} />
             <Route path="/enquiries" element={<ProtectedRoute><Enquiries /></ProtectedRoute>} />
             

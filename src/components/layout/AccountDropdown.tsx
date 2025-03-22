@@ -48,6 +48,14 @@ export function AccountDropdown({ profile }: AccountDropdownProps) {
     }
   };
 
+  const handleDashboardClick = () => {
+    if (profile?.role === "company") {
+      navigate("/company/dashboard");
+    } else {
+      navigate("/customer/dashboard");
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -65,11 +73,8 @@ export function AccountDropdown({ profile }: AccountDropdownProps) {
           <p className="text-xs text-muted-foreground">{profile?.email}</p>
         </div>
         <DropdownMenuSeparator />
-        {profile?.role === "company" ? (
-          <DropdownMenuItem onClick={() => navigate("/dashboard")}>Dashboard</DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem onClick={() => navigate("/enquiries")}>My Enquiries</DropdownMenuItem>
-        )}
+        <DropdownMenuItem onClick={handleDashboardClick}>Dashboard</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/profile")}>Profile</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
           <LogOut className="h-4 w-4 mr-2" />

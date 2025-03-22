@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, Play } from "lucide-react";
 
 interface MobileMenuProps {
   isAuthenticated: boolean;
@@ -56,6 +56,14 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
               onClick={() => setIsMenuOpen(false)}
             >
               Contact
+            </Link>
+            <Link
+              to="/demo"
+              className="py-2 text-sm font-medium hover:text-primary transition-colors flex items-center gap-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Play className="h-4 w-4" />
+              See Demo
             </Link>
             {!isAuthenticated && (
               <>

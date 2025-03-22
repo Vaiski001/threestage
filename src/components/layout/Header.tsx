@@ -7,6 +7,7 @@ import { AccountDropdown } from "./AccountDropdown";
 import { AuthButtons } from "./AuthButtons";
 import { MobileMenu } from "./MobileMenu";
 import { Button } from "@/components/ui/button";
+import { Play } from "lucide-react";
 
 export function Header() {
   const { isAuthenticated, profile, resetAuth } = useAuth();
@@ -22,7 +23,13 @@ export function Header() {
             <MainNavigation />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link to="/demo">
+              <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                See Demo
+              </Button>
+            </Link>
             {isAuthenticated && profile ? (
               <AccountDropdown profile={profile} />
             ) : (
