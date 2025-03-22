@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FormTemplate } from "./FormManagement";
+import { FormTemplate } from "@/lib/supabase/types";
 import { FormPreview } from "./FormPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,8 +19,8 @@ export function FormEmbedded() {
         id: formId || '1',
         name: 'Contact Form',
         description: 'General contact and enquiry form',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         fields: [
           {
             id: 'name',

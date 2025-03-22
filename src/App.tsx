@@ -24,6 +24,7 @@ import FormBuilder from "./pages/FormBuilder";
 import CompanySearch from "./pages/CompanySearch";
 import CompanyProfile from "./pages/CompanyProfile";
 import { FormEmbedded } from "./components/forms/FormEmbedded";
+import CompanySettings from "./pages/CompanySettings";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,13 @@ const App = () => (
             <Route path="/customer/dashboard" element={
               <ProtectedRoute>
                 <CustomerDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Company settings */}
+            <Route path="/company/settings" element={
+              <ProtectedRoute>
+                <CompanySettings />
               </ProtectedRoute>
             } />
             
