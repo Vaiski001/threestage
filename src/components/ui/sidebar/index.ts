@@ -31,6 +31,7 @@ export {
   SidebarMenuSubItem, 
   SidebarMenuSubButton 
 } from './menu-sub';
+export { SidebarNavItem } from './nav-item';
 
 // Export types
 export type { SidebarContext } from './types';

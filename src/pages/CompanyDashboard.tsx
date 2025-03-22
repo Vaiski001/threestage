@@ -7,22 +7,25 @@ import {
   SidebarProvider, 
   Sidebar, 
   SidebarContent, 
-  SidebarTrigger 
+  SidebarTrigger,
+  SidebarNavItem
 } from "@/components/ui/sidebar";
 import { 
-  BarChart, 
   MessageSquare, 
   Users, 
-  FileText, 
-  CreditCard, 
-  TrendingUp, 
-  UserPlus, 
   Settings, 
   Bell, 
   Search, 
-  User, 
-  PlusCircle,
-  Building
+  User,
+  Building,
+  LayoutDashboard,
+  Receipt,
+  DollarSign,
+  PieChart,
+  UserPlus,
+  Filter,
+  Plus,
+  PlusCircle
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -62,12 +65,12 @@ const CompanyDashboard = () => {
 
   // Company sidebar navigation items
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: <BarChart className="h-5 w-5" />, description: "Overview of key stats and activities" },
+    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of key stats and activities" },
     { id: "enquiries", label: "Enquiries", icon: <MessageSquare className="h-5 w-5" />, description: "View and manage customer enquiries" },
     { id: "customers", label: "Customers", icon: <Users className="h-5 w-5" />, description: "List of customers with their details" },
-    { id: "invoices", label: "Invoices", icon: <FileText className="h-5 w-5" />, description: "Manage invoices and billing" },
-    { id: "payments", label: "Payments", icon: <CreditCard className="h-5 w-5" />, description: "Track payments and transactions" },
-    { id: "reports", label: "Reports & Analytics", icon: <TrendingUp className="h-5 w-5" />, description: "Insights and trends" },
+    { id: "invoices", label: "Invoices", icon: <Receipt className="h-5 w-5" />, description: "Manage invoices and billing" },
+    { id: "payments", label: "Payments", icon: <DollarSign className="h-5 w-5" />, description: "Track payments and transactions" },
+    { id: "reports", label: "Reports & Analytics", icon: <PieChart className="h-5 w-5" />, description: "Insights and trends" },
     { id: "team", label: "Team Management", icon: <UserPlus className="h-5 w-5" />, description: "Manage company users and roles" },
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, description: "Configure company details and preferences" }
   ];
@@ -126,7 +129,24 @@ const CompanyDashboard = () => {
               </div>
             </div>
 
-            <KanbanBoard isDemo={false} />
+            <div className="pb-8">
+              <Container size="full">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-medium">Enquiry Board</h2>
+                  <div className="flex gap-3">
+                    <Button variant="outline" size="sm" onClick={() => toast({ title: "Feature coming soon", description: "Filter functionality is coming soon." })}>
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filter
+                    </Button>
+                    <Button size="sm" onClick={() => toast({ title: "Feature coming soon", description: "New enquiry creation is coming soon." })}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Enquiry
+                    </Button>
+                  </div>
+                </div>
+              </Container>
+              <KanbanBoard isDemo={false} />
+            </div>
           </>
         );
       case 'enquiries':
@@ -213,19 +233,15 @@ const CompanyDashboard = () => {
           <SidebarContent>
             <div className="space-y-1 py-4">
               {navigationItems.map((item) => (
-                <button
+                <SidebarNavItem
                   key={item.id}
-                  onClick={() => setActiveNavItem(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-all-200 ${
-                    activeNavItem === item.id
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                  }`}
-                  title={item.description}
-                >
-                  {item.icon}
-                  {item.label}
-                </button>
+                  id={item.id}
+                  label={item.label}
+                  icon={item.icon}
+                  description={item.description}
+                  isActive={activeNavItem === item.id}
+                  onClick={setActiveNavItem}
+                />
               ))}
             </div>
           </SidebarContent>

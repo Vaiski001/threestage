@@ -3,11 +3,16 @@ import { useState } from "react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger } from "@/components/ui/sidebar";
+import { 
+  SidebarProvider, 
+  Sidebar, 
+  SidebarContent, 
+  SidebarTrigger,
+  SidebarNavItem
+} from "@/components/ui/sidebar";
 import { 
   MessageSquare, 
   Users, 
-  BarChart, 
   Settings, 
   Bell, 
   Search, 
@@ -21,16 +26,15 @@ import {
   Receipt,
   DollarSign,
   PieChart,
-  UserPlus
+  UserPlus,
+  Filter,
+  Plus
 } from "lucide-react";
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  Tabs, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
 
 const DemoDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
@@ -60,6 +64,25 @@ const DemoDashboard = () => {
 
   // Get the current active navigation items based on portal selection
   const activeNavItems = activePortal === "company" ? companyNavItems : customerNavItems;
+
+  // Stats for demo company dashboard
+  const companyStats = [
+    { label: "Total Enquiries", value: "164", change: "+12%", changeType: "positive" },
+    { label: "Pending", value: "21", change: "-5%", changeType: "positive" },
+    { label: "Response Time", value: "1.8h", change: "+0.3h", changeType: "negative" },
+    { label: "Conversion Rate", value: "26%", change: "+2%", changeType: "positive" }
+  ];
+
+  // Stats for demo customer dashboard
+  const customerStats = [
+    { label: "Active Enquiries", value: "3", change: "+1", changeType: "positive" },
+    { label: "Completed", value: "12", change: "+2", changeType: "positive" },
+    { label: "Pending Invoices", value: "1", change: "0", changeType: "neutral" },
+    { label: "Total Spent", value: "$750", change: "+$120", changeType: "positive" }
+  ];
+
+  // Get the current active stats based on portal selection
+  const activeStats = activePortal === "company" ? companyStats : customerStats;
 
   return (
     <SidebarProvider>
@@ -95,21 +118,15 @@ const DemoDashboard = () => {
           <SidebarContent>
             <div className="space-y-1 py-4">
               {activeNavItems.map((item) => (
-                <button
+                <SidebarNavItem
                   key={item.id}
-                  onClick={() => setActiveNavItem(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-all-200 ${
-                    activeNavItem === item.id
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                  }`}
-                >
-                  {item.icon}
-                  <div className="flex flex-col items-start">
-                    <span>{item.label}</span>
-                    <span className="text-xs text-sidebar-foreground/70 hidden sm:inline-block">{item.description}</span>
-                  </div>
-                </button>
+                  id={item.id}
+                  label={item.label}
+                  icon={item.icon}
+                  description={item.description}
+                  isActive={activeNavItem === item.id}
+                  onClick={setActiveNavItem}
+                />
               ))}
             </div>
           </SidebarContent>
@@ -182,58 +199,69 @@ const DemoDashboard = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {activePortal === "company" ? (
-                    // Company stats
-                    [
-                      { label: "Total Enquiries", value: "164", change: "+12%", changeType: "positive" },
-                      { label: "Pending", value: "21", change: "-5%", changeType: "positive" },
-                      { label: "Response Time", value: "1.8h", change: "+0.3h", changeType: "negative" },
-                      { label: "Conversion Rate", value: "26%", change: "+2%", changeType: "positive" }
-                    ].map((card, i) => (
-                      <div key={i} className="glass-card rounded-lg p-6">
-                        <div className="text-muted-foreground mb-2">{card.label}</div>
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-3xl font-semibold">{card.value}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            card.changeType === "positive" 
-                              ? "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30" 
-                              : "text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-950/30"
-                          }`}>
-                            {card.change}
-                          </span>
-                        </div>
+                  {activeStats.map((card, i) => (
+                    <div key={i} className="glass-card rounded-lg p-6">
+                      <div className="text-muted-foreground mb-2">{card.label}</div>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-3xl font-semibold">{card.value}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          card.changeType === "positive" 
+                            ? "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30" 
+                            : card.changeType === "negative"
+                              ? "text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-950/30"
+                              : "text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-950/30"
+                        }`}>
+                          {card.change}
+                        </span>
                       </div>
-                    ))
-                  ) : (
-                    // Customer stats
-                    [
-                      { label: "Active Enquiries", value: "3", change: "+1", changeType: "positive" },
-                      { label: "Completed", value: "12", change: "+2", changeType: "positive" },
-                      { label: "Pending Invoices", value: "1", change: "0", changeType: "neutral" },
-                      { label: "Total Spent", value: "$750", change: "+$120", changeType: "positive" }
-                    ].map((card, i) => (
-                      <div key={i} className="glass-card rounded-lg p-6">
-                        <div className="text-muted-foreground mb-2">{card.label}</div>
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-3xl font-semibold">{card.value}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            card.changeType === "positive" 
-                              ? "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30" 
-                              : card.changeType === "negative"
-                                ? "text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-950/30"
-                                : "text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-950/30"
-                          }`}>
-                            {card.change}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                    </div>
+                  ))}
                 </div>
               </Container>
             </div>
 
-            {activePortal === "company" && <KanbanBoard isDemo={true} />}
+            {activePortal === "company" && activeNavItem === "dashboard" && (
+              <>
+                <div className="px-4 sm:px-6 pb-6">
+                  <Container size="full">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-2xl font-medium">Enquiry Board</h2>
+                      <div className="flex gap-3">
+                        <Button variant="outline" size="sm">
+                          <Filter className="h-4 w-4 mr-2" />
+                          Filter
+                        </Button>
+                        <Button size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          New Enquiry
+                        </Button>
+                      </div>
+                    </div>
+                  </Container>
+                </div>
+                <KanbanBoard isDemo={true} />
+              </>
+            )}
+            
+            {activePortal === "company" && activeNavItem !== "dashboard" && (
+              <div className="px-4 sm:px-6 pb-8">
+                <Container size="full">
+                  <div className="bg-card rounded-lg border shadow-sm p-8 text-center">
+                    <h2 className="text-2xl font-semibold mb-4">{activeNavItems.find(item => item.id === activeNavItem)?.label}</h2>
+                    <p className="text-muted-foreground mb-6">{activeNavItems.find(item => item.id === activeNavItem)?.description}</p>
+                    <Button>
+                      {activeNavItem === 'enquiries' ? 'Add Enquiry' : 
+                      activeNavItem === 'customers' ? 'Add Customer' :
+                      activeNavItem === 'invoices' ? 'New Invoice' :
+                      activeNavItem === 'payments' ? 'Record Payment' :
+                      activeNavItem === 'reports' ? 'Generate Report' :
+                      activeNavItem === 'team' ? 'Add Team Member' :
+                      'Save Changes'}
+                    </Button>
+                  </div>
+                </Container>
+              </div>
+            )}
             
             {activePortal === "customer" && (
               <div className="px-4 sm:px-6 pb-8">
