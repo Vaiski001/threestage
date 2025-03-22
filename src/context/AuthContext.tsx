@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
@@ -35,6 +34,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const success = await ensureProfilesTableExists();
         if (!success) {
           console.warn("Could not ensure profiles table exists. Some functionality may not work correctly.");
+          
+          // Show toast to notify user about potential issue
+          toast({
+            title: "Setup Notice",
+            description: "Some database tables might need to be created in your Supabase project.",
+            variant: "destructive"
+          });
         }
       } catch (error) {
         console.error("Error initializing tables:", error);
@@ -42,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     
     initializeTables();
-  }, []);
+  }, [toast]);
 
   // Check for session on initial load
   useEffect(() => {

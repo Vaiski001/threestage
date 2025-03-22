@@ -13,17 +13,18 @@ export const ensureProfilesTableExists = async () => {
     if (error && error.code === '42P01') { // Table doesn't exist error code
       console.log('Profiles table does not exist, creating it...');
       
-      // Create the profiles table using raw SQL
+      // Create the profiles table using RPC (this only works if you've added this function to your Supabase project)
       const { error: createError } = await supabase.rpc(
         'create_profiles_table_if_not_exists', 
         {}
       ).single();
       
       if (createError) {
-        console.error('Error with RPC method, trying direct SQL:', createError);
+        console.error('Error with RPC method, trying an alternative approach:', createError);
         
-        // Try direct SQL if RPC fails
-        const { error: sqlError } = await supabase.auth.admin.executeSql(`
+        // If we can't use RPC, the user needs to manually create the table in the Supabase dashboard
+        console.log('Please create the profiles table in your Supabase dashboard with the following SQL:');
+        console.log(`
           CREATE TABLE IF NOT EXISTS public.profiles (
             id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
             email TEXT NOT NULL,
@@ -50,15 +51,14 @@ export const ensureProfilesTableExists = async () => {
             USING (auth.uid() = id);
         `);
         
-        if (sqlError) {
-          console.error('Direct SQL approach failed:', sqlError);
-          
-          // Last resort: Use a simpler approach that might work with limited permissions
-          console.log('Attempting to create profile directly by inserting sample row...');
-          
-          // Get the current user
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData && userData.user) {
+        // Try a fallback: Create the profile table by directly inserting a sample profile
+        // If the table doesn't exist but we have direct insert privileges, this might create it
+        console.log('Attempting a fallback approach by using INSERT which may create the table...');
+        
+        // Get the current user
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData && userData.user) {
+          try {
             await createUserProfile({
               id: userData.user.id,
               email: userData.user.email || 'unknown@example.com',
@@ -67,9 +67,13 @@ export const ensureProfilesTableExists = async () => {
               created_at: new Date().toISOString()
             });
             console.log('Created sample profile, table should now exist');
+          } catch (insertError) {
+            console.error('Failed to create table through insertion:', insertError);
+            return false;
           }
         } else {
-          console.log('Profiles table created successfully via direct SQL');
+          console.log('No authenticated user found to create a sample profile');
+          return false;
         }
       } else {
         console.log('Profiles table created successfully via RPC');
