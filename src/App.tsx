@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Signup from "./pages/Signup";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import Enquiries from "./pages/Enquiries";
@@ -28,6 +29,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             
             {/* Protected routes */}

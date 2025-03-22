@@ -67,15 +67,9 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
                 </button>
                 <button
                   className="py-2 text-left text-sm font-medium hover:text-primary transition-colors"
-                  onClick={() => handleNavigation("/signup-customer")}
+                  onClick={() => handleNavigation("/signup")}
                 >
-                  Sign up as Customer
-                </button>
-                <button
-                  className="py-2 text-left text-sm font-medium hover:text-primary transition-colors"
-                  onClick={() => handleNavigation("/signup-company")}
-                >
-                  Sign up as Company
+                  Sign up
                 </button>
               </>
             )}

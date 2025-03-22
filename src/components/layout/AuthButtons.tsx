@@ -40,11 +40,11 @@ export function AuthButtons() {
   
   return (
     <div className="flex items-center gap-4">
-      <Button onClick={() => navigate("/dashboard")}>
-        Dashboard
+      <Button variant="outline" onClick={() => navigate("/login")}>
+        Log in
       </Button>
-      <Button variant="outline" onClick={handleGoogleAuth}>
-        Google Auth (For Later)
+      <Button onClick={() => navigate("/signup")}>
+        Sign up
       </Button>
       {import.meta.env.DEV && (
         <Button 
