@@ -15,6 +15,7 @@ export default function CustomerSignup() {
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
+        console.log("CustomerSignup: Checking for existing session");
         // Check if user already has a session
         const { data } = await supabase.auth.getSession();
         
@@ -32,6 +33,8 @@ export default function CustomerSignup() {
           } else {
             navigate("/profile");
           }
+        } else {
+          console.log("CustomerSignup: No existing session found, showing signup form");
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -58,6 +61,7 @@ export default function CustomerSignup() {
     );
   }
 
+  console.log("CustomerSignup: Rendering signup form");
   return (
     <div className="min-h-screen">
       <Header />

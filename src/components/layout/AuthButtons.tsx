@@ -22,6 +22,11 @@ export function AuthButtons() {
     }
   };
   
+  const handleNavigateToSignup = () => {
+    console.log("Navigating to customer signup");
+    navigate("/signup-customer");
+  };
+  
   return (
     <div className="flex items-center gap-4">
       <div className="hidden sm:block">
@@ -31,7 +36,7 @@ export function AuthButtons() {
       </div>
       <SignUpDropdown />
       <div className="hidden sm:block">
-        <Button variant="secondary" onClick={() => navigate("/signup-customer")}>
+        <Button variant="secondary" onClick={handleNavigateToSignup}>
           Join as Customer
         </Button>
       </div>

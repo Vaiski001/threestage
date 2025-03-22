@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 
 interface MobileMenuProps {
@@ -9,6 +9,12 @@ interface MobileMenuProps {
 
 export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  const handleNavigation = (path: string) => {
+    setIsMenuOpen(false);
+    navigate(path);
+  };
   
   return (
     <div className="md:hidden">
@@ -53,27 +59,24 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
             </Link>
             {!isAuthenticated && (
               <>
-                <Link
-                  to="/login"
-                  className="py-2 text-sm font-medium hover:text-primary transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
+                <button
+                  className="py-2 text-left text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => handleNavigation("/login")}
                 >
                   Log in
-                </Link>
-                <Link
-                  to="/signup-customer"
-                  className="py-2 text-sm font-medium hover:text-primary transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
+                </button>
+                <button
+                  className="py-2 text-left text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => handleNavigation("/signup-customer")}
                 >
                   Sign up as Customer
-                </Link>
-                <Link
-                  to="/signup-company"
-                  className="py-2 text-sm font-medium hover:text-primary transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
+                </button>
+                <button
+                  className="py-2 text-left text-sm font-medium hover:text-primary transition-colors"
+                  onClick={() => handleNavigation("/signup-company")}
                 >
                   Sign up as Company
-                </Link>
+                </button>
               </>
             )}
           </nav>

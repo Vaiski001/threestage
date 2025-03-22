@@ -8,9 +8,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 export function SignUpDropdown() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    toast({
+      title: "Navigating to signup",
+      description: `Taking you to ${path === "/signup-customer" ? "customer" : "company"} signup page.`
+    });
+  };
   
   return (
     <DropdownMenu>
@@ -21,10 +31,10 @@ export function SignUpDropdown() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => navigate("/signup-customer")}>
+        <DropdownMenuItem onClick={() => handleNavigation("/signup-customer")}>
           As Customer
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/signup-company")}>
+        <DropdownMenuItem onClick={() => handleNavigation("/signup-company")}>
           As Company
         </DropdownMenuItem>
       </DropdownMenuContent>
