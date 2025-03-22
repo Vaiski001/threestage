@@ -1,3 +1,4 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -7,9 +8,10 @@ import { clearAuthStorage } from './signout';
 export const signUpWithEmail = async (
   email: string, 
   password: string, 
-  userData: Omit<UserProfile, 'id' | 'created_at'>
+  userData: Record<string, unknown>
 ) => {
   try {
+    console.log("Starting signUpWithEmail process with:", email);
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -22,20 +24,32 @@ export const signUpWithEmail = async (
       }
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      console.error("Auth error during signup:", authError);
+      throw authError;
+    }
     
     if (authData.user) {
+      console.log("Auth successful, creating profile for:", authData.user.id);
+      
+      // Create the profile record with proper shape for Supabase
+      const profileData: Record<string, unknown> = {
+        id: authData.user.id,
+        email,
+        ...userData,
+        created_at: new Date().toISOString(),
+      };
+      
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email,
-          ...userData,
-          created_at: new Date().toISOString(),
-        });
+        .insert(profileData);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+        throw profileError;
+      }
       
+      console.log("Profile created successfully");
       return { user: authData.user, session: authData.session };
     }
     
@@ -266,7 +280,8 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
     
     if (!existingProfile) {
       console.log('No existing profile found, creating new profile');
-      const newProfile: UserProfile = {
+      // Create object as Record<string, unknown> to satisfy TypeScript
+      const newProfileData: Record<string, unknown> = {
         id: user.id,
         email: user.email || '',
         name: user.user_metadata?.full_name || user.user_metadata?.name || '',
@@ -276,7 +291,7 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       
       const { error } = await supabase
         .from('profiles')
-        .insert(newProfile);
+        .insert(newProfileData);
         
       if (error) {
         console.error('Error creating profile:', error);
@@ -284,17 +299,39 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
       }
       
       console.log('New profile created successfully');
+      // Return constructed UserProfile
+      const newProfile: UserProfile = {
+        id: user.id,
+        email: user.email || '',
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        role: role,
+        created_at: new Date().toISOString(),
+      };
       return newProfile;
     }
     
+    // Check if the returned data has the expected shape of a UserProfile
     if (existingProfile && 
+        typeof existingProfile === 'object' &&
         'id' in existingProfile && 
         'email' in existingProfile && 
         'role' in existingProfile && 
         'name' in existingProfile && 
         'created_at' in existingProfile) {
       console.log('Existing profile found:', existingProfile);
-      return existingProfile as UserProfile;
+      // Safe to cast to UserProfile now that we've verified the structure
+      return {
+        id: existingProfile.id as string,
+        email: existingProfile.email as string,
+        role: existingProfile.role as UserRole,
+        name: existingProfile.name as string,
+        created_at: existingProfile.created_at as string,
+        company_name: existingProfile.company_name as string | undefined,
+        phone: existingProfile.phone as string | undefined,
+        industry: existingProfile.industry as string | undefined,
+        website: existingProfile.website as string | undefined,
+        integrations: existingProfile.integrations as string[] | undefined,
+      };
     }
     
     console.error('Retrieved profile data is missing required fields:', existingProfile);

@@ -14,8 +14,26 @@ export const getUserProfile = async (userId: string) => {
     if (error) throw error;
     
     // Verify the data has the required properties before returning it as UserProfile
-    if (data && 'id' in data && 'email' in data && 'role' in data && 'name' in data && 'created_at' in data) {
-      return data as UserProfile;
+    if (data && 
+        typeof data === 'object' &&
+        'id' in data && 
+        'email' in data && 
+        'role' in data && 
+        'name' in data && 
+        'created_at' in data) {
+      // Safely construct UserProfile with type checking
+      return {
+        id: data.id as string,
+        email: data.email as string,
+        role: data.role as UserProfile['role'],
+        name: data.name as string,
+        created_at: data.created_at as string,
+        company_name: data.company_name as string | undefined,
+        phone: data.phone as string | undefined,
+        industry: data.industry as string | undefined,
+        website: data.website as string | undefined,
+        integrations: data.integrations as string[] | undefined,
+      };
     }
     
     console.error('Retrieved profile data is missing required fields:', data);
