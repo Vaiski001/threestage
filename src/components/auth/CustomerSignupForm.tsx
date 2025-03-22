@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { signUpWithEmail, signInWithGoogle } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
+import { createUserProfile } from "@/lib/supabase/profiles";
+import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
@@ -42,29 +44,55 @@ export function CustomerSignupForm() {
     setSignupError(null);
     
     try {
-      console.log("📝 Form values:", { ...values, password: "***" });
+      console.log("Starting customer signup process:", { ...values, password: "***" });
       
-      // Create user data for Supabase
-      const userData: Record<string, unknown> = {
-        name: values.name,
+      // 1. Create the auth user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            name: values.name,
+            role: "customer"
+          }
+        }
+      });
+      
+      if (authError) {
+        console.error("Auth error during signup:", authError);
+        throw authError;
+      }
+      
+      if (!authData.user) {
+        throw new Error("Failed to create user account");
+      }
+      
+      console.log("Auth signup successful for user:", authData.user.id);
+      
+      // 2. Create a profile record in the profiles table
+      await createUserProfile({
+        id: authData.user.id,
+        email: values.email,
+        name: values.name,
         role: "customer",
-      };
+        created_at: new Date().toISOString()
+      });
       
-      console.log("📝 Signup data:", { ...userData, password: "***" });
-      
-      const result = await signUpWithEmail(values.email, values.password, userData);
-      console.log("✅ Signup success:", result);
-
+      // 3. Show success message and redirect to login
       toast({
         title: "Account created!",
         description: "Please check your email to verify your account.",
       });
       
+      // Sign out the user so they can sign in with their new credentials
+      await supabase.auth.signOut();
+      
+      // Redirect to login page
       navigate("/login");
     } catch (error: any) {
-      console.error("❌ Signup error:", error);
+      console.error("Signup error:", error);
       setSignupError(error.message || "Failed to create account. Please try again.");
+      
       toast({
         title: "Error",
         description: error.message || "Failed to create account. Please try again.",
@@ -99,7 +127,7 @@ export function CustomerSignupForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form id="customer-signup-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"

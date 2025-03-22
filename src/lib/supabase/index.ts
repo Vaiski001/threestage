@@ -29,5 +29,7 @@ export {
 // Export profile functions
 export {
   getUserProfile,
+  createUserProfile,
+  updateUserProfile,
   deleteUserAccount
 } from './profiles';

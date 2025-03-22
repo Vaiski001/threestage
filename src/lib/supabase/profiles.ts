@@ -23,25 +23,78 @@ export const getUserProfile = async (userId: string) => {
     
     // Convert the data to a proper UserProfile object
     const profile: UserProfile = {
-      id: data.id as string,
-      email: data.email as string,
-      role: data.role as UserProfile['role'],
-      name: data.name as string,
-      created_at: data.created_at as string,
+      id: data.id,
+      email: data.email,
+      role: data.role,
+      name: data.name,
+      created_at: data.created_at,
     };
     
     // Add optional fields if they exist
-    if ('company_name' in data && data.company_name) profile.company_name = data.company_name as string;
-    if ('phone' in data && data.phone) profile.phone = data.phone as string;
-    if ('industry' in data && data.industry) profile.industry = data.industry as string;
-    if ('website' in data && data.website) profile.website = data.website as string;
-    if ('integrations' in data && data.integrations) profile.integrations = data.integrations as string[];
+    if (data.company_name) profile.company_name = data.company_name;
+    if (data.phone) profile.phone = data.phone;
+    if (data.industry) profile.industry = data.industry;
+    if (data.website) profile.website = data.website;
+    if (data.integrations) profile.integrations = data.integrations;
     
     console.log('Profile retrieved successfully:', profile);
     return profile;
   } catch (error) {
     console.error('Error getting user profile:', error);
     return null;
+  }
+};
+
+// Function to create a user profile
+export const createUserProfile = async (profileData: Partial<UserProfile>) => {
+  try {
+    console.log('Creating user profile with data:', profileData);
+    
+    if (!profileData.id) {
+      throw new Error('User ID is required to create a profile');
+    }
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert(profileData)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating profile:', error);
+      throw error;
+    }
+    
+    console.log('Profile created successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error creating user profile:', error);
+    throw error;
+  }
+};
+
+// Function to update a user profile
+export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>) => {
+  try {
+    console.log('Updating profile for user:', userId, 'with data:', profileData);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(profileData)
+      .eq('id', userId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+    
+    console.log('Profile updated successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
   }
 };
 
