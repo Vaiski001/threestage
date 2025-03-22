@@ -6,7 +6,8 @@ import {
   getUserProfile, 
   processAccessToken,
   hasCompleteProfile,
-  forceSignOut
+  forceSignOut,
+  deleteUserAccount
 } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -21,7 +22,7 @@ import { Container } from "@/components/ui/Container";
 import { Checkbox } from "@/components/ui/checkbox";
 import { User, Session } from "@supabase/supabase-js";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw, Trash } from "lucide-react";
 
 const companyFormSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -173,6 +174,64 @@ export default function AuthCallback() {
       console.error("Error during reset:", error);
       setIsProcessing(false);
       setErrorMessage("Failed to reset authentication. Please try again.");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsProcessing(true);
+    setErrorMessage("Deleting account and resetting authentication state...");
+    try {
+      let userId = null;
+      
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        
+        if (accessToken) {
+          try {
+            const { data, error } = await supabase.auth.getUser(accessToken);
+            if (!error && data.user) {
+              userId = data.user.id;
+            }
+          } catch (e) {
+            console.error("Error getting user from token:", e);
+          }
+        }
+      }
+      
+      if (!userId) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session && data.session.user) {
+          userId = data.session.user.id;
+        }
+      }
+      
+      if (userId) {
+        await deleteUserAccount(userId);
+        toast({
+          title: "Account deleted",
+          description: "Your account has been deleted. You can now sign up again.",
+        });
+      } else {
+        toast({
+          title: "Account deletion skipped",
+          description: "Could not identify your account. Auth state has been reset.",
+        });
+      }
+      
+      await forceSignOut();
+      
+      window.location.href = "/login";
+    } catch (error: any) {
+      console.error("Error during account deletion:", error);
+      setIsProcessing(false);
+      setErrorMessage(`Failed to delete account: ${error.message}`);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. " + error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -640,6 +699,16 @@ export default function AuthCallback() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reset & Try Again
               </Button>
+              
+              <Button 
+                variant="destructive" 
+                className="w-full"
+                onClick={handleDeleteAccount}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete Account & Try Again
+              </Button>
+              
               <Button 
                 variant="outline" 
                 className="w-full"
@@ -647,6 +716,7 @@ export default function AuthCallback() {
               >
                 Return to Login
               </Button>
+              
               {window.location.hash && window.location.hash.includes('access_token') && (
                 <Button
                   variant="outline"

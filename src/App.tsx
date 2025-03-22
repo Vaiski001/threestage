@@ -50,7 +50,11 @@ const App = () => (
             />
             <Route 
               path="/enquiries" 
-              element={<Enquiries />} 
+              element={
+                <ProtectedRoute allowedRoles={["customer", "company"]}>
+                  <Enquiries />
+                </ProtectedRoute>
+              } 
             />
             
             {/* Catch-all route */}

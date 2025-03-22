@@ -1,11 +1,11 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, getUserProfile } from '@/lib/supabase';
+import { supabase, getUserProfile, deleteUserAccount } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, Trash } from 'lucide-react';
 
 export default function ManualLogin() {
   const { toast } = useToast();
@@ -13,6 +13,7 @@ export default function ManualLogin() {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const processManualLogin = async () => {
@@ -46,6 +47,9 @@ export default function ManualLogin() {
         
         console.log("Session set successfully:", data.session.user.id);
         
+        // Store the user ID for potential account deletion
+        setUserId(data.session.user.id);
+        
         // Get user profile
         const profile = await getUserProfile(data.session.user.id);
         
@@ -72,6 +76,34 @@ export default function ManualLogin() {
     
     processManualLogin();
   }, [navigate, toast]);
+  
+  const handleDeleteAccount = async () => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "Could not determine user account to delete",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsProcessing(true);
+    try {
+      await deleteUserAccount(userId);
+      toast({
+        title: "Account deleted",
+        description: "Your account has been successfully deleted. You can now sign up again.",
+      });
+      navigate('/login');
+    } catch (error: any) {
+      setIsProcessing(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account",
+        variant: "destructive",
+      });
+    }
+  };
   
   return (
     <div className="h-screen flex items-center justify-center bg-background p-4">
@@ -110,6 +142,18 @@ export default function ManualLogin() {
             >
               Return to Login
             </Button>
+            
+            {userId && (
+              <Button 
+                variant="destructive" 
+                className="w-full"
+                onClick={handleDeleteAccount}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete Account & Try Again
+              </Button>
+            )}
+            
             <Button 
               variant="outline" 
               className="w-full"
