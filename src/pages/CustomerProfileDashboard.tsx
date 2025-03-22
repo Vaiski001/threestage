@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/Header";
 import { Container } from "@/components/ui/Container";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,14 +11,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 
 export default function CustomerProfileDashboard() {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && !user) {
-      console.log("No user found, redirecting to login");
-      navigate("/login");
+      console.log("No user found, redirecting to unauthorized page");
+      navigate("/unauthorized");
     }
   }, [user, loading, navigate]);
 
@@ -48,9 +47,9 @@ export default function CustomerProfileDashboard() {
               <Button
                 variant="link"
                 className="p-0 ml-2"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/unauthorized")}
               >
-                Log in
+                Go to unauthorized page
               </Button>
             </AlertDescription>
           </Alert>
