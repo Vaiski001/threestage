@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
 import { getUserProfile } from './profiles';
+import { clearAuthStorage } from './signout';
 
 export const signUpWithEmail = async (
   email: string, 

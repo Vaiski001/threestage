@@ -3,7 +3,7 @@
 export { supabase } from './client';
 
 // Export types
-export { UserRole, UserProfile } from './types';
+export type { UserRole, UserProfile } from './types';
 
 // Export authentication functions
 export {
