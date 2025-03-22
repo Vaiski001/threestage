@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
@@ -25,12 +26,14 @@ import {
   UserPlus,
   Filter,
   Plus,
-  PlusCircle
+  PlusCircle,
+  FormInput
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const CompanyDashboard = () => {
+  const navigate = useNavigate();
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
   const { profile, loading, refreshProfile } = useAuth();
   const { toast } = useToast();
@@ -68,12 +71,24 @@ const CompanyDashboard = () => {
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of key stats and activities" },
     { id: "enquiries", label: "Enquiries", icon: <MessageSquare className="h-5 w-5" />, description: "View and manage customer enquiries" },
     { id: "customers", label: "Customers", icon: <Users className="h-5 w-5" />, description: "List of customers with their details" },
+    { id: "forms", label: "Form Builder", icon: <FormInput className="h-5 w-5" />, description: "Create and manage forms" },
     { id: "invoices", label: "Invoices", icon: <Receipt className="h-5 w-5" />, description: "Manage invoices and billing" },
     { id: "payments", label: "Payments", icon: <DollarSign className="h-5 w-5" />, description: "Track payments and transactions" },
     { id: "reports", label: "Reports & Analytics", icon: <PieChart className="h-5 w-5" />, description: "Insights and trends" },
     { id: "team", label: "Team Management", icon: <UserPlus className="h-5 w-5" />, description: "Manage company users and roles" },
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, description: "Configure company details and preferences" }
   ];
+
+  // Handle navigation
+  const handleNavigation = (id: string) => {
+    if (id === "forms") {
+      navigate("/forms");
+    } else if (id === "enquiries") {
+      navigate("/enquiries");
+    } else {
+      setActiveNavItem(id);
+    }
+  };
 
   // Show loading state while profile data is loading
   if (loading) {
@@ -240,7 +255,7 @@ const CompanyDashboard = () => {
                   icon={item.icon}
                   description={item.description}
                   isActive={activeNavItem === item.id}
-                  onClick={setActiveNavItem}
+                  onClick={handleNavigation}
                 />
               ))}
             </div>

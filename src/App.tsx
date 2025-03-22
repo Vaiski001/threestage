@@ -20,6 +20,7 @@ import Unauthorized from "./pages/Unauthorized";
 import Enquiries from "./pages/Enquiries";
 import CustomerProfileDashboard from "./pages/CustomerProfileDashboard";
 import AuthCallback from "./pages/AuthCallback";
+import FormBuilder from "./pages/FormBuilder";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,13 @@ const App = () => (
             <Route path="/customer/dashboard" element={
               <ProtectedRoute>
                 <CustomerDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Form Builder */}
+            <Route path="/forms" element={
+              <ProtectedRoute>
+                <FormBuilder />
               </ProtectedRoute>
             } />
             
