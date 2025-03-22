@@ -74,15 +74,21 @@ export const signUpWithEmail = async (
 
 export const signInWithEmail = async (email: string, password: string) => {
   try {
+    console.log("Signing in with email:", email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    if (error) throw error;
-    return data;
+    if (error) {
+      console.error('Error signing in with email:', error);
+      return { error };
+    }
+    
+    console.log("Sign in successful:", data.user?.id);
+    return { data };
   } catch (error) {
-    console.error('Error signing in:', error);
+    console.error('Exception during sign in:', error);
     throw error;
   }
 };

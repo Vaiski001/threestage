@@ -7,12 +7,14 @@ import { Container } from "@/components/ui/Container";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshProfile } = useAuth();
 
   useEffect(() => {
     // Check for success message passed via location state (from signup or unauthorized page)
@@ -30,6 +32,17 @@ export default function Login() {
       return () => clearTimeout(timer);
     }
   }, [location]);
+
+  const handleLoginSuccess = async () => {
+    // Ensure we have the latest profile data before redirecting
+    try {
+      await refreshProfile();
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error refreshing profile after login:", error);
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -74,7 +87,7 @@ export default function Login() {
             )}
             
             <LoginForm 
-              onSuccess={() => navigate("/dashboard")}
+              onSuccess={handleLoginSuccess}
               onError={(message) => setError(message)}
             />
           </div>

@@ -65,31 +65,37 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     
     setIsLoading(true);
     
-    // Set a timeout to detect if the request takes too long
-    const timeout = window.setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Login timeout",
-        description: "The login request is taking longer than expected. Please try again.",
-        variant: "destructive",
-      });
-      setErrorMessage("Login timeout. Please try again.");
-      if (onError) onError("Login timeout. Please try again.");
-    }, 10000); // 10 seconds timeout
-    
-    setTimeoutId(timeout);
-    
     try {
-      const { session, user } = await signInWithEmail(email, password);
+      console.log("Attempting login with:", { email });
+      const { data, error } = await signInWithEmail(email, password);
       
-      // Clear timeout as we've received a response
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
+      if (error) {
+        console.error("Login error from Supabase:", error);
+        let errorMessage = "Invalid email or password. Please double-check your credentials and try again.";
+        
+        if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Please confirm your email before logging in.";
+        } else if (error.message.includes("rate limit")) {
+          errorMessage = "Too many login attempts. Please wait a minute and try again.";
+        }
+        
+        setErrorMessage(errorMessage);
+        
+        if (onError) {
+          onError(errorMessage);
+        }
+        
+        toast({
+          title: "Login failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        return;
       }
       
-      if (user) {
-        console.log("Login successful for user:", user.id);
+      if (data?.user) {
+        console.log("Login successful for user:", data.user.id);
         
         toast({
           title: "Login successful",
@@ -103,12 +109,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         }
       }
     } catch (error: any) {
-      // Clear timeout as we've received a response
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
-      }
-      
       console.error("Login error:", error);
       
       let errorMessage = "An error occurred during login. Please try again.";
@@ -138,6 +138,12 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       }
     } finally {
       setIsLoading(false);
+      
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        setTimeoutId(null);
+      }
     }
   };
 
