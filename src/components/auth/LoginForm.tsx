@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { signInWithEmail, signInWithOAuth, resetPassword } from "@/lib/supabase";
+import { signInWithEmail, signInWithOAuth, resetPassword, signInWithGoogle } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -100,7 +100,11 @@ export function LoginForm() {
 
   const handleOAuthLogin = async (provider: 'google' | 'facebook' | 'linkedin') => {
     try {
-      await signInWithOAuth(provider);
+      if (provider === 'google') {
+        await signInWithGoogle();
+      } else {
+        await signInWithOAuth(provider);
+      }
     } catch (error: any) {
       console.error(`${provider} login error:`, error);
       toast({

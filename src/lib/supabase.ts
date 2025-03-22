@@ -1,14 +1,21 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize the Supabase client with default values for local development
-// In production, these should be set as environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// For local development, use placeholders to prevent the app from crashing
+// In a production environment, these values should be properly configured as environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
-// Validate required configuration before creating client
-if (!supabaseUrl.includes('supabase.co') || supabaseAnonKey === 'your-anon-key') {
-  console.warn('Using placeholder Supabase credentials. For development only. Please set proper environment variables in production.');
+// Validate if we're using placeholder credentials
+if (supabaseUrl === 'https://placeholder-project.supabase.co' || supabaseAnonKey === 'placeholder-key') {
+  console.warn(
+    'Using placeholder Supabase credentials. The app will function, but authentication features will not work.\n' +
+    'To enable authentication:\n' +
+    '1. Create a Supabase project at https://supabase.com\n' +
+    '2. Add your project URL and anon key to a .env file:\n' +
+    '   VITE_SUPABASE_URL=your-project-url\n' +
+    '   VITE_SUPABASE_ANON_KEY=your-anon-key\n' +
+    '3. Restart your development server'
+  );
 }
 
 // Create the supabase client
@@ -168,6 +175,66 @@ export const getUserProfile = async (userId: string) => {
     return data as UserProfile;
   } catch (error) {
     console.error('Error getting user profile:', error);
+    return null;
+  }
+};
+
+// Enhanced Google OAuth sign-in function
+export const signInWithGoogle = async () => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
+    });
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
+    throw error;
+  }
+};
+
+// Helper to handle the OAuth callback and create/update profile
+export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer') => {
+  if (!user) return null;
+  
+  try {
+    // Check if profile exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    if (!existingProfile) {
+      // Create new profile if it doesn't exist
+      const newProfile: Partial<UserProfile> = {
+        id: user.id,
+        email: user.email || '',
+        name: user.user_metadata?.full_name || user.user_metadata?.name || 'User',
+        role: role,
+        created_at: new Date().toISOString(),
+      };
+      
+      const { error } = await supabase
+        .from('profiles')
+        .insert(newProfile);
+        
+      if (error) throw error;
+      
+      return newProfile as UserProfile;
+    }
+    
+    return existingProfile as UserProfile;
+  } catch (error) {
+    console.error('Error handling OAuth sign-in:', error);
     return null;
   }
 };
