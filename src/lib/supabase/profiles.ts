@@ -1,6 +1,6 @@
 
 import { supabase } from './client';
-import { UserProfile } from './types';
+import { UserProfile, UserRole } from './types';
 
 export const getUserProfile = async (userId: string) => {
   try {
@@ -21,21 +21,21 @@ export const getUserProfile = async (userId: string) => {
       return null;
     }
     
-    // Convert the data to a proper UserProfile object
+    // Convert the data to a properly typed UserProfile object
     const profile: UserProfile = {
-      id: data.id,
-      email: data.email,
-      role: data.role,
-      name: data.name,
-      created_at: data.created_at,
+      id: data.id as string,
+      email: data.email as string,
+      role: data.role as UserRole,
+      name: data.name as string,
+      created_at: data.created_at as string,
     };
     
     // Add optional fields if they exist
-    if (data.company_name) profile.company_name = data.company_name;
-    if (data.phone) profile.phone = data.phone;
-    if (data.industry) profile.industry = data.industry;
-    if (data.website) profile.website = data.website;
-    if (data.integrations) profile.integrations = data.integrations;
+    if (data.company_name) profile.company_name = data.company_name as string;
+    if (data.phone) profile.phone = data.phone as string;
+    if (data.industry) profile.industry = data.industry as string;
+    if (data.website) profile.website = data.website as string;
+    if (data.integrations) profile.integrations = data.integrations as string[] || [];
     
     console.log('Profile retrieved successfully:', profile);
     return profile;
@@ -66,7 +66,24 @@ export const createUserProfile = async (profileData: Partial<UserProfile>) => {
     }
     
     console.log('Profile created successfully:', data);
-    return data;
+    
+    // Return a properly typed profile
+    const createdProfile: UserProfile = {
+      id: data.id as string,
+      email: data.email as string,
+      role: data.role as UserRole,
+      name: data.name as string, 
+      created_at: data.created_at as string,
+    };
+    
+    // Add optional fields if they exist
+    if (data.company_name) createdProfile.company_name = data.company_name as string;
+    if (data.phone) createdProfile.phone = data.phone as string;
+    if (data.industry) createdProfile.industry = data.industry as string;
+    if (data.website) createdProfile.website = data.website as string;
+    if (data.integrations) createdProfile.integrations = data.integrations as string[] || [];
+    
+    return createdProfile;
   } catch (error) {
     console.error('Error creating user profile:', error);
     throw error;
@@ -91,7 +108,24 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
     }
     
     console.log('Profile updated successfully:', data);
-    return data;
+    
+    // Return a properly typed profile
+    const updatedProfile: UserProfile = {
+      id: data.id as string,
+      email: data.email as string,
+      role: data.role as UserRole,
+      name: data.name as string,
+      created_at: data.created_at as string,
+    };
+    
+    // Add optional fields if they exist
+    if (data.company_name) updatedProfile.company_name = data.company_name as string;
+    if (data.phone) updatedProfile.phone = data.phone as string;
+    if (data.industry) updatedProfile.industry = data.industry as string;
+    if (data.website) updatedProfile.website = data.website as string;
+    if (data.integrations) updatedProfile.integrations = data.integrations as string[] || [];
+    
+    return updatedProfile;
   } catch (error) {
     console.error('Error updating user profile:', error);
     throw error;
