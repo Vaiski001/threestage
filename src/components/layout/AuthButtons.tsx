@@ -30,6 +30,11 @@ export function AuthButtons() {
         </Button>
       </div>
       <SignUpDropdown />
+      <div className="hidden sm:block">
+        <Button variant="secondary" onClick={() => navigate("/signup-customer")}>
+          Join as Customer
+        </Button>
+      </div>
       {/* Adding debug button to clear auth state - remove in production */}
       {import.meta.env.DEV && (
         <Button 

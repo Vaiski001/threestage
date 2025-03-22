@@ -21,7 +21,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
       </button>
       
       {isMenuOpen && (
-        <div className="pt-4 pb-2 border-t mt-4">
+        <div className="absolute top-16 right-0 left-0 z-50 bg-background border-b shadow-lg pt-4 pb-2 px-4">
           <nav className="flex flex-col gap-2">
             <Link
               to="/"
