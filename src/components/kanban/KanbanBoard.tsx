@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { KanbanColumn } from "./KanbanColumn";
 import { Container } from "@/components/ui/Container";
 import { Plus, Filter, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 // Define the Enquiry type to match the type in KanbanColumn.tsx
 interface Enquiry {
@@ -107,7 +109,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
 export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
   // Use sample data for demo, empty for new users
   const [enquiries, setEnquiries] = useState(isDemo ? sampleEnquiries : emptyEnquiries);
-  const isEmpty = Object.values(enquiries).every(column => column.length === 0);
+  const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent, id: string, fromColumn: string) => {
     e.dataTransfer.setData("id", id);
@@ -141,11 +143,11 @@ export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-medium">Enquiry Board</h2>
           <div className="flex gap-3">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => toast({ title: "Feature coming soon", description: "Filter functionality is coming soon." })}>
               <Filter className="h-4 w-4 mr-2" />
               Filter
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={() => toast({ title: "Feature coming soon", description: "New enquiry creation is coming soon." })}>
               <Plus className="h-4 w-4 mr-2" />
               New Enquiry
             </Button>

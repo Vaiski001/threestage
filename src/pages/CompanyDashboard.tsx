@@ -13,15 +13,13 @@ const CompanyDashboard = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
 
-  // Sample stats for all company users
+  // Stats for all company users (showing zero values initially)
   const stats = [
     { label: "Total Enquiries", value: "0", change: "0%", changeType: "neutral" },
     { label: "Pending", value: "0", change: "0%", changeType: "neutral" },
     { label: "Response Time", value: "0h", change: "0h", changeType: "neutral" },
     { label: "Conversion Rate", value: "0%", change: "0%", changeType: "neutral" }
   ];
-
-  const hasEnquiries = false; // This would be determined by a real data fetch in a production app
 
   return (
     <SidebarProvider>
@@ -111,6 +109,7 @@ const CompanyDashboard = () => {
                   </div>
                 </div>
 
+                {/* Stats cards - always shown with zero values initially */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   {stats.map((card, i) => (
                     <div key={i} className="glass-card rounded-lg p-6">
@@ -131,7 +130,7 @@ const CompanyDashboard = () => {
                   ))}
                 </div>
 
-                {/* Empty state always shown for now since we don't fetch real data yet */}
+                {/* Empty state message - always shown until we implement real data fetching */}
                 <div className="bg-card rounded-lg border shadow-sm p-8 text-center mb-8">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <PlusCircle className="h-8 w-8 text-primary" />
@@ -141,14 +140,19 @@ const CompanyDashboard = () => {
                     Start managing your customer enquiries by adding your first enquiry or integrating our form to your website.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button>Add First Enquiry</Button>
-                    <Button variant="outline">Get Integration Code</Button>
+                    <Button onClick={() => toast({ title: "Feature coming soon", description: "This feature is not yet implemented." })}>
+                      Add First Enquiry
+                    </Button>
+                    <Button variant="outline" onClick={() => toast({ title: "Feature coming soon", description: "Integration code functionality is coming soon." })}>
+                      Get Integration Code
+                    </Button>
                   </div>
                 </div>
               </Container>
             </div>
 
-            <KanbanBoard />
+            {/* Always show the Kanban board, it will display its own empty state */}
+            <KanbanBoard isDemo={false} />
           </main>
         </div>
       </div>
