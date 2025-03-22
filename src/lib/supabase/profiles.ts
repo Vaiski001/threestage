@@ -174,6 +174,23 @@ export const createUserProfile = async (profileData: Partial<UserProfile>) => {
       profileRecord[key] = value;
     });
     
+    // First check if a profile with this ID already exists
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', profileData.id)
+      .maybeSingle();
+      
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking for existing profile:', checkError);
+    }
+    
+    if (existingProfile) {
+      console.log('Profile already exists, updating instead of creating');
+      return updateUserProfile(profileData.id, profileData);
+    }
+    
+    // If we get here, profile doesn't exist, so create it
     const { data, error } = await supabase
       .from('profiles')
       .insert(profileRecord)
@@ -182,6 +199,16 @@ export const createUserProfile = async (profileData: Partial<UserProfile>) => {
     
     if (error) {
       console.error('Error creating profile:', error);
+      
+      // Special handling for common errors
+      if (error.code === '23505') {
+        throw new Error('A profile with this email already exists');
+      } else if (error.code === '42P01') {
+        throw new Error('The profiles table does not exist. Please set up your database first.');
+      } else if (error.message?.includes('foreign key constraint')) {
+        throw new Error('There was an issue with user authentication. Please sign out and try again.');
+      }
+      
       throw error;
     }
     

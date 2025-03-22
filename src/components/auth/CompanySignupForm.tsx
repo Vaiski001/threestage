@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Form,
@@ -63,6 +65,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Initialize form
   const form = useForm<CompanySignupFormValues>({
@@ -143,25 +146,52 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       }
       
       // Create profile in the profiles table regardless of email confirmation
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          name: values.contactName,
-          email: values.email,
-          role: 'company',
-          company_name: values.companyName,
-          industry: values.industry,
-          website: values.website || null,
-          phone: values.phone || null,
-          created_at: new Date().toISOString(),
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            name: values.contactName,
+            email: values.email,
+            role: 'company',
+            company_name: values.companyName,
+            industry: values.industry,
+            website: values.website || null,
+            phone: values.phone || null,
+            created_at: new Date().toISOString(),
+          });
+          
+        if (profileError) {
+          console.error("Error creating company profile:", profileError);
+          
+          // Check for specific error types
+          if (profileError.code === '23505') {
+            throw new Error("This email is already registered. Please use a different email or try logging in.");
+          } else if (profileError.code === '42P01') {
+            throw new Error("Database setup issue. Please contact support with error code: 42P01");
+          } else if (profileError.message.includes("foreign key constraint")) {
+            throw new Error("Authentication issue. Please try again or contact support.");
+          }
+          
+          // General fallback error
+          throw new Error(`Profile creation failed: ${profileError.message}`);
+        } else {
+          console.log("Company profile created successfully for user:", data.user.id);
+        }
+      } catch (profileError: any) {
+        console.error("Detailed profile creation error:", profileError);
+        
+        // Try to sign out the user if the profile creation failed
+        await supabase.auth.signOut();
+        
+        // Navigate to unauthorized page with error details
+        navigate('/unauthorized', { 
+          state: { 
+            errorMessage: profileError.message || "Failed to create company profile. Please contact support." 
+          } 
         });
         
-      if (profileError) {
-        console.error("Error creating company profile:", profileError);
-        // Continue anyway as the auth user was created
-      } else {
-        console.log("Company profile created successfully for user:", data.user.id);
+        throw profileError;
       }
       
       // Success! Show a toast notification
