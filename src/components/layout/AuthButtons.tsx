@@ -23,8 +23,12 @@ export function AuthButtons() {
   };
   
   const handleNavigateToSignup = () => {
-    console.log("Navigating to customer signup");
+    console.log("AuthButtons: Navigating to customer signup");
     navigate("/signup-customer");
+    toast({
+      title: "Navigating to customer signup",
+      description: "Taking you to the customer signup page."
+    });
   };
   
   return (

@@ -35,18 +35,20 @@ export default function CustomerSignup() {
           }
         } else {
           console.log("CustomerSignup: No existing session found, showing signup form");
+          setIsCheckingAuth(false);
         }
       } catch (error) {
         console.error("Error checking session:", error);
-      } finally {
         setIsCheckingAuth(false);
       }
     };
     
+    console.log("CustomerSignup: Component mounted");
     checkExistingSession();
   }, [navigate, toast]);
   
   if (isCheckingAuth) {
+    console.log("CustomerSignup: Showing loading state");
     return (
       <div className="min-h-screen">
         <Header />

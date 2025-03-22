@@ -15,6 +15,7 @@ export function SignUpDropdown() {
   const { toast } = useToast();
   
   const handleNavigation = (path: string) => {
+    console.log(`SignUpDropdown: Navigating to ${path}`);
     navigate(path);
     toast({
       title: "Navigating to signup",
