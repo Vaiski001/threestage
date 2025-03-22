@@ -28,61 +28,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Handle OAuth callback
-  useEffect(() => {
-    // Parse the hash from the URL if it exists
-    const handleOAuthCallback = async () => {
-      // Check if we have a hash in the URL (this indicates an OAuth callback)
-      if (window.location.hash && window.location.hash.includes('access_token')) {
-        console.log("Detected OAuth callback");
-        
-        try {
-          // The hash will be automatically handled by Supabase auth
-          const { data, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error("Error retrieving session after OAuth:", error);
-            toast({
-              title: "Authentication Error",
-              description: "There was an error logging in with your social account.",
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          if (data.session?.user) {
-            console.log("OAuth login successful for user:", data.session.user.id);
-            
-            // Get the role that was stored before the OAuth flow
-            const role = localStorage.getItem('oauth_role') || 'customer';
-            
-            // Handle the OAuth sign-in (create profile if necessary)
-            const profile = await handleOAuthSignIn(data.session.user, role as UserProfile['role']);
-            
-            if (profile) {
-              setUser(data.session.user);
-              setProfile(profile);
-              
-              toast({
-                title: "Login successful",
-                description: `Welcome${profile.name ? ', ' + profile.name : ''}!`,
-              });
-              
-              // Clean up the OAuth data
-              localStorage.removeItem('oauth_role');
-              localStorage.removeItem('oauth_provider');
-              localStorage.removeItem('oauth_timestamp');
-            }
-          }
-        } catch (error) {
-          console.error("Error processing OAuth callback:", error);
-        }
-      }
-    };
-    
-    handleOAuthCallback();
-  }, [toast]);
-
   // Check for session on initial load
   useEffect(() => {
     const checkSession = async () => {
@@ -130,6 +75,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
           console.error("Error fetching profile:", error);
+          
+          // If profile doesn't exist yet, try to create one based on OAuth data
+          if (error.code === 'PGRST116') { // Not found
+            try {
+              // Get role from localStorage if it exists (from OAuth process)
+              const role = localStorage.getItem('oauth_role') as UserProfile['role'] || 'customer';
+              
+              const createdProfile = await handleOAuthSignIn(user, role);
+              if (createdProfile) {
+                console.log("Created new profile during fetch:", createdProfile);
+                setProfile(createdProfile);
+                return;
+              }
+            } catch (createError) {
+              console.error("Error creating profile during fetch:", createError);
+            }
+          }
           return;
         }
 

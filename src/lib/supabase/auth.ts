@@ -95,7 +95,6 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     
     console.log(`OAuth sign-in initiated with ${provider}`);
     console.log(`Redirect URL: ${redirectTo}`);
-    console.log(`Current domain: ${domain}`);
     
     localStorage.setItem('oauth_role', role);
     localStorage.setItem('oauth_provider', provider);
@@ -108,7 +107,7 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: redirectTo,
+        redirectTo,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -293,80 +292,45 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
     if (!existingProfile) {
       console.log('No existing profile found, creating new profile');
       
-      // Create a record with properly typed fields for Supabase
-      const newProfileRecord: Record<string, unknown> = {
+      const newProfile = {
         id: user.id,
         email: user.email || '',
         name: user.user_metadata?.full_name || user.user_metadata?.name || '',
         role: role,
-        created_at: new Date().toISOString(),
+        created_at: new Date().toISOString()
       };
       
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('profiles')
-        .insert(newProfileRecord);
-        
-      if (error) {
-        console.error('Error creating profile:', error);
-        throw error;
+        .insert(newProfile);
+      
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+        throw insertError;
       }
       
       console.log('New profile created successfully');
       
-      // Return a properly constructed UserProfile object
-      const newProfile: UserProfile = {
-        id: user.id,
-        email: user.email || '',
-        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-        role: role,
-        created_at: new Date().toISOString(),
-      };
-      
-      return newProfile;
+      return newProfile as UserProfile;
     }
     
-    // Check if the returned data has the expected shape of a UserProfile
-    if (existingProfile && 
-        typeof existingProfile === 'object' &&
-        'id' in existingProfile && 
-        'email' in existingProfile && 
-        'role' in existingProfile && 
-        'name' in existingProfile && 
-        'created_at' in existingProfile) {
-      
-      console.log('Existing profile found:', existingProfile);
-      
-      // Construct a valid UserProfile object
-      const profile: UserProfile = {
-        id: existingProfile.id as string,
-        email: existingProfile.email as string,
-        role: existingProfile.role as UserProfile['role'],
-        name: existingProfile.name as string,
-        created_at: existingProfile.created_at as string,
-      };
-      
-      // Add optional fields if they exist
-      if ('company_name' in existingProfile) {
-        profile.company_name = existingProfile.company_name as string;
-      }
-      if ('phone' in existingProfile) {
-        profile.phone = existingProfile.phone as string;
-      }
-      if ('industry' in existingProfile) {
-        profile.industry = existingProfile.industry as string;
-      }
-      if ('website' in existingProfile) {
-        profile.website = existingProfile.website as string;
-      }
-      if ('integrations' in existingProfile) {
-        profile.integrations = existingProfile.integrations as string[];
-      }
-      
-      return profile;
-    }
+    console.log('Existing profile found:', existingProfile);
     
-    console.error('Retrieved profile data is missing required fields:', existingProfile);
-    return null;
+    const profile: UserProfile = {
+      id: existingProfile.id,
+      email: existingProfile.email || '',
+      role: existingProfile.role,
+      name: existingProfile.name || '',
+      created_at: existingProfile.created_at,
+    };
+    
+    if (existingProfile.company_name) profile.company_name = existingProfile.company_name;
+    if (existingProfile.phone) profile.phone = existingProfile.phone;
+    if (existingProfile.industry) profile.industry = existingProfile.industry;
+    if (existingProfile.website) profile.website = existingProfile.website;
+    if (existingProfile.integrations) profile.integrations = existingProfile.integrations;
+    
+    return profile;
   } catch (error) {
     console.error('Error handling OAuth sign-in:', error);
     return null;

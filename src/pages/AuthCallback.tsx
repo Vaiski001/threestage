@@ -1,9 +1,8 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { supabase, processAccessToken, handleOAuthSignIn } from "@/lib/supabase";
+import { supabase, processAccessToken, handleOAuthSignIn, createUserProfile, UserRole } from "@/lib/supabase";
 import { Container } from "@/components/ui/Container";
-import { UserRole } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { 
   DebugInfo, 
@@ -79,12 +78,50 @@ export default function AuthCallback() {
         setAuthStage("session_received");
         setCurrentUser(data.session.user);
         
-        // Handle the OAuth sign-in (create profile if necessary)
-        const profile = await handleOAuthSignIn(data.session.user, userRole);
-        
-        if (!profile) {
-          console.error("Failed to create or retrieve user profile");
-          setAuthError("Failed to complete account setup. Please try again.");
+        // Create a profile if it doesn't exist already
+        try {
+          setAuthStage("creating_profile");
+          
+          // Check if a profile exists first
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.session.user.id)
+            .single();
+            
+          if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = not found
+            console.error("Error checking profile:", profileError);
+            throw profileError;
+          }
+          
+          if (!profileData) {
+            // Create a new profile record
+            const newProfileData = {
+              id: data.session.user.id,
+              email: data.session.user.email || '',
+              name: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || '',
+              role: userRole,
+              created_at: new Date().toISOString()
+            };
+            
+            console.log("Creating new profile with data:", newProfileData);
+            
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert(newProfileData);
+              
+            if (insertError) {
+              console.error("Error creating profile:", insertError);
+              throw insertError;
+            }
+            
+            console.log("Profile created successfully");
+          } else {
+            console.log("Existing profile found:", profileData);
+          }
+        } catch (profileCreateError) {
+          console.error("Error handling profile creation:", profileCreateError);
+          setAuthError("Failed to set up your user profile. Please try again.");
           return;
         }
         
@@ -98,10 +135,10 @@ export default function AuthCallback() {
         
         toast({
           title: "Login successful",
-          description: `Welcome${profile.name ? ', ' + profile.name : ''}!`,
+          description: `Welcome back!`,
         });
         
-        // Redirect to appropriate page based on whether additional info is needed
+        // Redirect to appropriate page based on role and whether additional info is needed
         setTimeout(() => {
           if (needsAdditionalInfo && userRole === 'company') {
             navigate("/profile");
