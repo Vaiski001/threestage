@@ -25,44 +25,22 @@ export function Header() {
   // Check if we're on the homepage
   const isHomePage = location.pathname === "/";
   
-  // Show auth buttons if:
-  // 1. User is NOT authenticated, OR
-  // 2. User IS authenticated but we're NOT on the homepage
-  const showAuthButtons = !isAuthenticated || !isHomePage;
-  
-  // For the homepage, we always want to show login/signup if not authenticated
-  const showLoginSignup = isHomePage && !isAuthenticated;
+  // Only show account dropdown if authenticated and not on home page
+  const showAccountMenu = isAuthenticated && !isHomePage;
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast({
         title: "Signed out",
-        description: "You have been successfully signed out and all credentials have been cleared.",
+        description: "You have been successfully signed out.",
       });
       navigate("/");
     } catch (error) {
       console.error("Sign out error:", error);
       toast({
         title: "Error",
-        description: "Failed to sign out completely. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleForceSignOut = async () => {
-    try {
-      await forceSignOut();
-      toast({
-        title: "Force signed out",
-        description: "All authentication data has been cleared.",
-      });
-    } catch (error) {
-      console.error("Force sign out error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to force sign out. Please try again.",
+        description: "Failed to sign out. Please try again.",
         variant: "destructive",
       });
     }
@@ -93,7 +71,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-4">
-            {isAuthenticated && !isHomePage ? (
+            {showAccountMenu ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
@@ -120,19 +98,11 @@ export function Header() {
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign out
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleForceSignOut} className="text-destructive">
-                    <RefreshCcw className="h-4 w-4 mr-2" />
-                    Force sign out
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              showAuthButtons && (
-                <>
-                  <Button variant="outline" className="hidden sm:flex gap-2" onClick={handleForceSignOut}>
-                    <RefreshCcw className="h-4 w-4" />
-                    <span>Reset Auth</span>
-                  </Button>
+              !isAuthenticated && (
+                <div className="flex items-center gap-4">
                   <div className="hidden sm:block">
                     <Button variant="outline" onClick={() => navigate("/login")}>
                       Log in
@@ -154,35 +124,8 @@ export function Header() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </>
-              )
-            )}
-
-            {/* For homepage only: Always show login/signup if not authenticated */}
-            {showLoginSignup && (
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:block">
-                  <Button variant="outline" onClick={() => navigate("/login")}>
-                    Log in
-                  </Button>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button>
-                      Sign up
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => navigate("/signup-customer")}>
-                      As Customer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/signup-company")}>
-                      As Company
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              )
             )}
 
             <button
@@ -250,16 +193,6 @@ export function Header() {
                     Sign up as Company
                   </Link>
                 </>
-              )}
-              {!isAuthenticated && (
-                <Button 
-                  variant="ghost" 
-                  className="justify-start px-0 text-sm font-medium hover:text-primary transition-colors"
-                  onClick={handleForceSignOut}
-                >
-                  <RefreshCcw className="h-4 w-4 mr-2" />
-                  Reset Auth
-                </Button>
               )}
             </nav>
           </div>
