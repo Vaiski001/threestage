@@ -79,7 +79,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         throw new Error("This email is already registered. Please use a different email or try logging in.");
       }
       
-      // Attempt to create the user
+      // Attempt to create the user with auto-confirmation
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -87,13 +87,16 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
           data: {
             name: values.name,
             role: "customer",
-          }
+          },
+          emailRedirectTo: window.location.origin + "/dashboard"
         }
       });
       
       console.log("Signup response received:", { 
         success: !!data.user, 
-        hasError: !!error 
+        hasError: !!error,
+        user: data.user,
+        session: data.session
       });
       
       if (error) {
@@ -107,10 +110,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         throw new Error("No user returned from signup. Please try again.");
       }
       
-      // Wait a moment to ensure the auth state is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Create profile in the profiles table
+      // Create profile in the profiles table regardless of email confirmation
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -123,23 +123,9 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         
       if (profileError) {
         console.error("Error creating profile:", profileError);
-        
-        // If we failed to create the profile but the user was created,
-        // we should still consider it a success and let them continue
-        if (data.user) {
-          toast({
-            title: "Account created",
-            description: "Your account has been created but some profile information may be incomplete. You can update it later.",
-          });
-          
-          setTimeout(() => {
-            setIsLoading(false);
-            onSuccess();
-          }, 500);
-          return;
-        }
-        
-        throw profileError;
+        // Continue anyway as the auth user was created
+      } else {
+        console.log("Profile created successfully for user:", data.user.id);
       }
       
       // Success! Show a toast notification

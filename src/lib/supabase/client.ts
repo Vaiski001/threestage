@@ -35,7 +35,7 @@ const getSupabaseClient = () => {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false, // We'll handle this manually
+        detectSessionInUrl: true, // Enable automatic session detection
         storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`,
       },
       global: {
@@ -62,7 +62,7 @@ export const createSupabaseClient = (options = {}) => {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: true, // Enable automatic session detection
       ...options
     }
   });
