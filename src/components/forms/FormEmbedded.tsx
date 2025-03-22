@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -85,7 +84,7 @@ export function FormEmbedded() {
   
   return (
     <div className="max-w-xl mx-auto">
-      <FormPreview form={form} onClose={() => {}} isEmbedded={true} />
+      <FormPreview form={form as any} onClose={() => {}} isEmbedded={true} />
     </div>
   );
 }

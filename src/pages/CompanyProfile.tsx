@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -49,7 +48,7 @@ const CompanyProfile = () => {
         {
           id: '1',
           name: 'Contact Form',
-          description: 'General contact and enquiry form',
+          description: 'General contact and enquiry form', // Ensure description is provided
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           fields: [
@@ -83,7 +82,7 @@ const CompanyProfile = () => {
         {
           id: '2',
           name: 'Quote Request',
-          description: 'Request a quote for our services',
+          description: 'Request a quote for our services', // Ensure description is provided
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           fields: [
@@ -103,14 +102,14 @@ const CompanyProfile = () => {
             },
             {
               id: 'service',
-              type: 'dropdown',
+              type: 'dropdown', // Changed from 'select' to 'dropdown'
               label: 'Service Interested In',
               options: company?.profile_services?.map(s => s.title) || ['Consulting', 'Development', 'Support'],
               required: true,
             },
             {
               id: 'budget',
-              type: 'dropdown',
+              type: 'dropdown', // Changed from 'select' to 'dropdown'
               label: 'Budget Range',
               options: ['$1,000 - $5,000', '$5,000 - $10,000', '$10,000+'],
               required: false,

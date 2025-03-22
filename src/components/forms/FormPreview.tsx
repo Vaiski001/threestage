@@ -2,12 +2,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FormTemplate, FormFieldType } from "./FormManagement";
 import { FormField } from "./FormField";
 import { X, ArrowLeft } from "lucide-react";
+import { FormTemplate as FormManagementTemplate } from "./FormManagement";
+import { FormTemplate as SupabaseFormTemplate } from "@/lib/supabase/types";
+
+// Union type to accept both FormTemplate types
+type FormTemplateUnion = FormManagementTemplate | SupabaseFormTemplate;
 
 interface FormPreviewProps {
-  form: FormTemplate;
+  form: FormTemplateUnion;
   onClose: () => void;
   isEmbedded?: boolean;
 }

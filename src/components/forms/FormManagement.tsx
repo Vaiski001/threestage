@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Plus, List, Eye, Copy, Trash2, Edit, ToggleLeft, 
@@ -17,7 +16,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export interface FormTemplate {
   id: string;
   name: string;
-  description: string;
+  description?: string; // Made optional to match with supabase/types.ts
   active?: boolean;
   fields: FormFieldType[];
   submissions?: number;
@@ -25,11 +24,15 @@ export interface FormTemplate {
   lastModified?: string;
   createdAt?: string;
   updatedAt?: string;
+  created_at?: string; // Added to match with supabase/types.ts
+  updated_at?: string; // Added to match with supabase/types.ts
   branding: {
     logo?: string;
     primaryColor?: string;
     fontFamily?: string;
   };
+  is_public?: boolean; // Added to match with supabase/types.ts
+  company_id?: string; // Added to match with supabase/types.ts
 }
 
 // Define the form field type
@@ -41,6 +44,7 @@ export interface FormFieldType {
   required: boolean;
   options?: string[]; // For dropdown, radio, or checkbox options
   defaultValue?: string;
+  validations?: Record<string, unknown>; // Added to match with supabase/types.ts
 }
 
 // Mock data for demonstration purposes
