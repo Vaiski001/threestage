@@ -9,10 +9,15 @@ interface RoleRouterProps {
 }
 
 export const RoleRouter = ({ children }: RoleRouterProps) => {
-  const { profile, loading } = useAuth();
+  const { profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+
+  // Refresh profile on mount and path change
+  useEffect(() => {
+    refreshProfile();
+  }, [refreshProfile, location.pathname]);
 
   useEffect(() => {
     if (loading) return;

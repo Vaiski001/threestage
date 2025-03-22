@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   resetAuth: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: false,
   isAuthenticated: false,
   resetAuth: async () => {},
+  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -83,6 +85,84 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkSession();
   }, []);
 
+  // Fetch profile data function that can be called programmatically
+  const fetchProfileData = async (userId: string) => {
+    try {
+      console.log("Explicitly fetching profile for user:", userId);
+      setProfileLoading(true);
+      
+      // Ensure profiles table exists
+      await ensureProfilesTableExists();
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        
+        // Handle not found case
+        if (error.code === 'PGRST116') { // Not found
+          try {
+            // Get role from localStorage if it exists (from OAuth process)
+            const role = localStorage.getItem('oauth_role') as UserProfile['role'] || 'customer';
+            
+            const createdProfile = await handleOAuthSignIn(user!, role);
+            if (createdProfile) {
+              console.log("Created new profile during fetch:", createdProfile);
+              setProfile(createdProfile);
+            } else {
+              console.error("Failed to create profile during fetch");
+            }
+          } catch (createError) {
+            console.error("Error creating profile during fetch:", createError);
+          }
+        }
+        return null;
+      }
+
+      if (!data) {
+        console.log("No profile found for user:", userId);
+        return null;
+      }
+      
+      console.log("Profile data received:", data);
+      
+      // Create profile with proper type casting
+      const profileData: UserProfile = {
+        id: data.id as string,
+        email: data.email as string,
+        role: data.role as UserProfile["role"],
+        name: data.name as string,
+        created_at: data.created_at as string,
+      };
+      
+      // Add optional fields if they exist
+      if (data.company_name) profileData.company_name = data.company_name as string;
+      if (data.phone) profileData.phone = data.phone as string;
+      if (data.industry) profileData.industry = data.industry as string;
+      if (data.website) profileData.website = data.website as string;
+      if (data.integrations) profileData.integrations = data.integrations as string[] || [];
+
+      setProfile(profileData);
+      return profileData;
+    } catch (error) {
+      console.error("Error in profile fetch:", error);
+      return null;
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // Function to refresh profile data manually
+  const refreshProfile = async () => {
+    if (!user) return;
+    console.log("Manually refreshing profile for user:", user.id);
+    await fetchProfileData(user.id);
+  };
+
   // Fetch profile when user changes
   useEffect(() => {
     if (!user) {
@@ -90,81 +170,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        console.log("Fetching profile for user:", user.id);
-        setProfileLoading(true);
-        
-        // Ensure profiles table exists first
-        const tableExists = await ensureProfilesTableExists();
-        if (!tableExists) {
-          console.warn("Profiles table may not exist. Will attempt to create profile anyway.");
-        }
-        
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching profile:", error);
-          
-          // If profile doesn't exist yet, try to create one based on OAuth data
-          if (error.code === 'PGRST116') { // Not found
-            try {
-              // Get role from localStorage if it exists (from OAuth process)
-              const role = localStorage.getItem('oauth_role') as UserProfile['role'] || 'customer';
-              
-              const createdProfile = await handleOAuthSignIn(user, role);
-              if (createdProfile) {
-                console.log("Created new profile during fetch:", createdProfile);
-                setProfile(createdProfile);
-              } else {
-                console.error("Failed to create profile during fetch");
-              }
-            } catch (createError) {
-              console.error("Error creating profile during fetch:", createError);
-            } finally {
-              setProfileLoading(false);
-            }
-          }
-          return;
-        }
-
-        if (!data) {
-          console.log("No profile found for user:", user.id);
-          setProfileLoading(false);
-          return;
-        }
-        
-        console.log("Profile data received:", data);
-        
-        // Create profile with proper type casting
-        const profileData: UserProfile = {
-          id: data.id as string,
-          email: data.email as string,
-          role: data.role as UserProfile["role"],
-          name: data.name as string,
-          created_at: data.created_at as string,
-        };
-        
-        // Add optional fields if they exist
-        if (data.company_name) profileData.company_name = data.company_name as string;
-        if (data.phone) profileData.phone = data.phone as string;
-        if (data.industry) profileData.industry = data.industry as string;
-        if (data.website) profileData.website = data.website as string;
-        if (data.integrations) profileData.integrations = data.integrations as string[] || [];
-
-        setProfile(profileData);
-      } catch (error) {
-        console.error("Error in profile fetch:", error);
-      } finally {
-        setProfileLoading(false);
-      }
+    const getProfile = async () => {
+      await fetchProfileData(user.id);
     };
 
-    fetchProfile();
+    getProfile();
   }, [user]);
 
   const resetAuth = async () => {
@@ -181,13 +191,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Listen for auth changes
+  // Enhanced auth state change listener with profile refresh
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event);
       
       if (event === 'SIGNED_IN' && session) {
         setUser(session.user);
+        // Fetch profile immediately after sign in
+        await fetchProfileData(session.user.id);
         toast({
           title: "Signed in",
           description: "You have been signed in successfully"
@@ -198,6 +210,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("User signed out");
       } else if (event === 'USER_UPDATED' && session) {
         setUser(session.user);
+        // Refresh profile on user update
+        await fetchProfileData(session.user.id);
       }
     });
 
@@ -213,7 +227,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       profile, 
       loading: loading || profileLoading, // Consider both loading states
       isAuthenticated: !!user,
-      resetAuth
+      resetAuth,
+      refreshProfile
     }}>
       {children}
     </AuthContext.Provider>

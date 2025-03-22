@@ -10,16 +10,28 @@ import { useToast } from "@/hooks/use-toast";
 
 const CompanyDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
-  const { profile, loading } = useAuth();
+  const { profile, loading, refreshProfile } = useAuth();
   const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
+  const [localProfile, setLocalProfile] = useState(profile);
 
-  // Set mounted state to true after the component mounts
+  // Update local profile state when profile changes
   useEffect(() => {
-    setMounted(true);
-    
-    console.log("CompanyDashboard mounted, profile:", profile);
+    setLocalProfile(profile);
+    console.log("CompanyDashboard received profile update:", profile);
   }, [profile]);
+
+  // Refresh profile data on mount and periodically
+  useEffect(() => {
+    // Refresh on mount
+    refreshProfile();
+    
+    // Set up periodic refresh every 30 seconds
+    const intervalId = setInterval(() => {
+      refreshProfile();
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [refreshProfile]);
 
   // Stats for all company users (showing zero values initially)
   const stats = [
@@ -29,8 +41,8 @@ const CompanyDashboard = () => {
     { label: "Conversion Rate", value: "0%", change: "0%", changeType: "neutral" }
   ];
 
-  // If not mounted yet, show minimal loading state
-  if (!mounted) {
+  // Show loading state while profile data is loading
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -79,7 +91,7 @@ const CompanyDashboard = () => {
                   <User className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{profile?.company_name || profile?.name || 'Company User'}</p>
+                  <p className="text-sm font-medium">{localProfile?.company_name || localProfile?.name || 'Company User'}</p>
                   <p className="text-xs text-sidebar-foreground/70">Company</p>
                 </div>
               </div>
@@ -119,7 +131,7 @@ const CompanyDashboard = () => {
               <Container size="full">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                   <div>
-                    <h1 className="text-2xl font-semibold mb-1">Welcome, {profile?.company_name || profile?.name || 'Company User'}</h1>
+                    <h1 className="text-2xl font-semibold mb-1">Welcome, {localProfile?.company_name || localProfile?.name || 'Company User'}</h1>
                     <p className="text-muted-foreground">Here's what's happening with your enquiries today.</p>
                   </div>
                   <div className="flex gap-3">
