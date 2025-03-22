@@ -1,3 +1,4 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -112,71 +113,103 @@ export const signInWithGoogle = async (role: UserRole = 'customer') => {
   return signInWithOAuth('google', role);
 };
 
+// Improved processAccessToken with retry mechanism and better error handling
 export const processAccessToken = async (accessToken: string, refreshToken: string | null) => {
-  try {
-    console.log('Processing access token from hash fragment');
-    
-    // First, clear all auth data to start fresh - but do it faster
-    console.log('Clearing previous auth state');
-    
-    // Clear localStorage items immediately
-    clearAuthStorage();
-    
-    // Force sign out but don't wait for it to complete
-    supabase.auth.signOut({ scope: 'global' }).catch(e => console.error("Error during force sign out:", e));
-    
-    // Much shorter waiting time before continuing
-    console.log('Preparing to set new session');
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    console.log('Setting new session with token');
-    // Set the session using the access token with a timeout
-    const { data, error } = await Promise.race([
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-      }),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Session setup timed out after 5 seconds")), 5000)
-      )
-    ]);
-    
-    if (error) {
-      console.error('Error setting session from access token:', error);
+  let retryCount = 0;
+  const maxRetries = 3;
+  const initialBackoff = 200; // Start with 200ms backoff
+  
+  const attemptTokenProcessing = async (): Promise<Session> => {
+    try {
+      console.log(`Processing access token attempt ${retryCount + 1}/${maxRetries + 1}`);
+      
+      // Clear previous auth state
+      console.log('Clearing previous auth state');
+      clearAuthStorage();
+      
+      // Force sign out but don't wait for it to complete
+      supabase.auth.signOut({ scope: 'global' }).catch(e => 
+        console.error("Non-blocking error during force sign out:", e)
+      );
+      
+      // Gradually increase wait time between operations based on retry count
+      const waitTime = Math.min(100 * Math.pow(2, retryCount), 1000);
+      console.log(`Waiting ${waitTime}ms before setting session`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      
+      console.log('Setting new session with token');
+      // Set the session using the access token with a shorter, adaptive timeout
+      const timeoutDuration = 3000 + (retryCount * 1000); // Increase timeout with each retry
+      
+      const { data, error } = await Promise.race([
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        }),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error(`Session setup timed out after ${timeoutDuration/1000} seconds`)), 
+          timeoutDuration)
+        )
+      ]);
+      
+      if (error) {
+        console.error(`Error setting session (attempt ${retryCount + 1}):`, error);
+        throw error;
+      }
+      
+      if (!data.session) {
+        console.error(`No session returned after setting access token (attempt ${retryCount + 1})`);
+        throw new Error('Failed to create session from access token');
+      }
+      
+      // Shorter verification delay
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Verify the session was set correctly with a shorter timeout
+      console.log('Verifying session');
+      const { data: verifyData, error: verifyError } = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error("Session verification timed out after 2 seconds")), 2000)
+        )
+      ]);
+      
+      if (verifyError) {
+        console.error('Error verifying session:', verifyError);
+        throw verifyError;
+      }
+      
+      if (!verifyData.session) {
+        console.error('Session verification failed - no session found after setting');
+        throw new Error('Session verification failed');
+      }
+      
+      console.log('Session verified successfully:', verifyData.session.user.id);
+      
+      return verifyData.session;
+    } catch (error: any) {
+      // Determine if we should retry based on the error and retry count
+      if (retryCount < maxRetries) {
+        retryCount++;
+        console.log(`Retrying token processing (${retryCount}/${maxRetries}). Error: ${error.message}`);
+        
+        // Exponential backoff
+        const backoffTime = initialBackoff * Math.pow(2, retryCount - 1);
+        console.log(`Waiting ${backoffTime}ms before retry`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+        
+        return attemptTokenProcessing();
+      }
+      
+      console.error('Maximum retries reached. Giving up token processing.');
       throw error;
     }
-    
-    if (!data.session) {
-      console.error('No session returned after setting access token');
-      throw new Error('Failed to create session from access token');
-    }
-    
-    // Shorter delay after setting session
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Verify the session was set correctly
-    const { data: verifyData, error: verifyError } = await Promise.race([
-      supabase.auth.getSession(),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error("Session verification timed out after 3 seconds")), 3000)
-      )
-    ]);
-    
-    if (verifyError) {
-      console.error('Error verifying session:', verifyError);
-      throw verifyError;
-    }
-    
-    if (!verifyData.session) {
-      console.error('Session verification failed - no session found after setting');
-      throw new Error('Session verification failed');
-    }
-    
-    console.log('Session verified successfully:', verifyData.session.user.id);
-    
-    return data.session;
+  };
+  
+  try {
+    return await attemptTokenProcessing();
   } catch (error) {
-    console.error('Error processing access token:', error);
+    console.error('Final error processing access token after all retries:', error);
     throw error;
   }
 };
