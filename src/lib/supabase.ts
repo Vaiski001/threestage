@@ -1,4 +1,3 @@
-
 import { createClient, User } from '@supabase/supabase-js';
 
 // For local development, use environment variables
@@ -111,6 +110,11 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     localStorage.setItem('oauth_role', role);
     localStorage.setItem('oauth_provider', provider);
     localStorage.setItem('oauth_timestamp', Date.now().toString());
+    
+    // Clear any existing hash fragment to prevent conflicts
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -296,6 +300,10 @@ export const handleOAuthSignIn = async (user: User, role: UserRole = 'customer')
 export const processAccessToken = async (accessToken: string, refreshToken: string | null) => {
   try {
     console.log('Processing access token from hash fragment');
+    
+    // Clear any previous session first to avoid conflicts
+    await supabase.auth.signOut();
+    
     // Set the session using the access token
     const { data, error } = await supabase.auth.setSession({
       access_token: accessToken,
@@ -305,6 +313,14 @@ export const processAccessToken = async (accessToken: string, refreshToken: stri
     if (error) {
       console.error('Error setting session from access token:', error);
       throw error;
+    }
+    
+    // Verify that we have a valid session
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session) {
+      console.error('Failed to verify session after setting:', sessionError || 'No session found');
+      throw new Error('Session verification failed');
     }
     
     console.log('Session set successfully from access token');

@@ -1,12 +1,12 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   supabase, 
   handleOAuthSignIn, 
   getUserProfile, 
   processAccessToken,
-  hasCompleteProfile
+  hasCompleteProfile,
+  forceSignOut
 } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -20,8 +20,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Container } from "@/components/ui/Container";
 import { Checkbox } from "@/components/ui/checkbox";
 import { User } from "@supabase/supabase-js";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
-// Schema for the additional info form for companies
 const companyFormSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
   phone: z.string().optional(),
@@ -30,7 +31,6 @@ const companyFormSchema = z.object({
   integrations: z.array(z.string()).optional(),
 });
 
-// Schema for the additional info form for customers
 const customerFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
 });
@@ -67,8 +67,9 @@ export default function AuthCallback() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<'customer' | 'company'>('customer');
   const [authStage, setAuthStage] = useState<string>('initializing');
+  const [processingTimeElapsed, setProcessingTimeElapsed] = useState(0);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
-  // Company form setup
   const companyForm = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
     defaultValues: {
@@ -80,7 +81,6 @@ export default function AuthCallback() {
     },
   });
 
-  // Customer form setup
   const customerForm = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
@@ -88,13 +88,11 @@ export default function AuthCallback() {
     },
   });
 
-  // Handle company form submission
   const handleCompanySubmit = async (values: CompanyFormValues) => {
     if (!currentUser) return;
     
     setIsProcessing(true);
     try {
-      // Update the user's profile with the additional info
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -127,13 +125,11 @@ export default function AuthCallback() {
     }
   };
 
-  // Handle customer form submission
   const handleCustomerSubmit = async (values: CustomerFormValues) => {
     if (!currentUser) return;
     
     setIsProcessing(true);
     try {
-      // Update the user's profile with the additional info
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -162,13 +158,20 @@ export default function AuthCallback() {
     }
   };
 
-  // Handle hash fragments from OAuth providers
-  const handleHashFragment = async () => {
+  const handleReset = async () => {
+    await forceSignOut();
+    toast({
+      title: "Authentication reset",
+      description: "All authentication data has been cleared. Redirecting to login page...",
+    });
+    setTimeout(() => navigate("/login"), 1000);
+  };
+
+  const handleHashFragment = useCallback(async () => {
     setAuthStage('processing_hash');
     console.log("Processing hash fragment:", window.location.hash);
     
     try {
-      // Parse hash fragment for access token
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
@@ -179,20 +182,21 @@ export default function AuthCallback() {
       }
       
       console.log("Access token found in hash, setting session");
-      const session = await processAccessToken(accessToken, refreshToken);
+      const session = await Promise.race([
+        processAccessToken(accessToken, refreshToken),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Session setup timeout")), 10000))
+      ]);
       
       if (!session) {
         throw new Error("Failed to establish session from access token");
       }
       
-      // Clear the hash to avoid issues with reload
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       
       const user = session.user;
       setCurrentUser(user);
       console.log("User set from hash token:", user.id);
       
-      // Get role from URL params or localStorage
       const urlParams = new URLSearchParams(window.location.search);
       const role = urlParams.get('role') === 'company' ? 'company' : 
                   localStorage.getItem('oauth_role') === 'company' ? 'company' : 'customer';
@@ -200,21 +204,18 @@ export default function AuthCallback() {
       setUserRole(role);
       console.log("User role determined:", role);
       
-      // Process user profile
       return await processUserProfile(user, role);
     } catch (error: any) {
       console.error("Error processing hash fragment:", error);
       throw error;
     }
-  };
+  }, []);
 
-  // Process user profile
   const processUserProfile = async (user: User, role: string) => {
     setAuthStage('processing_profile');
     console.log(`Processing profile for user ${user.id} with role ${role}`);
     
     try {
-      // Check if the user has a complete profile
       const isProfileComplete = await hasCompleteProfile(user, role as 'customer' | 'company');
       
       if (!isProfileComplete) {
@@ -225,14 +226,12 @@ export default function AuthCallback() {
         return false;
       }
       
-      // Profile exists and has required info
       console.log("Complete profile found, redirecting");
       toast({
         title: "Authentication successful",
         description: "You have been successfully logged in.",
       });
 
-      // Redirect based on user role
       const profile = await getUserProfile(user.id);
       if (profile?.role === "company") {
         navigate("/dashboard");
@@ -247,19 +246,44 @@ export default function AuthCallback() {
   };
 
   useEffect(() => {
+    if (isProcessing && authStage === 'processing_hash') {
+      const timer = setInterval(() => {
+        setProcessingTimeElapsed(prev => {
+          if (prev >= 15 && !showDebugInfo) {
+            setShowDebugInfo(true);
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [isProcessing, authStage, showDebugInfo]);
+
+  useEffect(() => {
     const handleAuthCallback = async () => {
       try {
         console.log("Auth callback started");
         setIsProcessing(true);
         setAuthStage('started');
         
-        // Check if we have hash fragments from OAuth provider
         if (window.location.hash && window.location.hash.includes('access_token')) {
-          await handleHashFragment();
+          try {
+            await Promise.race([
+              handleHashFragment(),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Authentication process timed out")), 20000)
+              )
+            ]);
+          } catch (error: any) {
+            console.error("Timeout or error in hash processing:", error);
+            setErrorMessage("Authentication timed out or failed. Please try again.");
+            setIsProcessing(false);
+            return;
+          }
           return;
         }
         
-        // No hash fragments, try to get session normally
         console.log("No hash fragment, getting session from supabase");
         setAuthStage('checking_session');
         const { data, error } = await supabase.auth.getSession();
@@ -274,12 +298,10 @@ export default function AuthCallback() {
           setCurrentUser(user);
           console.log("User set from session:", user.id);
           
-          // Get role from URL params
           const urlParams = new URLSearchParams(window.location.search);
           const role = urlParams.get('role') === 'company' ? 'company' : 'customer';
           setUserRole(role);
           
-          // Process user profile
           await processUserProfile(user, role);
         } else {
           console.log("No session found");
@@ -306,9 +328,8 @@ export default function AuthCallback() {
     };
 
     handleAuthCallback();
-  }, [navigate, toast]);
+  }, [navigate, toast, handleHashFragment]);
 
-  // Debug info component
   const DebugInfo = () => (
     <div className="mt-4 p-4 bg-slate-100 rounded-md text-xs text-slate-700">
       <p><strong>Auth Stage:</strong> {authStage}</p>
@@ -317,10 +338,23 @@ export default function AuthCallback() {
       <p><strong>Has URL Hash:</strong> {window.location.hash ? 'Yes' : 'No'}</p>
       <p><strong>User ID:</strong> {currentUser?.id || 'None'}</p>
       <p><strong>URL:</strong> {window.location.href}</p>
+      <p><strong>Processing Time:</strong> {processingTimeElapsed} seconds</p>
+      <p><strong>localStorage:</strong></p>
+      <pre className="mt-1 p-2 bg-slate-200 rounded text-xs overflow-x-auto">
+        {JSON.stringify(
+          Object.keys(localStorage).reduce((acc, key) => {
+            if (key.startsWith('supabase.') || key.startsWith('sb-') || key.startsWith('oauth_')) {
+              acc[key] = localStorage.getItem(key);
+            }
+            return acc;
+          }, {} as Record<string, string | null>),
+          null,
+          2
+        )}
+      </pre>
     </div>
   );
 
-  // Render the additional info collection form if needed
   if (needsAdditionalInfo && currentUser) {
     return (
       <div className="min-h-screen bg-background py-12">
@@ -481,7 +515,6 @@ export default function AuthCallback() {
     );
   }
 
-  // Default loading or error UI
   return (
     <div className="h-screen flex items-center justify-center bg-background">
       <div className="text-center max-w-md p-8 rounded-lg shadow-sm border bg-card">
@@ -491,7 +524,39 @@ export default function AuthCallback() {
             <h2 className="text-xl font-semibold mb-2">Completing authentication...</h2>
             <p className="text-muted-foreground mb-2">Please wait while we log you in.</p>
             <p className="text-sm text-muted-foreground">Auth stage: {authStage}</p>
-            {import.meta.env.DEV && <DebugInfo />}
+            
+            {processingTimeElapsed > 10 && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Taking longer than expected</AlertTitle>
+                <AlertDescription>
+                  Authentication is taking longer than usual. 
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2" 
+                    onClick={() => setShowDebugInfo(!showDebugInfo)}
+                  >
+                    {showDebugInfo ? "Hide Details" : "Show Details"}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {processingTimeElapsed > 20 && (
+              <div className="mt-4">
+                <Button 
+                  variant="secondary" 
+                  onClick={handleReset}
+                  className="flex items-center"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reset & Try Again
+                </Button>
+              </div>
+            )}
+            
+            {(showDebugInfo || import.meta.env.DEV) && <DebugInfo />}
           </>
         ) : errorMessage ? (
           <>
@@ -502,15 +567,24 @@ export default function AuthCallback() {
             </div>
             <h2 className="text-xl font-semibold mb-2 text-destructive">Authentication Failed</h2>
             <p className="text-muted-foreground mb-4">{errorMessage}</p>
-            <p className="text-sm text-muted-foreground">Redirecting you to the login page...</p>
-            <Button 
-              variant="outline" 
-              className="mt-4" 
-              onClick={() => navigate("/login")}
-            >
-              Return to Login
-            </Button>
-            {import.meta.env.DEV && <DebugInfo />}
+            <div className="flex flex-col gap-2">
+              <Button 
+                variant="default" 
+                className="w-full"
+                onClick={handleReset}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reset & Try Again
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate("/login")}
+              >
+                Return to Login
+              </Button>
+            </div>
+            {(showDebugInfo || import.meta.env.DEV) && <DebugInfo />}
           </>
         ) : (
           <>
@@ -522,7 +596,7 @@ export default function AuthCallback() {
             <h2 className="text-xl font-semibold mb-2 text-primary">Authentication Successful</h2>
             <p className="text-muted-foreground mb-4">You've been successfully authenticated.</p>
             <p className="text-sm text-muted-foreground">Redirecting you to your dashboard...</p>
-            {import.meta.env.DEV && <DebugInfo />}
+            {(showDebugInfo || import.meta.env.DEV) && <DebugInfo />}
           </>
         )}
       </div>
