@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -43,6 +44,8 @@ export function CustomerSignupForm() {
     setSignupError(null);
     
     try {
+      console.log("Starting customer signup process...");
+      
       // Step 1: Create auth user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
@@ -56,12 +59,16 @@ export function CustomerSignupForm() {
       });
       
       if (authError) {
+        console.error("Auth error during signup:", authError);
         throw authError;
       }
       
       if (!authData.user) {
+        console.error("No user returned from auth signup");
         throw new Error("Failed to create user account");
       }
+      
+      console.log("Auth signup successful for user:", authData.user.id);
       
       // Step 2: Create the profile record
       const { error: profileError } = await supabase
@@ -77,31 +84,17 @@ export function CustomerSignupForm() {
       if (profileError) {
         console.error("Profile creation error:", profileError);
         // Continue anyway since the auth user was created
+      } else {
+        console.log("Profile created successfully");
       }
       
-      // Step 3: Sign in automatically
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-      
-      if (signInError) {
-        console.error("Auto sign-in error:", signInError);
-        toast({
-          title: "Account created",
-          description: "Your account has been created. Please sign in.",
-        });
-        navigate("/login");
-        return;
-      }
-      
-      // Success - redirect to profile page
+      // Step 3: Redirect to the login page with a success message
       toast({
-        title: "Welcome!",
-        description: "Your account has been created successfully.",
+        title: "Account created successfully!",
+        description: "Please sign in with your credentials",
       });
       
-      navigate("/profile");
+      navigate("/login");
     } catch (error: any) {
       console.error("Signup error:", error);
       setSignupError(error.message || "Failed to create account. Please try again.");
@@ -121,6 +114,7 @@ export function CustomerSignupForm() {
     setSignupError(null);
     
     try {
+      console.log("Starting Google signup process...");
       await signInWithGoogle();
       // The redirect to Google OAuth will happen automatically
     } catch (error: any) {
@@ -212,7 +206,7 @@ export function CustomerSignupForm() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Setting up profile...
+                  Creating account...
                 </>
               ) : (
                 "Create Account"
