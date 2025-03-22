@@ -13,11 +13,17 @@ export default function CustomerSignup() {
   const { toast } = useToast();
 
   useEffect(() => {
+    let isMounted = true; // Track if component is still mounted
+    
     const checkExistingSession = async () => {
       try {
         console.log("CustomerSignup: Checking for existing session");
+        
         // Check if user already has a session
         const { data } = await supabase.auth.getSession();
+        
+        // Guard against state updates after unmount
+        if (!isMounted) return;
         
         if (data.session) {
           // User is already logged in, redirect based on role
@@ -39,6 +45,9 @@ export default function CustomerSignup() {
           setIsCheckingAuth(false);
         }
       } catch (error) {
+        // Guard against state updates after unmount
+        if (!isMounted) return;
+        
         console.error("Error checking session:", error);
         setIsCheckingAuth(false);
       }
@@ -49,13 +58,20 @@ export default function CustomerSignup() {
     // Check session immediately
     checkExistingSession();
     
-    // Add a safety timeout to ensure the loader doesn't get stuck
+    // Add a shorter safety timeout to ensure the loader doesn't get stuck
     const timeoutId = setTimeout(() => {
-      console.log("CustomerSignup: Safety timeout triggered, forcing isCheckingAuth to false");
-      setIsCheckingAuth(false);
-    }, 2000); // Reduced to 2 seconds
+      if (isMounted) {
+        console.log("CustomerSignup: Safety timeout triggered after 1.5s, forcing isCheckingAuth to false");
+        setIsCheckingAuth(false);
+      }
+    }, 1500);
     
-    return () => clearTimeout(timeoutId);
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      console.log("CustomerSignup: Component unmounted");
+    };
   }, [navigate, toast]);
   
   if (isCheckingAuth) {
@@ -67,7 +83,7 @@ export default function CustomerSignup() {
           <Container size="sm">
             <div className="flex flex-col items-center justify-center gap-4">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm text-muted-foreground">Loading...</p>
+              <p className="text-sm text-muted-foreground">Checking authentication status...</p>
             </div>
           </Container>
         </main>

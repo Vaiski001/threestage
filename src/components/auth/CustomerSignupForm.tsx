@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -98,17 +99,16 @@ export function CustomerSignupForm() {
       // Clear form
       form.reset();
       
-      // Force the page state to update before redirecting
+      // IMPORTANT: Always set loading to false before navigation
       setIsLoading(false);
       
-      // Add a delay and then navigate to login page
-      console.log("[CustomerSignup] Preparing to redirect to login page...");
-      setTimeout(() => {
-        console.log("[CustomerSignup] Now redirecting to login page");
-        window.location.href = "/login"; // Use direct navigation instead of React Router for complete reset
-      }, 1000); // Increased delay to ensure all state updates and UI changes are complete
+      // Add clear logging and use a simpler approach to redirecting
+      console.log("[CustomerSignup] Redirecting to login page in 1.5 seconds");
       
-      return; // Exit early to prevent the finally block from running
+      setTimeout(() => {
+        console.log("[CustomerSignup] Executing redirect to /login now");
+        navigate("/login");
+      }, 1500);
       
     } catch (error: any) {
       console.error("[CustomerSignup] Signup error:", error);
@@ -122,8 +122,8 @@ export function CustomerSignupForm() {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      // Only set isLoading to false if we didn't redirect (i.e., there was an error)
+      
+      // Make sure loading state is cleared on error
       setIsLoading(false);
     }
   };
