@@ -1,16 +1,17 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize the Supabase client
-// Check if environment variables are available and provide fallbacks for development
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Initialize the Supabase client with default values for local development
+// In production, these should be set as environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
 // Validate required configuration before creating client
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file or configuration.');
+if (!supabaseUrl.includes('supabase.co') || supabaseAnonKey === 'your-anon-key') {
+  console.warn('Using placeholder Supabase credentials. For development only. Please set proper environment variables in production.');
 }
 
+// Create the supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Define types for auth
