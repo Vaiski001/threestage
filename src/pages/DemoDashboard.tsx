@@ -17,8 +17,11 @@ import {
   FileText,
   HelpCircle,
   Building,
-  Mails,
-  BookOpen
+  LayoutDashboard,
+  Receipt,
+  DollarSign,
+  PieChart,
+  UserPlus
 } from "lucide-react";
 import { 
   Select,
@@ -35,20 +38,24 @@ const DemoDashboard = () => {
 
   // Company portal navigation items
   const companyNavItems = [
-    { id: "dashboard", label: "Dashboard", icon: <BarChart className="h-5 w-5" /> },
-    { id: "enquiries", label: "Enquiries", icon: <MessageSquare className="h-5 w-5" /> },
-    { id: "customers", label: "Customers", icon: <Users className="h-5 w-5" /> },
-    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" /> }
+    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of key stats and activities" },
+    { id: "enquiries", label: "Enquiries", icon: <MessageSquare className="h-5 w-5" />, description: "View and manage customer enquiries" },
+    { id: "customers", label: "Customers", icon: <Users className="h-5 w-5" />, description: "List of customers with their details" },
+    { id: "invoices", label: "Invoices", icon: <Receipt className="h-5 w-5" />, description: "Manage invoices and billing" },
+    { id: "payments", label: "Payments", icon: <DollarSign className="h-5 w-5" />, description: "Track payments and transactions" },
+    { id: "reports", label: "Reports & Analytics", icon: <PieChart className="h-5 w-5" />, description: "Insights and trends" },
+    { id: "team", label: "Team Management", icon: <UserPlus className="h-5 w-5" />, description: "Manage company users and roles" },
+    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, description: "Configure company details and preferences" }
   ];
 
   // Customer portal navigation items
   const customerNavItems = [
-    { id: "dashboard", label: "Dashboard", icon: <BarChart className="h-5 w-5" /> },
-    { id: "my-enquiries", label: "My Enquiries", icon: <FileText className="h-5 w-5" /> },
-    { id: "billing", label: "Billing & Payments", icon: <CreditCard className="h-5 w-5" /> },
-    { id: "profile", label: "Profile Settings", icon: <User className="h-5 w-5" /> },
-    { id: "notifications", label: "Notifications", icon: <Bell className="h-5 w-5" /> },
-    { id: "support", label: "Support", icon: <HelpCircle className="h-5 w-5" /> }
+    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of past enquiries and responses" },
+    { id: "my-enquiries", label: "My Enquiries", icon: <FileText className="h-5 w-5" />, description: "List of submitted enquiries and status updates" },
+    { id: "billing", label: "Billing & Payments", icon: <CreditCard className="h-5 w-5" />, description: "View invoices and make payments" },
+    { id: "profile", label: "Profile Settings", icon: <User className="h-5 w-5" />, description: "Update account details" },
+    { id: "notifications", label: "Notifications", icon: <Bell className="h-5 w-5" />, description: "View alerts and messages" },
+    { id: "support", label: "Support", icon: <HelpCircle className="h-5 w-5" />, description: "Contact customer service or FAQs" }
   ];
 
   // Get the current active navigation items based on portal selection
@@ -98,7 +105,10 @@ const DemoDashboard = () => {
                   }`}
                 >
                   {item.icon}
-                  {item.label}
+                  <div className="flex flex-col items-start">
+                    <span>{item.label}</span>
+                    <span className="text-xs text-sidebar-foreground/70 hidden sm:inline-block">{item.description}</span>
+                  </div>
                 </button>
               ))}
             </div>
