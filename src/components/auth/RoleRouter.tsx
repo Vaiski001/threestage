@@ -27,6 +27,8 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
           description: "Your account has an invalid role. Please contact support.",
           variant: "destructive",
         });
+        // Redirect to login if role is invalid
+        navigate('/login');
       }
     }
   }, [profile, loading, navigate, toast]);
