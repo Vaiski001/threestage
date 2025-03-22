@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { signOut } from "@/lib/supabase";
+import { signOut, forceSignOut } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, User, LogOut, ChevronDown } from "lucide-react";
+import { Menu, User, LogOut, ChevronDown, RefreshCcw } from "lucide-react";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -34,6 +34,23 @@ export function Header() {
       toast({
         title: "Error",
         description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleForceSignOut = async () => {
+    try {
+      await forceSignOut();
+      toast({
+        title: "Force signed out",
+        description: "All authentication data has been cleared.",
+      });
+    } catch (error) {
+      console.error("Force sign out error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to force sign out. Please try again.",
         variant: "destructive",
       });
     }
@@ -91,10 +108,18 @@ export function Header() {
                     <LogOut className="h-4 w-4 mr-2" />
                     Sign out
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleForceSignOut} className="text-destructive">
+                    <RefreshCcw className="h-4 w-4 mr-2" />
+                    Force sign out
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <>
+                <Button variant="outline" className="hidden sm:flex gap-2" onClick={handleForceSignOut}>
+                  <RefreshCcw className="h-4 w-4" />
+                  <span>Reset Auth</span>
+                </Button>
                 <div className="hidden sm:block">
                   <Button variant="outline" onClick={() => navigate("/login")}>
                     Log in
@@ -161,13 +186,23 @@ export function Header() {
                 Contact
               </Link>
               {!isAuthenticated && (
-                <Link
-                  to="/login"
-                  className="py-2 text-sm font-medium hover:text-primary transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Log in
-                </Link>
+                <>
+                  <Button 
+                    variant="ghost" 
+                    className="justify-start px-0 text-sm font-medium hover:text-primary transition-colors"
+                    onClick={handleForceSignOut}
+                  >
+                    <RefreshCcw className="h-4 w-4 mr-2" />
+                    Reset Auth
+                  </Button>
+                  <Link
+                    to="/login"
+                    className="py-2 text-sm font-medium hover:text-primary transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Log in
+                  </Link>
+                </>
               )}
             </nav>
           </div>

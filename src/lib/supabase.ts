@@ -139,9 +139,44 @@ export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
+    // Also clear any OAuth-related items from localStorage
+    clearAuthStorage();
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;
+  }
+};
+
+// New function to force clear all auth data from localStorage and supabase client
+export const forceSignOut = async () => {
+  try {
+    // Clear Supabase auth
+    await supabase.auth.signOut({ scope: 'global' });
+    
+    // Clear all auth-related localStorage items
+    clearAuthStorage();
+    
+    // Force reload the page to ensure all state is reset
+    window.location.href = '/';
+  } catch (error) {
+    console.error('Error during force sign out:', error);
+  }
+};
+
+// Helper to clear all auth-related localStorage items
+const clearAuthStorage = () => {
+  // Clear OAuth related items
+  localStorage.removeItem('oauth_role');
+  localStorage.removeItem('oauth_provider');
+  localStorage.removeItem('oauth_timestamp');
+  
+  // Clear any supabase items
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('supabase.') || key.startsWith('sb-'))) {
+      localStorage.removeItem(key);
+    }
   }
 };
 
