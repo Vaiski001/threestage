@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/Header";
 import { Container } from "@/components/ui/Container";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomerProfileForm } from "@/components/auth/ProfileForms";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,7 +14,6 @@ import { Loader2 } from "lucide-react";
 export default function CustomerProfileDashboard() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,20 +21,7 @@ export default function CustomerProfileDashboard() {
       console.log("No user found, redirecting to login");
       navigate("/login");
     }
-    
-    // Log profile information for debugging
-    if (profile) {
-      console.log("Customer profile loaded:", profile);
-    }
-  }, [user, profile, loading, navigate]);
-
-  useEffect(() => {
-    // Try to refresh profile when component loads
-    if (user && !profile) {
-      console.log("Profile not loaded initially, trying to refresh");
-      refreshProfile();
-    }
-  }, [user, profile, refreshProfile]);
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (
@@ -51,7 +37,7 @@ export default function CustomerProfileDashboard() {
     );
   }
 
-  if (!user || !profile) {
+  if (!user) {
     return (
       <div className="min-h-screen">
         <Header />
@@ -82,7 +68,7 @@ export default function CustomerProfileDashboard() {
             <CardHeader>
               <CardTitle>Your Profile</CardTitle>
               <CardDescription>
-                Manage your personal information
+                Update your personal information below
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -94,18 +80,6 @@ export default function CustomerProfileDashboard() {
                 />
               )}
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => navigate("/enquiries")}>
-                Go to Enquiries
-              </Button>
-              <Button 
-                variant="default" 
-                onClick={() => refreshProfile()}
-                disabled={isProcessing}
-              >
-                Refresh Profile
-              </Button>
-            </CardFooter>
           </Card>
         </Container>
       </main>

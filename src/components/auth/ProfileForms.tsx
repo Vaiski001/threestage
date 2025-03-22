@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
@@ -248,7 +247,6 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
     },
   });
 
-  // Try to get the existing profile data
   React.useEffect(() => {
     const loadProfileData = async () => {
       try {
@@ -265,7 +263,6 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
         
         if (data) {
           console.log("Loaded profile data:", data);
-          // Fix TypeScript errors by using type assertions
           form.setValue('name', data.name ? String(data.name) : '');
           form.setValue('phone', data.phone ? String(data.phone) : '');
         }
@@ -289,7 +286,6 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
         .update({
           name: values.name,
           phone: values.phone || null,
-          role: 'customer',
         })
         .eq('id', currentUser.id);
       
@@ -299,8 +295,6 @@ export const CustomerProfileForm = ({ currentUser, isProcessing, setIsProcessing
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
       });
-      
-      navigate("/profile");
     } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({
