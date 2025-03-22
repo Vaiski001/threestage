@@ -19,7 +19,7 @@ import { useForm } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Container } from "@/components/ui/Container";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User } from "@supabase/supabase-js";
+import { User, Session } from "@supabase/supabase-js";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
@@ -184,7 +184,7 @@ export default function AuthCallback() {
       console.log("Access token found in hash, setting session");
       const session = await Promise.race([
         processAccessToken(accessToken, refreshToken),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Session setup timeout")), 10000))
+        new Promise<Session>((_, reject) => setTimeout(() => reject(new Error("Session setup timeout")), 10000))
       ]);
       
       if (!session) {
