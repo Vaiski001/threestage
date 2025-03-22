@@ -1,4 +1,3 @@
-
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -91,6 +90,17 @@ export const signInWithEmail = async (email: string, password: string) => {
     
     if (error) {
       console.error('Error signing in with email:', error);
+      
+      // Check if the error is related to CAPTCHA
+      if (error.message.includes('captcha')) {
+        console.warn('CAPTCHA verification failed. Suggesting alternative login methods.');
+        return { 
+          error: { 
+            message: "CAPTCHA verification failed. Please try using Google login instead, or try again later." 
+          } 
+        };
+      }
+      
       return { error };
     }
     
@@ -113,8 +123,19 @@ export const signInWithEmail = async (email: string, password: string) => {
     );
     
     return { data };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Exception during sign in:', error);
+    
+    // Check if the error is related to CAPTCHA
+    if (error.message && error.message.includes('captcha')) {
+      console.warn('CAPTCHA verification failed during sign in. Suggesting alternative login methods.');
+      return { 
+        error: { 
+          message: "CAPTCHA verification failed. Please try using Google login instead, or try again later." 
+        } 
+      };
+    }
+    
     throw error;
   }
 };

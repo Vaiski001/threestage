@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { Header } from "@/components/layout/Header";
 import { Container } from "@/components/ui/Container";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,14 @@ export default function Login() {
       }, 15000);
       
       return () => clearTimeout(timer);
+    }
+    
+    // Check for error message passed via location state
+    if (location.state && location.state.error) {
+      setError(location.state.error);
+      
+      // Clear the state so it doesn't persist on page refresh
+      window.history.replaceState({}, document.title);
     }
   }, [location]);
 
@@ -159,6 +167,15 @@ export default function Login() {
                   >
                     <XCircle size={14} />
                   </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {error && error.includes("CAPTCHA") && (
+              <Alert className="mb-6 border-yellow-200 bg-yellow-50">
+                <Info className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-700">
+                  We're experiencing some CAPTCHA verification issues. Please try using Google login instead, or try again later.
                 </AlertDescription>
               </Alert>
             )}

@@ -158,6 +158,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           errorMsg = "Please confirm your email before logging in.";
         } else if (error.message.includes("rate limit")) {
           errorMsg = "Too many login attempts. Please wait a minute and try again.";
+        } else if (error.message.includes("captcha")) {
+          errorMsg = "CAPTCHA verification failed. Please try again or use Google login instead.";
         } else if (error.message.includes("unavailable") || error.message.includes("maintenance")) {
           errorMsg = "Supabase services are currently unavailable. Please try again later.";
         }
@@ -218,6 +220,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           errorMsg = "Please confirm your email before logging in.";
         } else if (error.message.includes("rate limit")) {
           errorMsg = "Too many login attempts. Please wait a minute and try again.";
+        } else if (error.message.includes("captcha")) {
+          errorMsg = "CAPTCHA verification failed. Please try again or use Google login instead.";
         } else if (error.message.includes("unavailable") || error.message.includes("maintenance")) {
           errorMsg = "Supabase services are currently unavailable. Please try again later.";
         } else {
@@ -411,6 +415,15 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           <Info className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-700">
             Supabase may be experiencing issues or maintenance. If login problems persist, please try again later.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {errorMessage && errorMessage.includes("CAPTCHA") && (
+        <Alert className="bg-yellow-50 border-yellow-200">
+          <Info className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-700">
+            CAPTCHA verification is preventing direct login. Please try using Google login instead, or try again later.
           </AlertDescription>
         </Alert>
       )}
