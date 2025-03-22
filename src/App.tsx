@@ -21,6 +21,9 @@ import Enquiries from "./pages/Enquiries";
 import CustomerProfileDashboard from "./pages/CustomerProfileDashboard";
 import AuthCallback from "./pages/AuthCallback";
 import FormBuilder from "./pages/FormBuilder";
+import CompanySearch from "./pages/CompanySearch";
+import CompanyProfile from "./pages/CompanyProfile";
+import { FormEmbedded } from "./components/forms/FormEmbedded";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +42,11 @@ const App = () => (
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/demo" element={<DemoDashboard />} />
+            
+            {/* Company search and discovery - publicly accessible */}
+            <Route path="/companies" element={<CompanySearch />} />
+            <Route path="/companies/:id" element={<CompanyProfile />} />
+            <Route path="/forms/:formId" element={<FormEmbedded />} />
             
             {/* Role router - redirects based on user role */}
             <Route path="/dashboard" element={

@@ -5,3 +5,4 @@ export { FormManagement } from "./FormManagement";
 export { FormField } from "./FormField";
 export { FormPreview } from "./FormPreview";
 export { FormIntegration } from "./FormIntegration";
+export { FormEmbedded } from "./FormEmbedded";
