@@ -142,7 +142,7 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
   try {
     const domain = window.location.origin;
     const redirectPath = '/auth/callback';
-    const redirectTo = `${domain}${redirectPath}?role=${role}`;
+    const redirectTo = `${domain}${redirectPath}?role=${role}&account_type=${role}`;
     
     console.log(`OAuth sign-in initiated with ${provider} for role: ${role}`);
     console.log(`Redirect URL: ${redirectTo}`);

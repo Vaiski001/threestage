@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, processAccessToken, handleOAuthSignIn, createUserProfile, UserRole } from "@/lib/supabase";
@@ -25,11 +24,13 @@ export default function AuthCallback() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Get role from query params or from localStorage (fallback)
-  // NOTE: When coming from email confirmation, check user metadata for role
+  // Get role from query params, account_type param, or localStorage (fallback)
   const userRole = searchParams.get('role') as UserRole || 
                    localStorage.getItem('oauth_role') as UserRole || 
                    'customer';
+                   
+  // Get account type for better redirection handling
+  const accountType = searchParams.get('account_type') || userRole;
   
   // Detect whether additional info is needed based on role
   const needsAdditionalInfo = userRole === 'company';
@@ -79,11 +80,17 @@ export default function AuthCallback() {
         setAuthStage("session_received");
         setCurrentUser(data.session.user);
         
-        // IMPORTANT FIX: Check user metadata for role if coming from email confirmation
+        // IMPORTANT: Check user metadata for role if coming from email confirmation
         let roleFromMetadata = null;
         if (data.session.user.user_metadata && data.session.user.user_metadata.role) {
           roleFromMetadata = data.session.user.user_metadata.role;
           console.log("Found role in user metadata:", roleFromMetadata);
+        }
+        
+        // Check account_type parameter for explicit redirection handling
+        const accountTypeParam = searchParams.get('account_type');
+        if (accountTypeParam) {
+          console.log("Found account_type in URL params:", accountTypeParam);
         }
         
         // Create a profile if it doesn't exist already
@@ -159,35 +166,54 @@ export default function AuthCallback() {
         localStorage.removeItem('oauth_provider');
         localStorage.removeItem('oauth_timestamp');
         
-        toast({
-          title: "Login successful",
-          description: `Welcome back!`,
-        });
+        // Determine if this was an email confirmation or OAuth callback
+        const isEmailConfirmation = !searchParams.get('provider') && searchParams.get('role');
         
-        // IMPORTANT FIX: Redirect based on user metadata role or existing profile role
+        if (isEmailConfirmation) {
+          toast({
+            title: "Email verified",
+            description: `Your account has been successfully verified!`,
+          });
+        } else {
+          toast({
+            title: "Login successful",
+            description: `Welcome back!`,
+          });
+        }
+        
+        // IMPORTANT: Improved redirect logic that prioritizes different sources of role information
         setTimeout(() => {
-          // Check if we have role from user metadata (for email confirmation)
-          if (roleFromMetadata === 'company') {
-            console.log("Email confirmation for company account, redirecting to company dashboard");
+          // 1. First priority: accountType from URL (most explicit)
+          if (accountType === 'company') {
+            console.log("Company account confirmed, redirecting to company dashboard");
             if (needsAdditionalInfo) {
               navigate("/company/settings");
             } else {
               navigate("/company/dashboard");
             }
-          } else if (roleFromMetadata === 'customer') {
-            console.log("Email confirmation for customer account, redirecting to customer dashboard");
-            navigate("/customer/dashboard");
-          } else {
-            // Fall back to the original logic if no metadata role
-            if (userRole === 'company') {
-              if (needsAdditionalInfo) {
-                navigate("/company/settings");
-              } else {
-                navigate("/company/dashboard");
-              }
+          } 
+          // 2. Second priority: role from user metadata (from email confirmation)
+          else if (roleFromMetadata === 'company') {
+            console.log("Company role from metadata, redirecting to company dashboard");
+            if (needsAdditionalInfo) {
+              navigate("/company/settings");
             } else {
-              navigate("/customer/dashboard");
+              navigate("/company/dashboard");
             }
+          } 
+          // 3. Third priority: role from URL param or localStorage
+          else if (userRole === 'company') {
+            console.log("Company role from URL/localStorage, redirecting to company dashboard");
+            if (needsAdditionalInfo) {
+              navigate("/company/settings");
+            } else {
+              navigate("/company/dashboard");
+            }
+          }
+          // 4. Default fallback: assume customer
+          else {
+            console.log("Customer account, redirecting to customer dashboard");
+            navigate("/customer/dashboard");
           }
         }, 1500);
       } catch (error) {
@@ -197,7 +223,7 @@ export default function AuthCallback() {
     };
     
     processOAuthCallback();
-  }, [navigate, searchParams, toast, userRole, needsAdditionalInfo]);
+  }, [navigate, searchParams, toast, userRole, needsAdditionalInfo, accountType]);
   
   // Function to parse hash and redirect
   const parseHashAndRedirect = () => {

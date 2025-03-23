@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -105,7 +106,8 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         throw new Error("This email is already registered. Please use a different email or try logging in.");
       }
       
-      // IMPORTANT: Explicitly setting role to 'company' in user metadata and setting redirectTo with role
+      // IMPORTANT: Explicitly setting role to 'company' in user metadata
+      // Make sure we use the correct redirectTo with company-specific path
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -118,7 +120,8 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             website: values.website || null,
             phone: values.phone || null,
           },
-          emailRedirectTo: window.location.origin + "/auth/callback?role=company" // Include role in redirect
+          // Use specific company redirect path to differentiate from customer
+          emailRedirectTo: window.location.origin + "/auth/callback?role=company&account_type=company"
         }
       });
       
@@ -177,14 +180,14 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             // Show a helpful message and redirect to login
             toast({
               title: "Account created successfully",
-              description: "Please log in with your new account credentials.",
+              description: "Please check your email for a verification link to activate your company account.",
               duration: 5000,
             });
             
             // Navigate to login page with a helpful message
             navigate('/login', { 
               state: { 
-                message: "Your account was created successfully. Please log in with your new credentials." 
+                message: "Your company account was created successfully. Please check your email for verification instructions." 
               } 
             });
             
@@ -205,14 +208,14 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
           await supabase.auth.signOut();
           
           toast({
-            title: "Account created",
-            description: "Your account was created. Please sign in with your new credentials.",
+            title: "Company account created",
+            description: "Please check your email for a verification link to complete your company account setup.",
             duration: 5000,
           });
           
           navigate('/login', { 
             state: { 
-              message: "Your account was created successfully. Please log in with your new credentials." 
+              message: "Your company account was created successfully. Please check your email for verification instructions." 
             } 
           });
           
@@ -233,10 +236,10 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         throw profileError;
       }
       
-      // Success! Show a toast notification
+      // Success! Show a toast notification about email verification
       toast({
         title: "Company account created",
-        description: "Your company account has been successfully created.",
+        description: "Please check your email for verification instructions to complete your account setup.",
       });
       
       // Safety: Using setTimeout to ensure state updates properly complete

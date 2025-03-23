@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -141,7 +140,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
             name: values.name,
             role: "customer",
           },
-          emailRedirectTo: window.location.origin + "/dashboard"
+          emailRedirectTo: window.location.origin + "/auth/callback?role=customer&account_type=customer"
         }
       });
       
@@ -181,10 +180,10 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         console.log("Profile created successfully for user:", data.user.id);
       }
       
-      // Success! Show a toast notification
+      // Success! Show a toast notification about email verification
       toast({
         title: "Account created",
-        description: "Your account has been successfully created.",
+        description: "Please check your email for verification instructions to complete your account setup.",
       });
       
       // Safety: Using setTimeout to ensure state updates properly complete
