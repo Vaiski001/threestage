@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { UserProfile, FormTemplate } from "@/lib/supabase/types";
 import { FormPreview } from "@/components/forms/FormPreview";
+import { Badge } from "@/components/ui/badge";
 import { 
   Building, 
   Link as LinkIcon, 
@@ -66,22 +67,22 @@ const CompanyProfile = () => {
           {
             title: 'Web Development',
             description: 'Custom websites and web applications',
-            price: '$5,000 - $25,000'
+            image: undefined
           },
           {
             title: 'Mobile Apps',
             description: 'iOS and Android application development',
-            price: '$10,000 - $50,000'
+            image: undefined
           },
           {
             title: 'Cloud Solutions',
             description: 'Scalable cloud infrastructure and migration',
-            price: 'Custom pricing'
+            image: undefined
           },
           {
             title: 'IT Consulting',
             description: 'Strategic technology planning and advice',
-            price: '$150/hour'
+            image: undefined
           }
         ]
       };
@@ -297,11 +298,6 @@ const CompanyProfile = () => {
                       <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <h3 className="font-semibold text-lg mb-1">{service.title}</h3>
                         <p className="text-sm text-gray-600 mb-3">{service.description}</p>
-                        {service.price && (
-                          <div className="text-sm font-medium text-gray-900">
-                            {service.price}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
