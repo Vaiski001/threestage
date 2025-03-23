@@ -11,7 +11,6 @@ import { ProfileEditorTabs } from "@/components/company/ProfileEditorTabs";
 import { BrandingInfoTab } from "@/components/company/BrandingInfoTab";
 import { ContactTab } from "@/components/company/ContactTab";
 import { ServicesTab } from "@/components/company/ServicesTab";
-import { InquiryFormTab } from "@/components/company/InquiryFormTab";
 
 const CompanySettings = () => {
   const { user } = useAuth();
@@ -97,10 +96,6 @@ const CompanySettings = () => {
 
       {activeTab === "services" && (
         <ServicesTab profile={profile} onUpdate={handleProfileUpdate} />
-      )}
-
-      {activeTab === "form" && (
-        <InquiryFormTab profile={profile} onUpdate={handleProfileUpdate} />
       )}
     </div>
   );

@@ -17,7 +17,6 @@ export function ProfileEditorTabs({ activeTab, onChange }: ProfileEditorTabsProp
     { id: "branding", label: "Branding & Info" },
     { id: "contact", label: "Contact" },
     { id: "services", label: "Services" },
-    { id: "form", label: "Inquiry Form" },
   ];
 
   const handlePreview = () => {
