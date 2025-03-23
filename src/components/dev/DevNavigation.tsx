@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, Code, X } from "lucide-react";
+import { ChevronUp, Code, X } from "lucide-react";
 
 export function DevNavigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,18 +14,26 @@ export function DevNavigation() {
   }
 
   const routes = [
+    // Public routes
     { path: "/", label: "Home" },
     { path: "/login", label: "Login" },
     { path: "/signup", label: "Signup" },
     { path: "/demo", label: "Demo Dashboard" },
-    { path: "/dashboard", label: "Main Dashboard" },
-    { path: "/company/dashboard", label: "Company Dashboard" },
-    { path: "/customer/dashboard", label: "Customer Dashboard" },
-    { path: "/company/settings", label: "Company Settings" },
-    { path: "/profile", label: "Profile" },
-    { path: "/enquiries", label: "Enquiries" },
-    { path: "/forms", label: "Form Builder" },
     { path: "/companies", label: "Company Search" },
+    
+    // Customer routes
+    { path: "/customer/dashboard", label: "Customer Dashboard" },
+    { path: "/customer/settings", label: "Customer Settings" },
+    { path: "/customer/enquiries", label: "Customer Enquiries" },
+    
+    // Company routes
+    { path: "/company/dashboard", label: "Company Dashboard" },
+    { path: "/company/settings", label: "Company Settings" },
+    { path: "/company/forms", label: "Form Builder" },
+    { path: "/company/enquiries", label: "Company Enquiries" },
+    
+    // Legacy/utility routes
+    { path: "/dashboard", label: "Generic Dashboard" },
     { path: "/unauthorized", label: "Unauthorized" }
   ];
 

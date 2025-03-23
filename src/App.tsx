@@ -9,23 +9,29 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RoleRouter } from "@/components/auth/RoleRouter";
 import { DevNavigation } from "@/components/dev/DevNavigation";
 
+// Public pages
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard"; // Now used as legacy/demo
 import DemoDashboard from "./pages/DemoDashboard";
-import CompanyDashboard from "./pages/CompanyDashboard";
-import CustomerDashboard from "./pages/CustomerDashboard";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
-import Enquiries from "./pages/Enquiries";
-import CustomerProfileDashboard from "./pages/CustomerProfileDashboard";
 import AuthCallback from "./pages/AuthCallback";
+
+// Company pages
+import CompanyDashboard from "./pages/CompanyDashboard";
+import CompanySettings from "./pages/CompanySettings";
 import FormBuilder from "./pages/FormBuilder";
+import Enquiries from "./pages/Enquiries";
+
+// Customer pages
+import CustomerDashboard from "./pages/CustomerDashboard";
+import CustomerSettings from "./pages/CustomerSettings";
+
+// Shared/discovery pages
 import CompanySearch from "./pages/CompanySearch";
 import CompanyProfile from "./pages/CompanyProfile";
 import { FormEmbedded } from "./components/forms/FormEmbedded";
-import CompanySettings from "./pages/CompanySettings";
 
 const queryClient = new QueryClient();
 
@@ -54,41 +60,54 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <RoleRouter>
-                  <Dashboard />
+                  <CustomerDashboard />
                 </RoleRouter>
               </ProtectedRoute>
             } />
             
-            {/* Role-specific routes */}
+            {/* Company routes */}
             <Route path="/company/dashboard" element={
               <ProtectedRoute>
                 <CompanyDashboard />
               </ProtectedRoute>
             } />
             
-            <Route path="/customer/dashboard" element={
-              <ProtectedRoute>
-                <CustomerDashboard />
-              </ProtectedRoute>
-            } />
-            
-            {/* Company settings */}
             <Route path="/company/settings" element={
               <ProtectedRoute>
                 <CompanySettings />
               </ProtectedRoute>
             } />
             
-            {/* Form Builder */}
-            <Route path="/forms" element={
+            <Route path="/company/forms" element={
               <ProtectedRoute>
                 <FormBuilder />
               </ProtectedRoute>
             } />
             
-            {/* Legacy/shared routes */}
-            <Route path="/profile" element={<ProtectedRoute><CustomerProfileDashboard /></ProtectedRoute>} />
-            <Route path="/enquiries" element={<ProtectedRoute><Enquiries /></ProtectedRoute>} />
+            <Route path="/company/enquiries" element={
+              <ProtectedRoute>
+                <Enquiries />
+              </ProtectedRoute>
+            } />
+            
+            {/* Customer routes */}
+            <Route path="/customer/dashboard" element={
+              <ProtectedRoute>
+                <CustomerDashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/settings" element={
+              <ProtectedRoute>
+                <CustomerSettings />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/enquiries" element={
+              <ProtectedRoute>
+                <Enquiries />
+              </ProtectedRoute>
+            } />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
