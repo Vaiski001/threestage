@@ -32,7 +32,8 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
     try {
       if (profile?.profile_services_json) {
         try {
-          const parsedServices = JSON.parse(profile.profile_services_json);
+          // Type assertion to ensure we know this is a string being parsed
+          const parsedServices = JSON.parse(profile.profile_services_json as string);
           if (Array.isArray(parsedServices)) {
             setServices(
               parsedServices.map((service, index) => ({
