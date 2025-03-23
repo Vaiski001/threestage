@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/input";
@@ -59,8 +60,8 @@ const mockCompanies: UserProfile[] = [
 
 export function CompanySearch() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [industryFilter, setIndustryFilter] = useState('');
-  const [sortBy, setSortBy] = useState('');
+  const [industryFilter, setIndustryFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   
   // Get unique industries for filter dropdown
   const industries = Array.from(new Set(mockCompanies.map(company => company.industry))).filter(Boolean) as string[];
@@ -71,7 +72,7 @@ export function CompanySearch() {
       (company.company_name && typeof company.company_name === 'string' && company.company_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
       (company.services && typeof company.services === 'string' && company.services.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesIndustry = industryFilter === '' || company.industry === industryFilter;
+    const matchesIndustry = industryFilter === 'all' || company.industry === industryFilter;
     
     return matchesSearch && matchesIndustry;
   });
@@ -103,7 +104,7 @@ export function CompanySearch() {
                   <SelectValue placeholder="Filter by industry" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Industries</SelectItem>
+                  <SelectItem value="all">All Industries</SelectItem>
                   {industries.map((industry) => (
                     <SelectItem key={industry} value={industry}>{industry}</SelectItem>
                   ))}
