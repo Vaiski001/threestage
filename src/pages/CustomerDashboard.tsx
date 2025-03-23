@@ -37,7 +37,7 @@ const CustomerDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
   const { toast } = useToast();
   
-  // Use empty list for new users
+  // Use sample data for demonstration
   const [customerEnquiries] = useState<CustomerEnquiry[]>([]);
 
   // Customer navigation items
@@ -50,12 +50,11 @@ const CustomerDashboard = () => {
     { id: "support", label: "Support", icon: <HelpCircle className="h-5 w-5" />, description: "Contact customer service or FAQs" }
   ];
 
-  // Customer dashboard stats
+  // Customer dashboard stats in a more realistic format
   const customerStats = [
-    { label: "Active Enquiries", value: "0", change: "0", changeType: "neutral" as const },
-    { label: "Completed", value: "0", change: "0", changeType: "neutral" as const },
-    { label: "Pending Invoices", value: "0", change: "0", changeType: "neutral" as const },
-    { label: "Total Spent", value: "$0", change: "$0", changeType: "neutral" as const }
+    { label: "Total Inquiries", value: "164", change: "+12%", changeType: "positive" as const },
+    { label: "Pending Inquiries", value: "21", change: "-5%", changeType: "negative" as const },
+    { label: "Resolved Inquiries", value: "143", change: "+15%", changeType: "positive" as const }
   ];
 
   const createNewEnquiry = () => {
