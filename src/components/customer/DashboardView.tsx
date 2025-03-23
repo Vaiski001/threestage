@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Container } from "@/components/ui/Container";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { useToast } from "@/hooks/use-toast";
+import { Link, useNavigate } from "react-router-dom";
 
 interface CustomerEnquiry {
   id: string;
@@ -52,19 +53,14 @@ export const DashboardView = ({
 }: DashboardViewProps) => {
   const isEmpty = customerEnquiries.length === 0;
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleViewInquiries = () => {
-    toast({
-      title: "Feature coming soon",
-      description: "View all inquiries feature will be available soon.",
-    });
+    navigate("/enquiries");
   };
 
   const handleBrowseCompanies = () => {
-    toast({
-      title: "Feature coming soon",
-      description: "Browse companies feature will be available soon.",
-    });
+    navigate("/companies");
   };
 
   const handleViewSaved = () => {
