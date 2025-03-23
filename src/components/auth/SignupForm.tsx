@@ -46,7 +46,6 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
   const [userEmail, setUserEmail] = useState<string>("");
   const { toast } = useToast();
   
-  // Check Supabase availability on component mount - with a timeout to prevent UI getting stuck
   useEffect(() => {
     let isMounted = true;
     
@@ -55,13 +54,12 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       
       setIsCheckingConnection(true);
       
-      // Add a timeout to make sure we don't block the UI indefinitely
       const timeoutId = setTimeout(() => {
         if (isMounted) {
           console.log("Availability check timed out, allowing form interaction");
           setIsCheckingConnection(false);
         }
-      }, 3000); // 3 second timeout
+      }, 3000);
       
       try {
         const isAvailable = await isSupabaseAvailable();
@@ -97,7 +95,6 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
     };
   }, [toast]);
   
-  // Initialize form
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -119,7 +116,6 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         passwordLength: values.password.length 
       });
       
-      // First, check if the user already exists to avoid rate limit issues
       const { data: existingUser, error: checkError } = await supabase
         .from('profiles')
         .select('email')
@@ -134,7 +130,9 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         throw new Error("This email is already registered. Please use a different email or try logging in.");
       }
       
-      // Attempt to create the user with email confirmation
+      const redirectUrl = `${window.location.origin}/auth/callback?role=customer&account_type=customer`;
+      console.log("Setting redirect URL for email verification:", redirectUrl);
+      
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -143,7 +141,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
             name: values.name,
             role: "customer",
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback?role=customer&account_type=customer`
+          emailRedirectTo: redirectUrl
         }
       });
       
@@ -151,7 +149,8 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         success: !!data.user, 
         hasError: !!error,
         user: data.user,
-        session: data.session
+        session: data.session,
+        emailConfirmation: data.user?.email_confirmed_at ? "confirmed" : "pending"
       });
       
       if (error) {
@@ -165,13 +164,12 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         throw new Error("No user returned from signup. Please try again.");
       }
 
-      // Verify email confirmation status
       console.log("📧 Email confirmation status:", {
         isEmailConfirmed: data.user.email_confirmed_at,
-        identities: data.user.identities
+        identities: data.user.identities,
+        providerToken: data.session?.provider_token || "none"
       });
       
-      // Create profile in the profiles table regardless of email confirmation
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -184,28 +182,23 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         
       if (profileError) {
         console.error("Error creating profile:", profileError);
-        // Continue anyway as the auth user was created
       } else {
         console.log("Profile created successfully for user:", data.user.id);
       }
       
-      // Store email for verification message
       setUserEmail(values.email);
       
-      // Success! Show a toast notification about email verification
       toast({
         title: "Account created",
         description: "Please check your email for verification instructions to complete your account setup.",
       });
       
-      // Set signup complete to show verification message
       setSignupComplete(true);
       setIsLoading(false);
       
     } catch (error: any) {
       console.error("Signup error:", error);
       
-      // Handle common error cases
       let errorMessage = "Failed to create account. Please try again.";
       
       if (error.message?.includes("email address is already registered")) {
@@ -228,7 +221,6 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         variant: "destructive",
       });
       
-      // Always reset loading state when there's an error
       setIsLoading(false);
       onError(errorMessage);
     }
@@ -236,11 +228,9 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
 
   const handleGoogleSignup = async (role: 'customer' | 'company' = 'customer') => {
     try {
-      // Store role in localStorage for post-OAuth processing
       localStorage.setItem('oauth_role', role);
       
       await signInWithGoogle(role);
-      // Note: The page will redirect to Google's OAuth flow
     } catch (error: any) {
       console.error("Google signup error:", error);
       
@@ -261,7 +251,6 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
     }
   };
 
-  // Show verification message if signup is complete
   if (signupComplete) {
     return <EmailVerificationMessage role="customer" email={userEmail} />;
   }

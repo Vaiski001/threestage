@@ -108,8 +108,11 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         throw new Error("This email is already registered. Please use a different email or try logging in.");
       }
       
+      // FIXED: Explicitly set redirectTo with company role parameter
+      const redirectUrl = `${window.location.origin}/auth/callback?role=company&account_type=company`;
+      console.log("Setting redirect URL for company email verification:", redirectUrl);
+      
       // IMPORTANT: Explicitly setting role to 'company' in user metadata
-      // Make sure we use the correct redirectTo with company-specific path
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -122,8 +125,8 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             website: values.website || null,
             phone: values.phone || null,
           },
-          // Use specific company redirect path to differentiate from customer
-          emailRedirectTo: `${window.location.origin}/auth/callback?role=company&account_type=company`
+          // Use specific company redirect path
+          emailRedirectTo: redirectUrl
         }
       });
       
@@ -132,7 +135,8 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         hasError: !!error,
         user: data.user,
         session: data.session,
-        role: data.user?.user_metadata?.role
+        role: data.user?.user_metadata?.role,
+        emailConfirmation: data.user?.email_confirmed_at ? "confirmed" : "pending"
       });
       
       if (error) {
@@ -147,9 +151,10 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       }
       
       // Check if confirmation email was sent
-      console.log("📧 Email confirmation status:", {
+      console.log("📧 Email confirmation status for company:", {
         isEmailConfirmed: data.user.email_confirmed_at,
-        identities: data.user.identities
+        identities: data.user.identities,
+        providerToken: data.session?.provider_token || "none"
       });
       
       // Create profile in the profiles table regardless of email confirmation

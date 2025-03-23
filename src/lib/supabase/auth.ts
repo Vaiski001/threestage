@@ -31,6 +31,7 @@ export const signUpWithEmail = async (
     
     // Create redirect URL with role and account_type
     const redirectUrl = `${window.location.origin}/auth/callback?role=${role}&account_type=${accountType}`;
+    console.log("Setting email verification redirect URL:", redirectUrl);
     
     // Create the auth user - ENSURE EMAIL CONFIRMATION IS ENABLED
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -62,6 +63,11 @@ export const signUpWithEmail = async (
     
     console.log("✅ Auth signup successful for:", authData.user.id);
     console.log("📧 Verification email should be sent to:", email);
+    console.log("📧 Email confirmation status:", {
+      isEmailConfirmed: authData.user.email_confirmed_at,
+      identities: authData.user.identities,
+      providerToken: authData.session?.provider_token || "none"
+    });
     
     // Create a profile record
     const profileData: Record<string, unknown> = {
