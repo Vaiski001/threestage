@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, processAccessToken, handleOAuthSignIn, createUserProfile, UserRole } from "@/lib/supabase";
@@ -139,10 +140,13 @@ export default function AuthCallback() {
         
         // Redirect to appropriate page based on role
         setTimeout(() => {
-          if (needsAdditionalInfo && userRole === 'company') {
-            navigate("/company/settings");
-          } else if (userRole === 'company') {
-            navigate("/company/dashboard");
+          // Fix the type comparison issue by using string comparison
+          if (userRole === 'company') {
+            if (needsAdditionalInfo) {
+              navigate("/company/settings");
+            } else {
+              navigate("/company/dashboard");
+            }
           } else {
             navigate("/customer/dashboard");
           }
