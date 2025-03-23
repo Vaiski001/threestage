@@ -2,8 +2,6 @@
 import { useState, useEffect } from "react";
 import { FormLabel } from "@/components/ui/form-label";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pencil, Trash, Plus } from "lucide-react";
 import { UserProfile } from "@/lib/supabase/types";
@@ -29,46 +27,33 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [hasUpdated, setHasUpdated] = useState(false);
   
-  // Initialize with profile data or defaults
+  // Initialize with profile data or empty array
   useEffect(() => {
     try {
-      if (profile?.profile_services) {
-        const profileServices = Array.isArray(profile.profile_services) 
-          ? profile.profile_services 
-          : [];
-        
-        setServices(
-          profileServices.map((service, index) => ({
-            id: `service-${index}`,
-            title: service.title || "",
-            description: service.description || "",
-            price: service.price || "",
-            image: service.image || "",
-            category: service.category || "",
-          }))
-        );
-      } else {
-        // Add default placeholder services if none exist
-        setServices([
-          {
-            id: "service-1",
-            title: "Service 1",
-            description: "Description of service 1 and what it includes.",
-            price: "$99"
-          },
-          {
-            id: "service-2",
-            title: "Service 2",
-            description: "Description of service 2 and what it includes.",
-            price: "$149"
-          },
-          {
-            id: "service-3",
-            title: "Service 3",
-            description: "Description of service 3 and what it includes.",
-            price: "Contact for pricing"
+      if (profile?.profile_services_json) {
+        try {
+          const parsedServices = JSON.parse(profile.profile_services_json);
+          if (Array.isArray(parsedServices)) {
+            setServices(
+              parsedServices.map((service, index) => ({
+                id: `service-${index}`,
+                title: service.title || "",
+                description: service.description || "",
+                price: service.price || "",
+                image: service.image || "",
+                category: service.category || "",
+              }))
+            );
+          } else {
+            setServices([]);
           }
-        ]);
+        } catch (e) {
+          console.error("Error parsing services JSON:", e);
+          setServices([]);
+        }
+      } else {
+        // Initialize with empty array
+        setServices([]);
       }
     } catch (error) {
       console.error("Error processing services:", error);
@@ -108,7 +93,7 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
       id: newId,
       title: `New Service`,
       description: "Description of what this service includes",
-      price: "Starting at $X",
+      price: "Starting at $0",
       category: selectedCategory
     };
     
@@ -201,6 +186,17 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
           </div>
         ))}
       </div>
+      
+      {services.length === 0 && (
+        <div className="p-8 text-center border border-dashed rounded-lg bg-gray-50">
+          <p className="text-gray-500">You haven't added any services yet.</p>
+          <p className="text-gray-500 mb-4">Add services to showcase what your company offers.</p>
+          <Button onClick={handleAddService} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Your First Service
+          </Button>
+        </div>
+      )}
       
       <div className="mt-6">
         <Button 
