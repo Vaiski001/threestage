@@ -31,6 +31,10 @@ interface CustomerEnquiry {
   date: string;
   lastUpdate: string;
   hasNewResponse?: boolean;
+  subject?: string;
+  content?: string;
+  attachments?: number;
+  submitted?: string;
 }
 
 const CustomerDashboard = () => {
