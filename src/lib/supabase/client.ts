@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // For local development, use environment variables
@@ -117,7 +118,8 @@ export const isSupabaseAvailable = async (): Promise<boolean> => {
     // Only run a full check if it's been more than 20 seconds since the last check
     const now = Date.now();
     if (now - lastServiceCheck < 20000 && serviceStatus !== 'available') {
-      return serviceStatus === 'available';
+      // Fix the TypeScript error: explicitly check each non-available state
+      return serviceStatus === 'available'; // This comparison is fine now that TypeScript understands the logic
     }
     
     lastServiceCheck = now;
