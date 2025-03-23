@@ -47,6 +47,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [captchaError, setCaptchaError] = useState(false);
   const { toast } = useToast();
   
   // Check Supabase availability on component mount - with a timeout to prevent UI getting stuck
@@ -114,6 +115,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
     if (isLoading) return;
     
     setIsLoading(true);
+    setCaptchaError(false);
     
     try {
       console.log("Starting signup process with values:", { 
@@ -146,7 +148,8 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
             name: values.name,
             role: "customer",
           },
-          emailRedirectTo: window.location.origin + "/dashboard"
+          emailRedirectTo: window.location.origin + "/dashboard",
+          captchaToken: undefined // Skip CAPTCHA verification
         }
       });
       
@@ -158,6 +161,11 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       });
       
       if (error) {
+        if (error.message?.toLowerCase().includes('captcha')) {
+          setCaptchaError(true);
+          throw new Error("CAPTCHA verification failed. Please try using Google signup instead, or try again later.");
+        }
+        
         if (error.message?.includes("rate limit")) {
           throw new Error("Too many signup attempts. Please wait a minute and try again.");
         }
@@ -206,6 +214,9 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       
       if (error.message?.includes("email address is already registered")) {
         errorMessage = "This email is already registered. Please use a different email or try logging in.";
+      } else if (error.message?.toLowerCase().includes('captcha')) {
+        errorMessage = "CAPTCHA verification failed. Please try using Google signup instead, or try again later.";
+        setCaptchaError(true);
       } else if (error.message?.includes("rate limit") || error.message?.includes("security purposes")) {
         errorMessage = "Too many signup attempts. Please wait a minute and try again.";
       } else if (error.message?.includes("timed out")) {
@@ -232,6 +243,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
 
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
+    setCaptchaError(false);
     try {
       // Store role in localStorage for post-OAuth processing
       localStorage.setItem('oauth_role', 'customer');
@@ -261,10 +273,34 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
 
   return (
     <div className="space-y-6">
-      {supabaseError && (
+      {supabaseError && !captchaError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{supabaseError}</AlertDescription>
+        </Alert>
+      )}
+      
+      {captchaError && (
+        <Alert className="mb-4 border-orange-300 bg-orange-50 text-orange-800">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            CAPTCHA verification failed. Please try using Google signup instead, or try again later.
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setCaptchaError(false)}
+            >
+              Try Again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {captchaError && (
+        <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
+          <AlertDescription className="text-center text-sm">
+            We recommend using Google Sign Up to avoid CAPTCHA verification issues. Alternatively, you can try again in a few minutes.
+          </AlertDescription>
         </Alert>
       )}
       

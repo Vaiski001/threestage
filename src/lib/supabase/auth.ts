@@ -32,7 +32,8 @@ export const signUpWithEmail = async (
           role: userData.role,
           name: userData.name,
           company_name: userData.company_name,
-        }
+        },
+        captchaToken: undefined // Skip CAPTCHA verification
       }
     });
 
@@ -40,7 +41,7 @@ export const signUpWithEmail = async (
       console.error("❌ Auth error during signup:", authError);
       
       // Special handling for CAPTCHA errors
-      if (authError.message?.includes("captcha")) {
+      if (authError.message?.toLowerCase().includes("captcha")) {
         throw new Error("CAPTCHA verification failed. Please try using Google login instead, or try again later.");
       }
       

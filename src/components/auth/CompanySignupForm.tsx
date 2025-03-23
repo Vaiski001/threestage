@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Industry options
 const industries = [
@@ -126,7 +126,8 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             website: values.website || null,
             phone: values.phone || null,
           },
-          emailRedirectTo: window.location.origin + "/dashboard"
+          emailRedirectTo: window.location.origin + "/dashboard",
+          captchaToken: undefined // Skip CAPTCHA verification
         }
       });
       
@@ -138,7 +139,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       });
       
       if (error) {
-        if (error.message?.includes("captcha")) {
+        if (error.message?.toLowerCase().includes('captcha')) {
           console.warn("CAPTCHA verification failed:", error.message);
           setCaptchaError(true);
           throw new Error("CAPTCHA verification failed. Please try using Google signup instead, or try again later.");
@@ -264,7 +265,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       // Handle common error cases
       let errorMessage = "Failed to create company account. Please try again.";
       
-      if (error.message?.includes("captcha")) {
+      if (error.message?.toLowerCase().includes('captcha')) {
         errorMessage = "CAPTCHA verification failed. Please try using Google signup instead, or try again later.";
         setCaptchaError(true);
       } else if (error.message?.includes("email address is already registered")) {
@@ -322,10 +323,27 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
   return (
     <div className="space-y-6">
       {captchaError && (
-        <Alert variant="destructive" className="mb-4">
+        <Alert variant="destructive" className="border-orange-300 bg-orange-50 text-orange-800 mb-4">
           <AlertCircle className="h-4 w-4 mr-2" />
-          <AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
             CAPTCHA verification failed. Please try using Google signup instead, or try again later.
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setCaptchaError(false)}
+              className="ml-2"
+            >
+              Try Again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {captchaError && (
+        <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
+          <AlertTitle>Recommendation</AlertTitle>
+          <AlertDescription>
+            We recommend using Google Sign-Up to avoid CAPTCHA verification issues. Alternatively, you can try again in a few minutes.
           </AlertDescription>
         </Alert>
       )}
@@ -482,14 +500,6 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
           </Button>
         </form>
       </Form>
-
-      {captchaError && (
-        <Alert variant="default" className="bg-muted/50">
-          <AlertDescription className="text-center text-sm">
-            We recommend using Google Sign Up instead to avoid CAPTCHA issues.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
