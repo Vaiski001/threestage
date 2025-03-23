@@ -62,20 +62,20 @@ const DemoDashboard = () => {
   // Get the current active navigation items based on portal selection
   const activeNavItems = activePortal === "company" ? companyNavItems : customerNavItems;
 
-  // Stats for demo company dashboard
+  // Stats for demo company dashboard - explicitly type the changeType property
   const companyStats = [
-    { label: "Total Enquiries", value: "164", change: "+12%", changeType: "positive" },
-    { label: "Pending", value: "21", change: "-5%", changeType: "positive" },
-    { label: "Response Time", value: "1.8h", change: "+0.3h", changeType: "negative" },
-    { label: "Conversion Rate", value: "26%", change: "+2%", changeType: "positive" }
+    { label: "Total Enquiries", value: "164", change: "+12%", changeType: "positive" as const },
+    { label: "Pending", value: "21", change: "-5%", changeType: "positive" as const },
+    { label: "Response Time", value: "1.8h", change: "+0.3h", changeType: "negative" as const },
+    { label: "Conversion Rate", value: "26%", change: "+2%", changeType: "positive" as const }
   ];
 
-  // Stats for demo customer dashboard with proper zero values
+  // Stats for demo customer dashboard with proper zero values - explicitly type the changeType property
   const customerStats = [
-    { label: "Total Inquiries", value: "0", change: "0%", changeType: "neutral" },
-    { label: "Active Inquiries", value: "0", change: "0%", changeType: "neutral" },
-    { label: "Pending Inquiries", value: "0", change: "0%", changeType: "neutral" },
-    { label: "Resolved Inquiries", value: "0", change: "0%", changeType: "neutral" }
+    { label: "Total Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
+    { label: "Active Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
+    { label: "Pending Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
+    { label: "Resolved Inquiries", value: "0", change: "0%", changeType: "neutral" as const }
   ];
 
   return (
