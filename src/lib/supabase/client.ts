@@ -28,7 +28,9 @@ console.log("Supabase configuration:", {
 let supabaseInstance: ReturnType<typeof createClient> | null = null;
 let connectionError: Error | null = null;
 let lastServiceCheck = 0;
-let serviceStatus: 'available' | 'degraded' | 'unavailable' = 'available';
+const serviceStatusTypes = ['available', 'degraded', 'unavailable'] as const;
+type ServiceStatusType = typeof serviceStatusTypes[number];
+let serviceStatus: ServiceStatusType = 'available';
 let consecutiveErrors = 0;
 
 // Function to get the Supabase client instance
@@ -118,8 +120,9 @@ export const isSupabaseAvailable = async (): Promise<boolean> => {
     // Only run a full check if it's been more than 20 seconds since the last check
     const now = Date.now();
     if (now - lastServiceCheck < 20000 && serviceStatus !== 'available') {
-      // Fix the TypeScript error: explicitly check each non-available state
-      return serviceStatus === 'available'; // This comparison is fine now that TypeScript understands the logic
+      // This is safe because we're explicitly checking if the service is NOT 'available'
+      // We want to return false for 'degraded' or 'unavailable' states
+      return false;
     }
     
     lastServiceCheck = now;
