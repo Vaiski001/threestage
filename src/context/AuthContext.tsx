@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const { toast } = useToast();
 
   // Initialize database tables if needed
@@ -54,36 +55,93 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeTables();
   }, [toast]);
 
-  // Check for session on initial load
+  // Check for session on initial load and set up listeners
   useEffect(() => {
+    let mounted = true;
+    
     const checkSession = async () => {
       try {
         console.log("Checking for existing session...");
         setLoading(true);
+        
+        // First attempt to get session from storage
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error checking session:", error);
-          setLoading(false);
+          if (mounted) {
+            setLoading(false);
+            setSessionChecked(true);
+          }
           return;
         }
         
         if (data.session?.user) {
           console.log("Found existing session for user:", data.session.user.id);
-          setUser(data.session.user);
-          // We'll fetch profile data in a separate effect
+          if (mounted) {
+            setUser(data.session.user);
+            // Profile will be fetched in a separate effect
+          }
         } else {
           console.log("No active session found");
         }
+        
+        if (mounted) {
+          setLoading(false);
+          setSessionChecked(true);
+        }
       } catch (error) {
         console.error("Error checking session:", error);
-      } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setSessionChecked(true);
+        }
       }
     };
 
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event);
+      
+      if (event === 'SIGNED_IN' && session) {
+        console.log("Sign in detected, setting user");
+        setUser(session.user);
+        // Profile will be fetched in useEffect that depends on user
+        
+        // Optionally show a success toast
+        toast({
+          title: "Signed in",
+          description: "You have been signed in successfully"
+        });
+      } 
+      else if (event === 'SIGNED_OUT') {
+        console.log("Sign out detected, clearing user and profile");
+        setUser(null);
+        setProfile(null);
+      } 
+      else if (event === 'TOKEN_REFRESHED' && session) {
+        console.log("Token refreshed, updating user");
+        setUser(session.user);
+      }
+      else if (event === 'USER_UPDATED' && session) {
+        console.log("User updated, refreshing data");
+        setUser(session.user);
+        if (profile) {
+          // Refresh profile if we already have one
+          fetchProfileData(session.user.id);
+        }
+      }
+    });
+
+    // Check session on mount
     checkSession();
-  }, []);
+    
+    // Clean up on unmount
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [toast]);
 
   // Fetch profile data function that can be called programmatically
   const fetchProfileData = async (userId: string) => {
@@ -191,41 +249,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Enhanced auth state change listener with profile refresh
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
-      
-      if (event === 'SIGNED_IN' && session) {
-        setUser(session.user);
-        // Fetch profile immediately after sign in
-        await fetchProfileData(session.user.id);
-        toast({
-          title: "Signed in",
-          description: "You have been signed in successfully"
-        });
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setProfile(null);
-        console.log("User signed out");
-      } else if (event === 'USER_UPDATED' && session) {
-        setUser(session.user);
-        // Refresh profile on user update
-        await fetchProfileData(session.user.id);
-      }
-    });
-
-    // Clean up the listener on unmount
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [toast]);
-
   return (
     <AuthContext.Provider value={{ 
       user, 
       profile, 
-      loading: loading || profileLoading, // Consider both loading states
+      loading: (loading || profileLoading) && !sessionChecked, // Only show loading until session is checked
       isAuthenticated: !!user,
       resetAuth,
       refreshProfile

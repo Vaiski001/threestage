@@ -46,8 +46,33 @@ const getSupabaseClient = () => {
         auth: {
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: true, // Enable automatic session detection
-          storageKey: `sb-${supabaseUrl.split('//')[1].split('.')[0]}-auth-token`,
+          detectSessionInUrl: true,
+          storageKey: 'supabase_auth_token',
+          storage: {
+            getItem: (key) => {
+              try {
+                const itemStr = localStorage.getItem(key);
+                return itemStr;
+              } catch (e) {
+                console.error('Error accessing localStorage:', e);
+                return null;
+              }
+            },
+            setItem: (key, value) => {
+              try {
+                localStorage.setItem(key, value);
+              } catch (e) {
+                console.error('Error writing to localStorage:', e);
+              }
+            },
+            removeItem: (key) => {
+              try {
+                localStorage.removeItem(key);
+              } catch (e) {
+                console.error('Error removing from localStorage:', e);
+              }
+            }
+          }
         },
         global: {
           fetch: (url: RequestInfo | URL, init?: RequestInit) => {
@@ -84,6 +109,18 @@ const getSupabaseClient = () => {
       
       // Test connection by making a simple request
       supabaseInstance.auth.getSession()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error getting session:', error);
+            connectionError = error;
+            serviceStatus = 'degraded';
+          } else if (data.session) {
+            console.log('Valid session found in storage:', data.session.user.id);
+            serviceStatus = 'available';
+          } else {
+            console.log('No active session found in storage');
+          }
+        })
         .catch(err => {
           console.error('Error connecting to Supabase:', err);
           connectionError = err;
@@ -120,7 +157,6 @@ export const isSupabaseAvailable = async (): Promise<boolean> => {
     // Only run a full check if it's been more than 20 seconds since the last check
     const now = Date.now();
     
-    // Using simplified conditionals to avoid TypeScript comparison issues
     if (now - lastServiceCheck < 20000) {
       // If we've checked recently, just return based on current status
       return serviceStatus === 'available';
@@ -129,24 +165,45 @@ export const isSupabaseAvailable = async (): Promise<boolean> => {
     // If it's been more than 20 seconds, perform a new check
     lastServiceCheck = now;
     
-    // Simple lightweight query to check connectivity
-    const { error } = await supabase.from('profiles').select('id').limit(1);
-    
-    if (error) {
-      consecutiveErrors++;
-      if (consecutiveErrors > 2) {
-        serviceStatus = 'degraded';
-      }
-      if (consecutiveErrors > 5) {
-        serviceStatus = 'unavailable';
-      }
-      return false;
+    // First check if there's an active session
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session) {
+      console.log('Active session found during availability check');
+      consecutiveErrors = 0;
+      serviceStatus = 'available';
+      return true;
     }
     
-    // Reset consecutive errors counter on successful requests
-    consecutiveErrors = 0;
-    serviceStatus = 'available';
-    return true;
+    // If no session, try a lightweight query with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    try {
+      const { error } = await supabase.from('profiles').select('id').limit(1);
+      clearTimeout(timeoutId);
+      
+      if (error) {
+        console.error('Error during availability check:', error);
+        consecutiveErrors++;
+        if (consecutiveErrors > 2) serviceStatus = 'degraded';
+        if (consecutiveErrors > 5) serviceStatus = 'unavailable';
+        return false;
+      }
+      
+      // Reset consecutive errors counter on successful requests
+      consecutiveErrors = 0;
+      serviceStatus = 'available';
+      return true;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        console.error('Supabase availability check timed out');
+        consecutiveErrors++;
+        serviceStatus = 'degraded';
+        return false;
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('Supabase availability check failed:', error);
     consecutiveErrors++;
@@ -165,7 +222,7 @@ export const createSupabaseClient = (options = {}) => {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true, // Enable automatic session detection
+      detectSessionInUrl: true,
       ...options
     }
   });
