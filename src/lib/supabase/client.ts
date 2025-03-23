@@ -120,12 +120,10 @@ export const isSupabaseAvailable = async (): Promise<boolean> => {
     // Only run a full check if it's been more than 20 seconds since the last check
     const now = Date.now();
     
-    // Using separate conditionals to avoid TypeScript comparison issues
+    // Using simplified conditionals to avoid TypeScript comparison issues
     if (now - lastServiceCheck < 20000) {
-      if (serviceStatus === 'degraded' || serviceStatus === 'unavailable') {
-        return false;
-      }
-      return true; // If recent check says available, return true without rechecking
+      // If we've checked recently, just return based on current status
+      return serviceStatus === 'available';
     }
     
     // If it's been more than 20 seconds, perform a new check

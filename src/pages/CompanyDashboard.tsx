@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
@@ -42,7 +41,6 @@ const CompanyDashboard = () => {
   // Update local profile state when profile changes
   useEffect(() => {
     setLocalProfile(profile);
-    console.log("CompanyDashboard received profile update:", profile);
   }, [profile]);
 
   // Refresh profile data on mount and periodically
