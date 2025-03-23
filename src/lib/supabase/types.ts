@@ -13,8 +13,10 @@ export interface UserProfile {
   website?: string;
   integrations?: string[];
   created_at: string;
+  
   // Company profile customization
   profile_banner?: string;
+  profile_logo?: string;
   profile_description?: string;
   profile_color_scheme?: string;
   profile_social_links?: {
@@ -32,8 +34,20 @@ export interface UserProfile {
   profile_services?: Array<{
     title: string;
     description: string;
+    price?: string;
     image?: string;
+    category?: string;
   }>;
+  
+  // Inquiry form settings
+  inquiry_form_enabled?: boolean;
+  inquiry_form_fields?: object[];
+  inquiry_form_settings?: {
+    redirect_url?: string;
+    success_message?: string;
+    email_notifications?: boolean;
+  };
+  
   [key: string]: unknown; // Allow for additional properties from Supabase
 }
 
