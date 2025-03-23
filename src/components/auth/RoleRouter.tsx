@@ -54,12 +54,15 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
       const isCustomerPath = currentPath.startsWith('/customer/');
       
       // If user is on the wrong path type for their role
+      // Use string comparison to fix type checking
       if ((profile.role === 'company' && isCustomerPath) || (profile.role === 'customer' && isCompanyPath)) {
         console.log("User on incorrect path for their role, redirecting");
         
         if (profile.role === 'company') {
+          console.log("Company user detected, redirecting to company dashboard");
           navigate('/company/dashboard', { replace: true });
         } else if (profile.role === 'customer') {
+          console.log("Customer user detected, redirecting to customer dashboard");
           navigate('/customer/dashboard', { replace: true });
         }
       } else if (!isCompanyPath && !isCustomerPath) {
@@ -67,8 +70,10 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
         console.log("User not on role-specific path, redirecting to appropriate dashboard");
         
         if (profile.role === 'company') {
+          console.log("Company user detected, redirecting to company dashboard");
           navigate('/company/dashboard', { replace: true });
         } else if (profile.role === 'customer') {
+          console.log("Customer user detected, redirecting to customer dashboard");
           navigate('/customer/dashboard', { replace: true });
         } else {
           toast({

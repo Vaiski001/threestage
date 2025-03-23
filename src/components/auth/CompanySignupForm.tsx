@@ -104,7 +104,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         throw new Error("This email is already registered. Please use a different email or try logging in.");
       }
       
-      // Attempt to create the user with auto-confirmation
+      // IMPORTANT: Explicitly setting role to 'company' in the user metadata
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -112,7 +112,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
           data: {
             name: values.contactName,
             company_name: values.companyName,
-            role: "company",
+            role: "company", // Explicitly set the role
             industry: values.industry,
             website: values.website || null,
             phone: values.phone || null,
@@ -148,7 +148,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             id: data.user.id,
             name: values.contactName,
             email: values.email,
-            role: 'company',
+            role: 'company', // Ensure role is always 'company'
             company_name: values.companyName,
             industry: values.industry,
             website: values.website || null,
@@ -278,6 +278,9 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
     try {
       // Store role in localStorage for post-OAuth processing
       localStorage.setItem('oauth_role', role);
+      
+      // Confirm it's set to 'company'
+      console.log("Setting Google OAuth role:", role);
       
       await signInWithGoogle(role);
       // Note: The page will redirect to Google's OAuth flow

@@ -13,9 +13,13 @@ const Dashboard = () => {
     // Redirect based on user role
     if (profile) {
       console.log("Dashboard redirecting based on profile role:", profile.role);
+      
+      // Use string comparison to ensure proper type checking
       if (profile.role === 'company') {
+        console.log("Redirecting to company dashboard");
         navigate('/company/dashboard', { replace: true });
       } else if (profile.role === 'customer') {
+        console.log("Redirecting to customer dashboard");
         navigate('/customer/dashboard', { replace: true });
       } else {
         console.warn("Unknown role detected:", profile.role);
