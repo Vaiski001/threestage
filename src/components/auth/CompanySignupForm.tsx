@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +17,7 @@ import { InputField } from "./InputField";
 import { FormPasswordField } from "./FormPasswordField";
 import { SelectField } from "./SelectField";
 import { GoogleButton } from "./GoogleButton";
+import { EmailVerificationMessage } from "./EmailVerificationMessage";
 
 // Industry options
 const industries = [
@@ -59,6 +59,8 @@ interface CompanySignupFormProps {
 
 export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [signupComplete, setSignupComplete] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -121,7 +123,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             phone: values.phone || null,
           },
           // Use specific company redirect path to differentiate from customer
-          emailRedirectTo: window.location.origin + "/auth/callback?role=company&account_type=company"
+          emailRedirectTo: `${window.location.origin}/auth/callback?role=company&account_type=company`
         }
       });
       
@@ -144,6 +146,12 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         throw new Error("No user returned from signup. Please try again.");
       }
       
+      // Check if confirmation email was sent
+      console.log("📧 Email confirmation status:", {
+        isEmailConfirmed: data.user.email_confirmed_at,
+        identities: data.user.identities
+      });
+      
       // Create profile in the profiles table regardless of email confirmation
       try {
         const { error: profileError } = await supabase
@@ -163,7 +171,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         if (profileError) {
           console.error("Error creating company profile:", profileError);
           
-          // Check for specific error types
+          // Handle specific error types as before
           if (profileError.code === '23505') {
             throw new Error("This email is already registered. Please use a different email or try logging in.");
           } else if (profileError.code === '42P01') {
@@ -199,6 +207,19 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
           throw new Error(`Profile creation failed: ${profileError.message}`);
         } else {
           console.log("Company profile created successfully for user:", data.user.id);
+          
+          // Store email for verification message
+          setUserEmail(values.email);
+          
+          // Show success message and verification screen
+          toast({
+            title: "Company account created",
+            description: "Please check your email for verification instructions to complete your account setup.",
+          });
+          
+          // Set signup complete to show verification message
+          setSignupComplete(true);
+          setIsLoading(false);
         }
       } catch (profileError: any) {
         console.error("Detailed profile creation error:", profileError);
@@ -235,18 +256,6 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         
         throw profileError;
       }
-      
-      // Success! Show a toast notification about email verification
-      toast({
-        title: "Company account created",
-        description: "Please check your email for verification instructions to complete your account setup.",
-      });
-      
-      // Safety: Using setTimeout to ensure state updates properly complete
-      setTimeout(() => {
-        setIsLoading(false);
-        onSuccess();
-      }, 500);
       
     } catch (error: any) {
       console.error("Company signup error:", error);
@@ -305,6 +314,11 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       onError(errorMessage);
     }
   };
+
+  // Show verification message if signup is complete
+  if (signupComplete) {
+    return <EmailVerificationMessage role="company" email={userEmail} />;
+  }
 
   return (
     <div className="space-y-6">

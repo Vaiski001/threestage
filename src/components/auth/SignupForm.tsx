@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InputField } from "./InputField";
 import { FormPasswordField } from "./FormPasswordField";
 import { GoogleButton } from "./GoogleButton";
+import { EmailVerificationMessage } from "./EmailVerificationMessage";
 
 // Validation schema
 const signupSchema = z.object({
@@ -42,6 +42,8 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [signupComplete, setSignupComplete] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
   const { toast } = useToast();
   
   // Check Supabase availability on component mount - with a timeout to prevent UI getting stuck
@@ -132,7 +134,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         throw new Error("This email is already registered. Please use a different email or try logging in.");
       }
       
-      // Attempt to create the user with auto-confirmation
+      // Attempt to create the user with email confirmation
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -162,6 +164,12 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       if (!data.user) {
         throw new Error("No user returned from signup. Please try again.");
       }
+
+      // Verify email confirmation status
+      console.log("📧 Email confirmation status:", {
+        isEmailConfirmed: data.user.email_confirmed_at,
+        identities: data.user.identities
+      });
       
       // Create profile in the profiles table regardless of email confirmation
       const { error: profileError } = await supabase
@@ -181,17 +189,18 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
         console.log("Profile created successfully for user:", data.user.id);
       }
       
+      // Store email for verification message
+      setUserEmail(values.email);
+      
       // Success! Show a toast notification about email verification
       toast({
         title: "Account created",
         description: "Please check your email for verification instructions to complete your account setup.",
       });
       
-      // Safety: Using setTimeout to ensure state updates properly complete
-      setTimeout(() => {
-        setIsLoading(false);
-        onSuccess();
-      }, 500);
+      // Set signup complete to show verification message
+      setSignupComplete(true);
+      setIsLoading(false);
       
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -251,6 +260,11 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       onError(errorMessage);
     }
   };
+
+  // Show verification message if signup is complete
+  if (signupComplete) {
+    return <EmailVerificationMessage role="customer" email={userEmail} />;
+  }
 
   return (
     <div className="space-y-6">

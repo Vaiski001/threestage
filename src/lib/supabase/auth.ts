@@ -1,4 +1,3 @@
-
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -33,7 +32,7 @@ export const signUpWithEmail = async (
     // Create redirect URL with role and account_type
     const redirectUrl = `${window.location.origin}/auth/callback?role=${role}&account_type=${accountType}`;
     
-    // Create the auth user
+    // Create the auth user - ENSURE EMAIL CONFIRMATION IS ENABLED
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -62,6 +61,7 @@ export const signUpWithEmail = async (
     }
     
     console.log("✅ Auth signup successful for:", authData.user.id);
+    console.log("📧 Verification email should be sent to:", email);
     
     // Create a profile record
     const profileData: Record<string, unknown> = {
