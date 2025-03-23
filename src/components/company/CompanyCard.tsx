@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { UserProfile } from "@/lib/supabase/types";
-import { Building, MapPin, Link as LinkIcon, ArrowRight, Mail, Phone } from "lucide-react";
+import { Building, MapPin, Link as LinkIcon, ArrowRight, Mail, Phone, Star } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,22 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, compact = fal
             <div className="flex items-center gap-1 mt-1">
               <Building className="h-4 w-4 text-muted-foreground" />
               <span>{company.industry}</span>
+              
+              {!compact && (
+                <div className="flex items-center ml-4">
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star 
+                        key={star}
+                        className="h-3.5 w-3.5" 
+                        fill={star <= 4 ? "currentColor" : "none"}
+                        color={star <= 4 ? "#FFD700" : "#D1D5DB"}
+                      />
+                    ))}
+                    <span className="text-xs ml-1 text-gray-500">(42)</span>
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
         </CardDescription>
