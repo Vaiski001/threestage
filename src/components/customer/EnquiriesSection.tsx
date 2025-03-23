@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { EmptyState } from "./EmptyState";
 import { DashboardSection } from "./DashboardSection";
@@ -17,8 +16,6 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { InquiryCard } from "./InquiryCard";
-import { InquiryDetails } from "./InquiryDetails";
 import { useToast } from "@/hooks/use-toast";
 import { Container } from "@/components/ui/Container";
 
@@ -52,7 +49,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
   
   const isEmpty = customerEnquiries.length === 0;
 
-  // Sample data for the demo UI
   const mockInquiries: CustomerEnquiry[] = [
     {
       id: "INQ-001",
@@ -88,7 +84,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
     }
   ];
 
-  // Use demo data if no real data is available
   const displayInquiries = isEmpty ? [] : mockInquiries;
 
   const handleStatusChange = (status: string) => {
@@ -138,7 +133,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     
-    // Format like "Mar 20, 2025, 02:30 PM"
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
@@ -172,7 +166,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
           />
         ) : (
           <div className="space-y-6">
-            {/* Search and filter section */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -202,7 +195,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
               </div>
             </div>
 
-            {/* Status filter pills */}
             <div className="flex gap-2">
               <Button 
                 variant="outline"
@@ -234,11 +226,9 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
               </Button>
             </div>
 
-            {/* Inquiries list */}
             <div className="space-y-4">
               {displayInquiries.map((inquiry) => (
                 <div key={inquiry.id} className="border rounded-lg overflow-hidden">
-                  {/* Inquiry header - always visible */}
                   <div 
                     className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50"
                     onClick={() => toggleInquiryExpand(inquiry.id)}
@@ -268,7 +258,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
                     </div>
                   </div>
 
-                  {/* Expanded inquiry details */}
                   {expandedInquiry === inquiry.id && (
                     <div className="border-t p-4">
                       <div className="mb-4">
@@ -289,7 +278,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
                         )}
                       </div>
 
-                      {/* Reply textarea */}
                       <Textarea 
                         placeholder="Write your reply here..." 
                         className="min-h-[100px] mb-4"
@@ -297,7 +285,6 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
                         onChange={(e) => setReplyContent(e.target.value)}
                       />
                       
-                      {/* Action buttons */}
                       <div className="flex justify-between">
                         <Button 
                           onClick={handleSendReply}
