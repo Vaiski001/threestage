@@ -28,21 +28,24 @@ export function FormPasswordField({
   disabled = false,
 }: FormPasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
-
+  const id = `field-${name}`;
+  
   return (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel htmlFor={id}>{label}</FormLabel>
           <FormControl>
             <div className="relative">
               <Input
+                id={id}
                 type={showPassword ? "text" : "password"}
                 placeholder={placeholder}
                 {...field}
                 disabled={disabled}
+                aria-required="true"
               />
               <Button
                 type="button"
@@ -50,6 +53,7 @@ export function FormPasswordField({
                 size="icon"
                 className="absolute right-0 top-0 h-full"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </Button>

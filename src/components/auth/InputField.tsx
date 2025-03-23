@@ -28,21 +28,25 @@ export function InputField({
   optional = false,
   disabled = false,
 }: InputFieldProps) {
+  const id = `field-${name}`;
+  
   return (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>
+          <FormLabel htmlFor={id}>
             {label} {optional && <span className="text-muted-foreground text-xs">(Optional)</span>}
           </FormLabel>
           <FormControl>
             <Input 
+              id={id}
               type={type}
               placeholder={placeholder}
               {...field} 
               disabled={disabled}
+              aria-required={!optional}
             />
           </FormControl>
           <FormMessage />

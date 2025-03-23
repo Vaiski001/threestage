@@ -26,16 +26,18 @@ export function SelectField({
   options,
   disabled = false,
 }: SelectFieldProps) {
+  const id = `field-${name}`;
+  
   return (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
+          <FormLabel htmlFor={id}>{label}</FormLabel>
+          <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled} name={name}>
             <FormControl>
-              <SelectTrigger>
+              <SelectTrigger id={id} aria-required="true">
                 <SelectValue placeholder={placeholder} />
               </SelectTrigger>
             </FormControl>

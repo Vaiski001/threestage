@@ -10,16 +10,11 @@ import { Loader2, AlertCircle } from "lucide-react";
 
 import {
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InputField } from "./InputField";
 import { FormPasswordField } from "./FormPasswordField";
 import { GoogleButton } from "./GoogleButton";
 
@@ -267,38 +262,22 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       )}
       
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4" aria-label="Customer signup form">
+          <InputField
+            form={form}
             name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Full Name"
+            placeholder="John Doe"
+            disabled={isLoading}
           />
           
-          <FormField
-            control={form.control}
+          <InputField
+            form={form}
             name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="you@example.com" 
-                    {...field} 
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Email"
+            placeholder="you@example.com"
+            type="email"
+            disabled={isLoading}
           />
           
           <FormPasswordField

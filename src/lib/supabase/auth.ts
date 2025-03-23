@@ -23,7 +23,7 @@ export const signUpWithEmail = async (
       throw new Error("This email is already registered. Please use a different email or try logging in.");
     }
     
-    // First, create the auth user
+    // Create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -33,7 +33,7 @@ export const signUpWithEmail = async (
           name: userData.name,
           company_name: userData.company_name,
         },
-        // Note: HCAPTCHA has been removed from Supabase settings, so no need to explicitly disable it
+        // No hCaptcha options
       }
     });
 

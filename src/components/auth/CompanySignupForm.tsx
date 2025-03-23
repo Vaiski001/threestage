@@ -302,7 +302,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
   return (
     <div className="space-y-6">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4" aria-label="Company signup form">
           <InputField
             form={form}
             name="companyName"

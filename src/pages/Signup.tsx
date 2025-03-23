@@ -29,7 +29,7 @@ export default function Signup() {
             <h1 className="text-2xl font-bold mb-6 text-center">Create an Account</h1>
             
             {error && (
-              <Alert className="mb-6">
+              <Alert className="mb-6" variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="flex items-center justify-between">
                   {error}
