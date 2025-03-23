@@ -32,7 +32,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, compact = fal
           {company.address && (
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm text-muted-foreground truncate">{company.address}</span>
+              <span className="text-sm text-muted-foreground truncate">{String(company.address)}</span>
             </div>
           )}
           
@@ -40,7 +40,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, compact = fal
             <div className="flex items-center gap-2">
               <LinkIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <a 
-                href={company.website.startsWith('http') ? company.website : `https://${company.website}`} 
+                href={typeof company.website === 'string' ? (company.website.startsWith('http') ? company.website : `https://${company.website}`) : '#'} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-sm hover:underline text-blue-500 truncate"
@@ -78,11 +78,14 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, compact = fal
             <div className="mt-4">
               <p className="text-sm font-medium mb-2">Services</p>
               <div className="flex flex-wrap gap-2">
-                {typeof company.services === 'string' ? company.services.split(',').map((service, index) => (
-                  <Badge key={index} variant="secondary">
-                    {service.trim()}
-                  </Badge>
-                )) : null}
+                {typeof company.services === 'string' 
+                  ? company.services.split(',').map((service, index) => (
+                      <Badge key={index} variant="secondary">
+                        {service.trim()}
+                      </Badge>
+                    )) 
+                  : null
+                }
               </div>
             </div>
           )}

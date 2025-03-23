@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { 
   Select,
   SelectContent,
@@ -70,8 +68,8 @@ export function CompanySearch() {
   // Filter companies based on search term and industry
   const filteredCompanies = mockCompanies.filter(company => {
     const matchesSearch = searchTerm === '' || 
-      (company.company_name && company.company_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
-      (company.services && company.services.toLowerCase().includes(searchTerm.toLowerCase()));
+      (company.company_name && typeof company.company_name === 'string' && company.company_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+      (company.services && typeof company.services === 'string' && company.services.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesIndustry = industryFilter === '' || company.industry === industryFilter;
     
