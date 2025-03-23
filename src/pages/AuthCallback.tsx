@@ -107,7 +107,7 @@ export default function AuthCallback() {
           
           if (!profileData) {
             // Create a new profile record
-            const newProfileData = {
+            const newProfileData: Record<string, any> = {
               id: data.session.user.id,
               email: data.session.user.email || '',
               name: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || '',

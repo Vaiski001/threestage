@@ -1,3 +1,4 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
 import { UserRole, UserProfile } from './types';
@@ -162,9 +163,8 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
           access_type: 'offline',
           prompt: 'consent',
         },
-        data: {
-          role: role // IMPORTANT FIX: Also set role in OAuth metadata
-        }
+        // Fix: Store role in the correct location - within options.emailRedirectTo
+        emailRedirectTo: `${domain}${redirectPath}?role=${role}`,
       }
     });
     
