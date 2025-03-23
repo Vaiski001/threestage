@@ -12,7 +12,7 @@ export const signUpWithEmail = async (
   console.log("📝 Starting signUpWithEmail process:", { email, userData });
   
   try {
-    // First, check if the user already exists to avoid unnecessary CAPTCHA triggers
+    // First, check if the user already exists to avoid unnecessary triggers
     const { data: existingProfile, error: profileCheckError } = await supabase
       .from('profiles')
       .select('id')
@@ -33,18 +33,12 @@ export const signUpWithEmail = async (
           name: userData.name,
           company_name: userData.company_name,
         },
-        captchaToken: undefined // Skip CAPTCHA verification
+        // Note: HCAPTCHA has been removed from Supabase settings, so no need to explicitly disable it
       }
     });
 
     if (authError) {
       console.error("❌ Auth error during signup:", authError);
-      
-      // Special handling for CAPTCHA errors
-      if (authError.message?.toLowerCase().includes("captcha")) {
-        throw new Error("CAPTCHA verification failed. Please try using Google login instead, or try again later.");
-      }
-      
       throw authError;
     }
     
@@ -108,17 +102,6 @@ export const signInWithEmail = async (email: string, password: string) => {
     
     if (error) {
       console.error('Error signing in with email:', error);
-      
-      // Check if the error is related to CAPTCHA
-      if (error.message.includes('captcha')) {
-        console.warn('CAPTCHA verification failed. Suggesting alternative login methods.');
-        return { 
-          error: { 
-            message: "CAPTCHA verification failed. Please try using Google login instead, or try again later." 
-          } 
-        };
-      }
-      
       return { error };
     }
     
@@ -143,17 +126,6 @@ export const signInWithEmail = async (email: string, password: string) => {
     return { data };
   } catch (error: any) {
     console.error('Exception during sign in:', error);
-    
-    // Check if the error is related to CAPTCHA
-    if (error.message && error.message.includes('captcha')) {
-      console.warn('CAPTCHA verification failed during sign in. Suggesting alternative login methods.');
-      return { 
-        error: { 
-          message: "CAPTCHA verification failed. Please try using Google login instead, or try again later." 
-        } 
-      };
-    }
-    
     throw error;
   }
 };

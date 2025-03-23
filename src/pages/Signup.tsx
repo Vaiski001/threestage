@@ -14,18 +14,10 @@ import { AlertCircle } from "lucide-react";
 export default function Signup() {
   const [error, setError] = useState<string | null>(null);
   const [accountType, setAccountType] = useState<UserRole>("customer");
-  const [captchaError, setCaptchaError] = useState(false);
   const navigate = useNavigate();
 
   const handleError = (errorMessage: string) => {
     setError(errorMessage);
-    
-    // Check if the error is related to CAPTCHA
-    if (errorMessage.toLowerCase().includes('captcha')) {
-      setCaptchaError(true);
-    } else {
-      setCaptchaError(false);
-    }
   };
 
   return (
@@ -37,7 +29,7 @@ export default function Signup() {
             <h1 className="text-2xl font-bold mb-6 text-center">Create an Account</h1>
             
             {error && (
-              <Alert className={`mb-6 ${captchaError ? 'border-orange-300 bg-orange-50 text-orange-800' : ''}`}>
+              <Alert className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="flex items-center justify-between">
                   {error}
@@ -46,20 +38,10 @@ export default function Signup() {
                     size="sm"
                     onClick={() => {
                       setError(null);
-                      setCaptchaError(false);
                     }}
                   >
                     Try Again
                   </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {captchaError && (
-              <Alert variant="default" className="mb-6 bg-blue-50 border-blue-200">
-                <AlertTitle>Recommendation</AlertTitle>
-                <AlertDescription>
-                  We recommend using Google Sign-Up to avoid CAPTCHA verification issues. Alternatively, you can try again in a few minutes.
                 </AlertDescription>
               </Alert>
             )}
@@ -70,7 +52,6 @@ export default function Signup() {
               onValueChange={(value) => {
                 setAccountType(value as UserRole);
                 setError(null);
-                setCaptchaError(false);
               }}
             >
               <TabsList className="grid w-full grid-cols-2 mb-6">

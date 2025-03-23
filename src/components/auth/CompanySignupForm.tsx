@@ -6,22 +6,18 @@ import * as z from "zod";
 import { supabase } from "@/lib/supabase";
 import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import {
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InputField } from "./InputField";
+import { FormPasswordField } from "./FormPasswordField";
+import { SelectField } from "./SelectField";
+import { GoogleButton } from "./GoogleButton";
 
 // Industry options
 const industries = [
@@ -63,9 +59,6 @@ interface CompanySignupFormProps {
 
 export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [captchaError, setCaptchaError] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -87,7 +80,6 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
     if (isLoading) return;
     
     setIsLoading(true);
-    setCaptchaError(false);
     
     try {
       console.log("Starting company signup process with values:", { 
@@ -126,8 +118,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             website: values.website || null,
             phone: values.phone || null,
           },
-          emailRedirectTo: window.location.origin + "/dashboard",
-          captchaToken: undefined // Skip CAPTCHA verification
+          emailRedirectTo: window.location.origin + "/dashboard"
         }
       });
       
@@ -139,12 +130,6 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       });
       
       if (error) {
-        if (error.message?.toLowerCase().includes('captcha')) {
-          console.warn("CAPTCHA verification failed:", error.message);
-          setCaptchaError(true);
-          throw new Error("CAPTCHA verification failed. Please try using Google signup instead, or try again later.");
-        }
-        
         if (error.message?.includes("rate limit")) {
           throw new Error("Too many signup attempts. Please wait a minute and try again.");
         }
@@ -265,10 +250,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       // Handle common error cases
       let errorMessage = "Failed to create company account. Please try again.";
       
-      if (error.message?.toLowerCase().includes('captcha')) {
-        errorMessage = "CAPTCHA verification failed. Please try using Google signup instead, or try again later.";
-        setCaptchaError(true);
-      } else if (error.message?.includes("email address is already registered")) {
+      if (error.message?.includes("email address is already registered")) {
         errorMessage = "This email is already registered. Please use a different email or try logging in.";
       } else if (error.message?.includes("rate limit") || error.message?.includes("security purposes")) {
         errorMessage = "Too many signup attempts. Please wait a minute and try again.";
@@ -292,14 +274,12 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
     }
   };
 
-  const handleGoogleSignup = async () => {
-    setIsGoogleLoading(true);
-    setCaptchaError(false);
+  const handleGoogleSignup = async (role: 'customer' | 'company' = 'company') => {
     try {
       // Store role in localStorage for post-OAuth processing
-      localStorage.setItem('oauth_role', 'company');
+      localStorage.setItem('oauth_role', role);
       
-      await signInWithGoogle('company');
+      await signInWithGoogle(role);
       // Note: The page will redirect to Google's OAuth flow
     } catch (error: any) {
       console.error("Google company signup error:", error);
@@ -315,177 +295,71 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         variant: "destructive",
       });
       
-      setIsGoogleLoading(false);
       onError(errorMessage);
     }
   };
 
   return (
     <div className="space-y-6">
-      {captchaError && (
-        <Alert variant="destructive" className="border-orange-300 bg-orange-50 text-orange-800 mb-4">
-          <AlertCircle className="h-4 w-4 mr-2" />
-          <AlertDescription className="flex items-center justify-between">
-            CAPTCHA verification failed. Please try using Google signup instead, or try again later.
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setCaptchaError(false)}
-              className="ml-2"
-            >
-              Try Again
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {captchaError && (
-        <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
-          <AlertTitle>Recommendation</AlertTitle>
-          <AlertDescription>
-            We recommend using Google Sign-Up to avoid CAPTCHA verification issues. Alternatively, you can try again in a few minutes.
-          </AlertDescription>
-        </Alert>
-      )}
-      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
+          <InputField
+            form={form}
             name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Acme Inc." {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Company Name"
+            placeholder="Acme Inc."
+            disabled={isLoading}
           />
           
-          <FormField
-            control={form.control}
+          <InputField
+            form={form}
             name="contactName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Contact Name"
+            placeholder="John Doe"
+            disabled={isLoading}
           />
           
-          <FormField
-            control={form.control}
+          <InputField
+            form={form}
             name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Business Email</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="contact@acme.com" 
-                    {...field} 
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Business Email"
+            placeholder="contact@acme.com"
+            type="email"
+            disabled={isLoading}
           />
           
-          <FormField
-            control={form.control}
+          <FormPasswordField
+            form={form}
             name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      {...field}
-                      disabled={isLoading}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </Button>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Password"
+            disabled={isLoading}
           />
           
-          <FormField
-            control={form.control}
+          <SelectField
+            form={form}
             name="industry"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Industry</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {industries.map((industry) => (
-                      <SelectItem key={industry} value={industry}>
-                        {industry}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Industry"
+            placeholder="Select your industry"
+            options={industries}
+            disabled={isLoading}
           />
           
-          <FormField
-            control={form.control}
+          <InputField
+            form={form}
             name="website"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Website (Optional)</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="https://acme.com" 
-                    {...field} 
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Company Website"
+            placeholder="https://acme.com"
+            optional={true}
+            disabled={isLoading}
           />
           
-          <FormField
-            control={form.control}
+          <InputField
+            form={form}
             name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number (Optional)</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="+1 (123) 456-7890" 
-                    {...field} 
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Phone Number"
+            placeholder="+1 (123) 456-7890"
+            optional={true}
+            disabled={isLoading}
           />
           
           <Button type="submit" className="w-full" disabled={isLoading}>
@@ -512,25 +386,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         </div>
       </div>
 
-      <Button
-        variant="outline"
-        type="button"
-        disabled={isGoogleLoading}
-        className="w-full"
-        onClick={handleGoogleSignup}
-      >
-        {isGoogleLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-            <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-            <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-            <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-          </svg>
-        )}
-        Sign up with Google
-      </Button>
+      <GoogleButton role="company" onGoogleSignup={handleGoogleSignup} />
     </div>
   );
 }
