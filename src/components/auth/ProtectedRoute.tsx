@@ -1,3 +1,4 @@
+
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -9,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, refreshProfile } = useAuth();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const location = useLocation();
@@ -17,9 +18,33 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   useEffect(() => {
     const checkSessionDirectly = async () => {
       try {
+        // First check if we already have authentication state from context
+        if (isAuthenticated) {
+          console.log("Protected route: Already authenticated via context");
+          setHasSession(true);
+          setIsCheckingSession(false);
+          return;
+        }
+
+        // If context doesn't have auth state but still loading, wait
+        if (loading) {
+          console.log("Protected route: Auth context still loading, waiting...");
+          return;
+        }
+
+        // If context finished loading but no auth state, check directly with Supabase
+        console.log("Protected route: Checking session directly with Supabase");
         const { data } = await supabase.auth.getSession();
         const hasValidSession = !!data.session;
+        
         console.log("Protected route session check:", hasValidSession ? "Found session" : "No session");
+        
+        // If we found a session, trigger a profile refresh to update the auth context
+        if (hasValidSession && refreshProfile) {
+          console.log("Protected route: Refreshing profile after finding valid session");
+          refreshProfile();
+        }
+        
         setHasSession(hasValidSession);
       } catch (error) {
         console.error("Error checking session in protected route:", error);
@@ -29,12 +54,27 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       }
     };
 
-    if (!isAuthenticated && !loading) {
-      checkSessionDirectly();
-    } else {
-      setIsCheckingSession(false);
-    }
-  }, [isAuthenticated, loading]);
+    checkSessionDirectly();
+  }, [isAuthenticated, loading, refreshProfile]);
+
+  // Set up auth state change listener
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("Auth state change in protected route:", event, !!session);
+        setHasSession(!!session);
+        
+        // If session is established and we have refresh function, update the profile
+        if (session && refreshProfile) {
+          refreshProfile();
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [refreshProfile]);
 
   if (loading || isCheckingSession) {
     return (
