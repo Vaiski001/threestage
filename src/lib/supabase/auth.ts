@@ -12,6 +12,17 @@ export const signUpWithEmail = async (
   console.log("📝 Starting signUpWithEmail process:", { email, userData });
   
   try {
+    // First, check if the user already exists to avoid unnecessary CAPTCHA triggers
+    const { data: existingProfile, error: profileCheckError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    
+    if (existingProfile) {
+      throw new Error("This email is already registered. Please use a different email or try logging in.");
+    }
+    
     // First, create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
@@ -27,6 +38,12 @@ export const signUpWithEmail = async (
 
     if (authError) {
       console.error("❌ Auth error during signup:", authError);
+      
+      // Special handling for CAPTCHA errors
+      if (authError.message?.includes("captcha")) {
+        throw new Error("CAPTCHA verification failed. Please try using Google login instead, or try again later.");
+      }
+      
       throw authError;
     }
     

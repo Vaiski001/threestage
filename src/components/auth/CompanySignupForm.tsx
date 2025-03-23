@@ -6,7 +6,7 @@ import * as z from "zod";
 import { supabase } from "@/lib/supabase";
 import { signInWithGoogle } from "@/lib/supabase/auth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Industry options
 const industries = [
@@ -64,6 +65,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaError, setCaptchaError] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -85,6 +87,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
     if (isLoading) return;
     
     setIsLoading(true);
+    setCaptchaError(false);
     
     try {
       console.log("Starting company signup process with values:", { 
@@ -135,6 +138,12 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       });
       
       if (error) {
+        if (error.message?.includes("captcha")) {
+          console.warn("CAPTCHA verification failed:", error.message);
+          setCaptchaError(true);
+          throw new Error("CAPTCHA verification failed. Please try using Google signup instead, or try again later.");
+        }
+        
         if (error.message?.includes("rate limit")) {
           throw new Error("Too many signup attempts. Please wait a minute and try again.");
         }
@@ -255,7 +264,10 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       // Handle common error cases
       let errorMessage = "Failed to create company account. Please try again.";
       
-      if (error.message?.includes("email address is already registered")) {
+      if (error.message?.includes("captcha")) {
+        errorMessage = "CAPTCHA verification failed. Please try using Google signup instead, or try again later.";
+        setCaptchaError(true);
+      } else if (error.message?.includes("email address is already registered")) {
         errorMessage = "This email is already registered. Please use a different email or try logging in.";
       } else if (error.message?.includes("rate limit") || error.message?.includes("security purposes")) {
         errorMessage = "Too many signup attempts. Please wait a minute and try again.";
@@ -281,6 +293,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
 
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
+    setCaptchaError(false);
     try {
       // Store role in localStorage for post-OAuth processing
       localStorage.setItem('oauth_role', 'company');
@@ -308,6 +321,15 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
 
   return (
     <div className="space-y-6">
+      {captchaError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            CAPTCHA verification failed. Please try using Google signup instead, or try again later.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <FormField
@@ -460,6 +482,14 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
           </Button>
         </form>
       </Form>
+
+      {captchaError && (
+        <Alert variant="default" className="bg-muted/50">
+          <AlertDescription className="text-center text-sm">
+            We recommend using Google Sign Up instead to avoid CAPTCHA issues.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
