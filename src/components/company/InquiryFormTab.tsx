@@ -15,6 +15,7 @@ export function InquiryFormTab({ profile, onUpdate }: InquiryFormTabProps) {
   const { toast } = useToast();
   const [formEnabled, setFormEnabled] = useState(profile?.inquiry_form_enabled || false);
   const [embedCode, setEmbedCode] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCopyEmbedCode = () => {
     // Generate embed code for the form
@@ -31,14 +32,23 @@ export function InquiryFormTab({ profile, onUpdate }: InquiryFormTabProps) {
 
   const handleFormToggle = (checked: boolean) => {
     setFormEnabled(checked);
-    onUpdate({ inquiry_form_enabled: checked });
+  };
+  
+  const handleSaveChanges = () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    onUpdate({ inquiry_form_enabled: formEnabled });
     
     toast({
-      title: checked ? "Inquiry form enabled" : "Inquiry form disabled",
-      description: checked 
+      title: formEnabled ? "Inquiry form enabled" : "Inquiry form disabled",
+      description: formEnabled 
         ? "Customers can now submit inquiries through your profile" 
         : "Inquiry form has been disabled on your profile",
     });
+    
+    setIsSubmitting(false);
   };
 
   return (
@@ -81,6 +91,16 @@ export function InquiryFormTab({ profile, onUpdate }: InquiryFormTabProps) {
           </div>
         </>
       )}
+      
+      <div className="mt-6">
+        <Button 
+          onClick={handleSaveChanges}
+          disabled={isSubmitting}
+          className="w-full md:w-auto"
+        >
+          Save Form Settings
+        </Button>
+      </div>
     </div>
   );
 }

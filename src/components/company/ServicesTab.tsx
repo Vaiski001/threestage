@@ -27,51 +27,80 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
   const { toast } = useToast();
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [hasUpdated, setHasUpdated] = useState(false);
   
   // Initialize with profile data or defaults
   useEffect(() => {
-    if (profile?.profile_services) {
-      setServices(
-        profile.profile_services.map((service, index) => ({
-          id: `service-${index}`,
-          title: service.title,
-          description: service.description,
-          price: service.price || "",
-          image: service.image,
-          category: service.category || "",
-        }))
-      );
-    } else {
-      // Add default placeholder services if none exist
-      setServices([
-        {
-          id: "service-1",
-          title: "Service 1",
-          description: "Description of service 1 and what it includes.",
-          price: "$99"
-        },
-        {
-          id: "service-2",
-          title: "Service 2",
-          description: "Description of service 2 and what it includes.",
-          price: "$149"
-        },
-        {
-          id: "service-3",
-          title: "Service 3",
-          description: "Description of service 3 and what it includes.",
-          price: "Contact for pricing"
-        }
-      ]);
+    try {
+      if (profile?.profile_services) {
+        const profileServices = Array.isArray(profile.profile_services) 
+          ? profile.profile_services 
+          : [];
+        
+        setServices(
+          profileServices.map((service, index) => ({
+            id: `service-${index}`,
+            title: service.title || "",
+            description: service.description || "",
+            price: service.price || "",
+            image: service.image || "",
+            category: service.category || "",
+          }))
+        );
+      } else {
+        // Add default placeholder services if none exist
+        setServices([
+          {
+            id: "service-1",
+            title: "Service 1",
+            description: "Description of service 1 and what it includes.",
+            price: "$99"
+          },
+          {
+            id: "service-2",
+            title: "Service 2",
+            description: "Description of service 2 and what it includes.",
+            price: "$149"
+          },
+          {
+            id: "service-3",
+            title: "Service 3",
+            description: "Description of service 3 and what it includes.",
+            price: "Contact for pricing"
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error processing services:", error);
+      setServices([]);
     }
   }, [profile]);
 
-  // Update parent component when services change
-  useEffect(() => {
-    onUpdate({
-      profile_services: services.map(({ id, ...service }) => service)
-    });
-  }, [services, onUpdate]);
+  // Only update when explicitly requested (not on every services change)
+  const handleUpdateServices = () => {
+    try {
+      const servicesData = services.map(({ id, ...service }) => service);
+      
+      // Store services as a JSON string to work with any database schema
+      onUpdate({
+        profile_services_json: JSON.stringify(servicesData)
+      });
+      
+      setHasUpdated(true);
+      
+      toast({
+        title: "Services updated",
+        description: "Your service offerings have been saved.",
+      });
+    } catch (error) {
+      console.error("Error updating services:", error);
+      toast({
+        title: "Update failed",
+        description: "There was a problem saving your services.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleAddService = () => {
     const newId = `service-${services.length + 1}`;
@@ -84,11 +113,7 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
     };
     
     setServices([...services, newService]);
-    
-    toast({
-      title: "Service added",
-      description: "New service has been added to your profile",
-    });
+    setHasUpdated(false);
   };
 
   const handleEditService = (id: string) => {
@@ -101,6 +126,7 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
 
   const handleDeleteService = (id: string) => {
     setServices(services.filter(service => service.id !== id));
+    setHasUpdated(false);
     
     toast({
       title: "Service deleted",
@@ -174,6 +200,16 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
             </div>
           </div>
         ))}
+      </div>
+      
+      <div className="mt-6">
+        <Button 
+          onClick={handleUpdateServices}
+          disabled={hasUpdated && services.length === 0}
+          className="w-full md:w-auto"
+        >
+          Save Services
+        </Button>
       </div>
     </div>
   );

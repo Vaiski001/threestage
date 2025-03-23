@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FormLabel } from "@/components/ui/form-label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form } from "@/components/ui/form";
 import { Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ContactTabProps {
   profile: UserProfile | null;
@@ -27,6 +28,8 @@ const formSchema = z.object({
 });
 
 export function ContactTab({ profile, onUpdate }: ContactTabProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,7 +60,11 @@ export function ContactTab({ profile, onUpdate }: ContactTabProps) {
   }, [profile, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onUpdate({
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    const updatedValues = {
       phone: values.phone,
       website: values.website,
       profile_contact_info: {
@@ -71,7 +78,10 @@ export function ContactTab({ profile, onUpdate }: ContactTabProps) {
         linkedin: values.linkedin,
         instagram: values.instagram,
       },
-    });
+    };
+    
+    onUpdate(updatedValues);
+    setIsSubmitting(false);
   };
 
   return (
@@ -79,7 +89,7 @@ export function ContactTab({ profile, onUpdate }: ContactTabProps) {
       <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
 
       <Form {...form}>
-        <form onChange={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <FormLabel htmlFor="phone">Phone Number</FormLabel>
@@ -178,6 +188,16 @@ export function ContactTab({ profile, onUpdate }: ContactTabProps) {
             {form.formState.errors.contact_address && (
               <p className="text-sm text-red-500 mt-1">{form.formState.errors.contact_address.message}</p>
             )}
+          </div>
+          
+          <div className="pt-4">
+            <Button 
+              type="submit" 
+              className="w-full md:w-auto"
+              disabled={isSubmitting}
+            >
+              Save Changes
+            </Button>
           </div>
         </form>
       </Form>
