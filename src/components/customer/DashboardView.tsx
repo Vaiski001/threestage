@@ -40,13 +40,15 @@ interface DashboardViewProps {
   customerEnquiries: CustomerEnquiry[];
   createNewEnquiry: () => void;
   customerName?: string;
+  isDemo?: boolean;
 }
 
 export const DashboardView = ({ 
   customerStats, 
   customerEnquiries, 
   createNewEnquiry,
-  customerName = "John Doe"
+  customerName = "John Doe",
+  isDemo = false
 }: DashboardViewProps) => {
   const isEmpty = customerEnquiries.length === 0;
   const { toast } = useToast();
@@ -96,9 +98,16 @@ export const DashboardView = ({
     }
   ];
 
-  // Active enquiries section
-  const activeEnquiries = customerEnquiries.filter(e => e.status !== "completed");
-  const hasActiveEnquiries = activeEnquiries.length > 0;
+  // Default stats with zero values
+  const defaultStats = [
+    { label: "Total Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
+    { label: "Active Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
+    { label: "Pending Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
+    { label: "Resolved Inquiries", value: "0", change: "0%", changeType: "neutral" as const }
+  ];
+
+  // Use demo stats or default zeros
+  const displayStats = isDemo ? customerStats : defaultStats;
 
   return (
     <>
@@ -108,7 +117,7 @@ export const DashboardView = ({
           <p className="text-muted-foreground">Welcome back to your customer portal</p>
         </div>
 
-        <CustomerStats stats={customerStats} />
+        <CustomerStats stats={displayStats} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
           {actionCards.map((card, index) => (
@@ -163,7 +172,7 @@ export const DashboardView = ({
             })}
           />
         ) : (
-          <KanbanBoard isDemo={true} readOnly={true} />
+          <KanbanBoard isDemo={isDemo} readOnly={true} />
         )}
       </div>
 

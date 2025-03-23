@@ -39,6 +39,7 @@ const CustomerDashboard = () => {
   
   // Use sample data for demonstration
   const [customerEnquiries] = useState<CustomerEnquiry[]>([]);
+  const isDemo = window.location.pathname.includes("demo");
 
   // Customer navigation items
   const navigationItems = [
@@ -53,8 +54,9 @@ const CustomerDashboard = () => {
   // Customer dashboard stats in a more realistic format
   const customerStats = [
     { label: "Total Inquiries", value: "164", change: "+12%", changeType: "positive" as const },
+    { label: "Active Inquiries", value: "35", change: "+8%", changeType: "positive" as const },
     { label: "Pending Inquiries", value: "21", change: "-5%", changeType: "negative" as const },
-    { label: "Resolved Inquiries", value: "143", change: "+15%", changeType: "positive" as const }
+    { label: "Resolved Inquiries", value: "108", change: "+15%", changeType: "positive" as const }
   ];
 
   const createNewEnquiry = () => {
@@ -82,6 +84,7 @@ const CustomerDashboard = () => {
                 customerStats={customerStats}
                 customerEnquiries={customerEnquiries}
                 createNewEnquiry={createNewEnquiry}
+                isDemo={isDemo}
               />
             )}
             
