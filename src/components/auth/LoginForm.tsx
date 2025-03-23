@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmail, signInWithGoogle } from "@/lib/supabase";
@@ -33,8 +34,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [serviceCheckCount, setServiceCheckCount] = useState(0);
   const [serviceStatus, setServiceStatus] = useState<'available' | 'degraded' | 'unavailable'>('available');
   
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [emailValue, setEmailValue] = useState("");
+  const [passwordValue, setPasswordValue] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
   const [loginAttempts, setLoginAttempts] = useState(0);
@@ -87,7 +88,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
   const validateForm = () => {
     try {
-      loginSchema.parse({ email, password });
+      loginSchema.parse({ email: emailValue, password: passwordValue });
       setErrors({});
       return true;
     } catch (error) {
@@ -137,6 +138,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         return;
       }
     } catch (error) {
+      // Continue with login attempt even if availability check fails
     }
     
     setIsLoading(true);
@@ -160,8 +162,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     setLoginTimeout(timeout);
     
     try {
-      console.log("Attempting login with:", { email });
-      const { data, error } = await signInWithEmail(email, password);
+      console.log("Attempting login with:", { email: emailValue });
+      const { data, error } = await signInWithEmail(emailValue, passwordValue);
       
       if (loginTimeout) {
         clearTimeout(loginTimeout);
@@ -292,6 +294,14 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     }
   };
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmailValue(e.target.value);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordValue(e.target.value);
+  };
+
   return (
     <div className="space-y-6">
       {serviceStatus === 'unavailable' && (
@@ -334,8 +344,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
             id="email"
             type="email"
             placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={emailValue}
+            onChange={handleEmailChange}
             disabled={isLoading || isCheckingConnection}
             aria-invalid={!!errors.email}
           />
@@ -351,8 +361,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={passwordValue}
+              onChange={handlePasswordChange}
               disabled={isLoading || isCheckingConnection}
               aria-invalid={!!errors.password}
             />
