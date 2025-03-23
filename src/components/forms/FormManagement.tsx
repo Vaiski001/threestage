@@ -47,6 +47,11 @@ export interface FormFieldType {
   validations?: Record<string, unknown>; // Added to match with supabase/types.ts
 }
 
+// Define props for FormManagement component
+export interface FormManagementProps {
+  onCreateNew?: () => void;
+}
+
 // Mock data for demonstration purposes
 const mockForms: FormTemplate[] = [
   {
@@ -86,7 +91,7 @@ const mockForms: FormTemplate[] = [
   }
 ];
 
-export function FormManagement() {
+export function FormManagement({ onCreateNew }: FormManagementProps) {
   const [forms, setForms] = useState<FormTemplate[]>(mockForms);
   const [activeTab, setActiveTab] = useState("forms");
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,7 +104,7 @@ export function FormManagement() {
   // Filter forms based on search query
   const filteredForms = forms.filter(form => 
     form.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    form.description.toLowerCase().includes(searchQuery.toLowerCase())
+    form.description?.toLowerCase().includes(searchQuery.toLowerCase() || '')
   );
 
   // Toggle form active status
@@ -173,6 +178,11 @@ export function FormManagement() {
 
   // Create a new form
   const createNewForm = () => {
+    if (onCreateNew) {
+      onCreateNew();
+      return;
+    }
+    
     const newForm: FormTemplate = {
       id: `form-${Date.now()}`,
       name: "New Form",
@@ -192,7 +202,6 @@ export function FormManagement() {
   // Save form after creation or editing
   const saveForm = (form: FormTemplate) => {
     if (forms.some(f => f.id === form.id)) {
-      // Update existing form
       setForms(prevForms => 
         prevForms.map(f => f.id === form.id ? { ...form, lastModified: new Date().toISOString().split('T')[0] } : f)
       );
@@ -202,7 +211,6 @@ export function FormManagement() {
         description: `${form.name} has been updated successfully.`
       });
     } else {
-      // Add new form
       setForms(prevForms => [...prevForms, { ...form, lastModified: new Date().toISOString().split('T')[0] }]);
       
       toast({
