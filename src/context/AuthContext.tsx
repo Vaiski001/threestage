@@ -147,18 +147,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error fetching profile:", error);
         
         if (error.code === 'PGRST116') {
-          let role = 'customer';
-          
-          const { data: userData } = await supabase.auth.getUser();
-          
-          if (userData?.user?.user_metadata?.role) {
-            role = userData.user.user_metadata.role;
-            console.log("Using role from user metadata:", role);
-          } else {
-            const storedRole = localStorage.getItem('oauth_role');
-            role = (storedRole === 'company' || storedRole === 'customer') ? storedRole : 'customer';
-            console.log("Using role from localStorage:", role);
-          }
+          const storedRole = localStorage.getItem('oauth_role');
+          const role = (storedRole === 'company' || storedRole === 'customer') 
+            ? storedRole as UserProfile['role'] 
+            : 'customer';
+            
+          console.log("Using role from localStorage:", role);
           
           const createdProfile = await handleOAuthSignIn(user!, role);
           if (createdProfile) {

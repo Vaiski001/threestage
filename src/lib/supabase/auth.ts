@@ -162,9 +162,10 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
+          // Include role in query params to ensure it's passed through the OAuth flow
+          role: role
         },
-        // Fix: Store role in the correct location - within options.emailRedirectTo
-        emailRedirectTo: `${domain}${redirectPath}?role=${role}`,
+        // Fix: Use redirectTo instead of emailRedirectTo as it's the correct property
       }
     });
     
