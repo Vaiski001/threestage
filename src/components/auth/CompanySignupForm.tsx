@@ -86,7 +86,8 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         companyName: values.companyName,
         contactName: values.contactName,
         industry: values.industry,
-        passwordLength: values.password.length 
+        passwordLength: values.password.length,
+        role: "company" // Explicitly log role
       });
       
       // First, check if the user already exists to avoid rate limit issues
@@ -104,7 +105,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         throw new Error("This email is already registered. Please use a different email or try logging in.");
       }
       
-      // IMPORTANT: Explicitly setting role to 'company' in the user metadata
+      // IMPORTANT: Explicitly setting role to 'company' in user metadata and setting redirectTo with role
       const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -117,7 +118,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             website: values.website || null,
             phone: values.phone || null,
           },
-          emailRedirectTo: window.location.origin + "/dashboard"
+          emailRedirectTo: window.location.origin + "/auth/callback?role=company" // Include role in redirect
         }
       });
       

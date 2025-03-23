@@ -23,17 +23,24 @@ export const signUpWithEmail = async (
       throw new Error("This email is already registered. Please use a different email or try logging in.");
     }
     
+    // IMPORTANT FIX: Ensure role is properly set in user metadata
+    console.log("Setting explicit role in auth metadata:", userData.role);
+    
     // Create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          role: userData.role,
+          role: userData.role, // Explicitly set role
           name: userData.name,
           company_name: userData.company_name,
+          // Include all other necessary fields
+          ...(userData.industry && { industry: userData.industry }),
+          ...(userData.website && { website: userData.website }),
+          ...(userData.phone && { phone: userData.phone }),
         },
-        // No hCaptcha options
+        emailRedirectTo: `${window.location.origin}/auth/callback?role=${userData.role}`
       }
     });
 
@@ -136,7 +143,7 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
     const redirectPath = '/auth/callback';
     const redirectTo = `${domain}${redirectPath}?role=${role}`;
     
-    console.log(`OAuth sign-in initiated with ${provider}`);
+    console.log(`OAuth sign-in initiated with ${provider} for role: ${role}`);
     console.log(`Redirect URL: ${redirectTo}`);
     
     localStorage.setItem('oauth_role', role);
@@ -154,6 +161,9 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
+        },
+        data: {
+          role: role // IMPORTANT FIX: Also set role in OAuth metadata
         }
       }
     });
@@ -318,6 +328,15 @@ export const updatePassword = async (newPassword: string) => {
 export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 'customer'): Promise<UserProfile | null> => {
   try {
     console.log("Handling OAuth sign-in for user:", user.id, "with role:", role);
+    
+    // IMPORTANT FIX: Check user metadata for role first
+    const metadataRole = user.user_metadata?.role as UserProfile['role'] | undefined;
+    if (metadataRole) {
+      console.log("Found role in user metadata:", metadataRole);
+      role = metadataRole; // Use role from metadata if available
+    } else {
+      console.log("Using provided role:", role);
+    }
     
     // Check if profile already exists
     const { data: existingProfile, error: profileError } = await supabase

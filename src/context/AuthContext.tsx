@@ -164,8 +164,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Handle not found case
         if (error.code === 'PGRST116') { // Not found
           try {
-            // Get role from localStorage if it exists (from OAuth process)
-            const role = localStorage.getItem('oauth_role') as UserProfile['role'] || 'customer';
+            // IMPROVEMENT: Check user metadata for role before falling back to localStorage
+            let role = 'customer';
+            
+            // Get the current user to check metadata
+            const { data: userData } = await supabase.auth.getUser();
+            
+            if (userData?.user?.user_metadata?.role) {
+              role = userData.user.user_metadata.role;
+              console.log("Using role from user metadata:", role);
+            } else {
+              // Fall back to localStorage
+              role = localStorage.getItem('oauth_role') as UserProfile['role'] || 'customer';
+              console.log("Using role from localStorage:", role);
+            }
             
             const createdProfile = await handleOAuthSignIn(user!, role);
             if (createdProfile) {

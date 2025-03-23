@@ -26,6 +26,7 @@ export default function AuthCallback() {
   const { toast } = useToast();
   
   // Get role from query params or from localStorage (fallback)
+  // NOTE: When coming from email confirmation, check user metadata for role
   const userRole = searchParams.get('role') as UserRole || 
                    localStorage.getItem('oauth_role') as UserRole || 
                    'customer';
@@ -78,6 +79,13 @@ export default function AuthCallback() {
         setAuthStage("session_received");
         setCurrentUser(data.session.user);
         
+        // IMPORTANT FIX: Check user metadata for role if coming from email confirmation
+        let roleFromMetadata = null;
+        if (data.session.user.user_metadata && data.session.user.user_metadata.role) {
+          roleFromMetadata = data.session.user.user_metadata.role;
+          console.log("Found role in user metadata:", roleFromMetadata);
+        }
+        
         // Create a profile if it doesn't exist already
         try {
           setAuthStage("creating_profile");
@@ -94,15 +102,32 @@ export default function AuthCallback() {
             throw profileError;
           }
           
+          let userRoleToUse = roleFromMetadata || userRole;
+          console.log("Using role for profile creation:", userRoleToUse);
+          
           if (!profileData) {
             // Create a new profile record
             const newProfileData = {
               id: data.session.user.id,
               email: data.session.user.email || '',
               name: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || '',
-              role: userRole,
+              role: userRoleToUse, // Use role from metadata if available
               created_at: new Date().toISOString()
             };
+            
+            // Add company-specific fields if applicable
+            if (userRoleToUse === 'company') {
+              newProfileData.company_name = data.session.user.user_metadata?.company_name || '';
+              if (data.session.user.user_metadata?.industry) {
+                newProfileData.industry = data.session.user.user_metadata.industry;
+              }
+              if (data.session.user.user_metadata?.website) {
+                newProfileData.website = data.session.user.user_metadata.website;
+              }
+              if (data.session.user.user_metadata?.phone) {
+                newProfileData.phone = data.session.user.user_metadata.phone;
+              }
+            }
             
             console.log("Creating new profile with data:", newProfileData);
             
@@ -115,9 +140,10 @@ export default function AuthCallback() {
               throw insertError;
             }
             
-            console.log("Profile created successfully with role:", userRole);
+            console.log("Profile created successfully with role:", userRoleToUse);
           } else {
             console.log("Existing profile found with role:", profileData.role);
+            userRoleToUse = profileData.role; // Use existing profile role
           }
         } catch (profileCreateError) {
           console.error("Error handling profile creation:", profileCreateError);
@@ -138,17 +164,30 @@ export default function AuthCallback() {
           description: `Welcome back!`,
         });
         
-        // Redirect to appropriate page based on role
+        // IMPORTANT FIX: Redirect based on user metadata role or existing profile role
         setTimeout(() => {
-          // Fix the type comparison issue by using string comparison
-          if (userRole === 'company') {
+          // Check if we have role from user metadata (for email confirmation)
+          if (roleFromMetadata === 'company') {
+            console.log("Email confirmation for company account, redirecting to company dashboard");
             if (needsAdditionalInfo) {
               navigate("/company/settings");
             } else {
               navigate("/company/dashboard");
             }
-          } else {
+          } else if (roleFromMetadata === 'customer') {
+            console.log("Email confirmation for customer account, redirecting to customer dashboard");
             navigate("/customer/dashboard");
+          } else {
+            // Fall back to the original logic if no metadata role
+            if (userRole === 'company') {
+              if (needsAdditionalInfo) {
+                navigate("/company/settings");
+              } else {
+                navigate("/company/dashboard");
+              }
+            } else {
+              navigate("/customer/dashboard");
+            }
           }
         }, 1500);
       } catch (error) {
