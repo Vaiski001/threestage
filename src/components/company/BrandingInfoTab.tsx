@@ -48,11 +48,13 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
   }, [profile, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onUpdate({
+    // Combine form values with logo and banner URLs
+    const updatedValues = {
       ...values,
       profile_logo: logoUrl,
       profile_banner: bannerUrl,
-    });
+    };
+    onUpdate(updatedValues);
   };
 
   // Handle file uploads
@@ -62,7 +64,6 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
       // In a real implementation, you'd upload to storage and get URL
       const tempUrl = URL.createObjectURL(file);
       setLogoUrl(tempUrl);
-      form.setValue("profile_logo", tempUrl);
     }
   };
 
@@ -72,7 +73,6 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
       // In a real implementation, you'd upload to storage and get URL
       const tempUrl = URL.createObjectURL(file);
       setBannerUrl(tempUrl);
-      form.setValue("profile_banner", tempUrl);
     }
   };
 
