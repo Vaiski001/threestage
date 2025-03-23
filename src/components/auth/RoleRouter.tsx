@@ -14,12 +14,21 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
   const location = useLocation();
   const { toast } = useToast();
 
+  // Development mode bypass
+  const isDevelopment = import.meta.env.DEV;
+  const bypassRoleCheck = isDevelopment && process.env.NODE_ENV !== 'production';
+
   // Refresh profile on mount and path change
   useEffect(() => {
-    refreshProfile();
-  }, [refreshProfile, location.pathname]);
+    if (!bypassRoleCheck) {
+      refreshProfile();
+    }
+  }, [refreshProfile, location.pathname, bypassRoleCheck]);
 
   useEffect(() => {
+    // Skip in development bypass mode
+    if (bypassRoleCheck) return;
+    
     if (loading) return;
 
     // Define paths that should always be accessible regardless of auth state
@@ -54,7 +63,7 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
         navigate('/login');
       }
     }
-  }, [profile, loading, navigate, toast, location.pathname]);
+  }, [profile, loading, navigate, toast, location.pathname, bypassRoleCheck]);
 
   return <>{children}</>;
 };

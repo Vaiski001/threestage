@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { RoleRouter } from "@/components/auth/RoleRouter";
+import { DevNavigation } from "@/components/dev/DevNavigation";
 
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard"; // Now used as legacy/demo
@@ -92,6 +93,9 @@ const App = () => (
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          
+          {/* Developer Navigation - only visible in development */}
+          <DevNavigation />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

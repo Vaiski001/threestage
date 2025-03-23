@@ -14,9 +14,21 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const location = useLocation();
+  
+  // Development mode bypass - always allow access in development
+  const isDevelopment = import.meta.env.DEV;
+  const bypassAuth = isDevelopment && process.env.NODE_ENV !== 'production';
 
   useEffect(() => {
     const checkSessionDirectly = async () => {
+      // Skip session check if in development mode with bypass enabled
+      if (bypassAuth) {
+        console.log("Protected route: Auth bypassed in development mode");
+        setHasSession(true);
+        setIsCheckingSession(false);
+        return;
+      }
+      
       try {
         // First check if we already have authentication state from context
         if (isAuthenticated) {
@@ -55,10 +67,13 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     };
 
     checkSessionDirectly();
-  }, [isAuthenticated, loading, refreshProfile]);
+  }, [isAuthenticated, loading, refreshProfile, bypassAuth]);
 
   // Set up auth state change listener
   useEffect(() => {
+    // Skip in development bypass mode
+    if (bypassAuth) return;
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state change in protected route:", event, !!session);
@@ -74,7 +89,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [refreshProfile]);
+  }, [refreshProfile, bypassAuth]);
 
   if (loading || isCheckingSession) {
     return (
@@ -86,7 +101,8 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (isAuthenticated || hasSession) {
+  // Allow access in development mode with bypass enabled
+  if (bypassAuth || isAuthenticated || hasSession) {
     return <>{children}</>;
   }
 
