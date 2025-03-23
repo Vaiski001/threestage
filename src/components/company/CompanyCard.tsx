@@ -45,7 +45,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, compact = fal
                 rel="noopener noreferrer" 
                 className="text-sm hover:underline text-blue-500 truncate"
               >
-                {company.website.replace(/^https?:\/\//, '')}
+                {typeof company.website === 'string' ? company.website.replace(/^https?:\/\//, '') : ''}
               </a>
             </div>
           )}
@@ -78,11 +78,11 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ company, compact = fal
             <div className="mt-4">
               <p className="text-sm font-medium mb-2">Services</p>
               <div className="flex flex-wrap gap-2">
-                {company.services.split(',').map((service, index) => (
+                {typeof company.services === 'string' ? company.services.split(',').map((service, index) => (
                   <Badge key={index} variant="secondary">
                     {service.trim()}
                   </Badge>
-                ))}
+                )) : null}
               </div>
             </div>
           )}
