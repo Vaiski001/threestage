@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 
 interface BrandingInfoTabProps {
   profile: UserProfile | null;
@@ -25,6 +26,7 @@ const formSchema = z.object({
 export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
   const [logoUrl, setLogoUrl] = useState<string | undefined>(profile?.profile_logo);
   const [bannerUrl, setBannerUrl] = useState<string | undefined>(profile?.profile_banner);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,13 +50,18 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
   }, [profile, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     // Combine form values with logo and banner URLs
     const updatedValues = {
       ...values,
       profile_logo: logoUrl,
       profile_banner: bannerUrl,
     };
+    
     onUpdate(updatedValues);
+    setIsSubmitting(false);
   };
 
   // Handle file uploads
@@ -94,7 +101,7 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
       <h2 className="text-2xl font-bold mb-6">Branding & Basic Information</h2>
 
       <Form {...form}>
-        <form onChange={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <FormLabel htmlFor="logo-upload">Company Logo</FormLabel>
@@ -195,6 +202,16 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
             {form.formState.errors.profile_description && (
               <p className="text-sm text-red-500 mt-1">{form.formState.errors.profile_description.message}</p>
             )}
+          </div>
+
+          <div className="pt-4">
+            <Button 
+              type="submit" 
+              className="w-full md:w-auto"
+              disabled={isSubmitting}
+            >
+              Save Changes
+            </Button>
           </div>
         </form>
       </Form>

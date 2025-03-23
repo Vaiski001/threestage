@@ -42,6 +42,7 @@ const CompanySettings = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (values: Partial<UserProfile>) => {
+      console.log("Updating profile with values:", values);
       const { data, error } = await supabase
         .from("profiles")
         .update(values)
@@ -62,6 +63,7 @@ const CompanySettings = () => {
       });
     },
     onError: (error: any) => {
+      console.error("Error in mutation:", error);
       toast({
         title: "Error updating profile",
         description: error.message,
