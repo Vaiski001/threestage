@@ -204,6 +204,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.website) profileData.website = data.website as string;
       if (data.integrations) profileData.integrations = data.integrations as string[] || [];
 
+      console.log("Processed profile data with role:", profileData.role);
       setProfile(profileData);
       return profileData;
     } catch (error) {

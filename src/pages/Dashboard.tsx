@@ -12,13 +12,19 @@ const Dashboard = () => {
     
     // Redirect based on user role
     if (profile) {
+      console.log("Dashboard redirecting based on profile role:", profile.role);
       if (profile.role === 'company') {
         navigate('/company/dashboard', { replace: true });
       } else if (profile.role === 'customer') {
         navigate('/customer/dashboard', { replace: true });
+      } else {
+        console.warn("Unknown role detected:", profile.role);
+        // If unknown role, redirect to demo for now
+        navigate('/demo', { replace: true });
       }
     } else {
       // If no profile, redirect to demo for now
+      console.log("No profile found, redirecting to demo");
       navigate('/demo', { replace: true });
     }
   }, [profile, loading, navigate]);

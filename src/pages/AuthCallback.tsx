@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, processAccessToken, handleOAuthSignIn, createUserProfile, UserRole } from "@/lib/supabase";
@@ -115,9 +114,9 @@ export default function AuthCallback() {
               throw insertError;
             }
             
-            console.log("Profile created successfully");
+            console.log("Profile created successfully with role:", userRole);
           } else {
-            console.log("Existing profile found:", profileData);
+            console.log("Existing profile found with role:", profileData.role);
           }
         } catch (profileCreateError) {
           console.error("Error handling profile creation:", profileCreateError);
@@ -138,12 +137,14 @@ export default function AuthCallback() {
           description: `Welcome back!`,
         });
         
-        // Redirect to appropriate page based on role and whether additional info is needed
+        // Redirect to appropriate page based on role
         setTimeout(() => {
           if (needsAdditionalInfo && userRole === 'company') {
-            navigate("/profile");
+            navigate("/company/settings");
+          } else if (userRole === 'company') {
+            navigate("/company/dashboard");
           } else {
-            navigate("/dashboard");
+            navigate("/customer/dashboard");
           }
         }, 1500);
       } catch (error) {

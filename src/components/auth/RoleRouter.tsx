@@ -46,25 +46,39 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
     }
     
     const currentPath = location.pathname;
-    const isOnCorrectDashboard = 
-      (profile?.role === 'company' && currentPath.includes('/company/')) ||
-      (profile?.role === 'customer' && currentPath.includes('/customer/'));
     
-    if (profile && !isOnCorrectDashboard) {
-      console.log("RoleRouter redirecting user based on role:", profile.role);
+    if (profile) {
+      console.log("RoleRouter checking path access for role:", profile.role, "Current path:", currentPath);
       
-      if (profile.role === 'company') {
-        navigate('/company/dashboard');
-      } else if (profile.role === 'customer') {
-        navigate('/customer/dashboard');
-      } else {
-        toast({
-          title: "Unknown user role",
-          description: "Your account has an invalid role. Please contact support.",
-          variant: "destructive",
-        });
-        // Redirect to login if role is invalid
-        navigate('/login');
+      const isCompanyPath = currentPath.startsWith('/company/');
+      const isCustomerPath = currentPath.startsWith('/customer/');
+      
+      // If user is on the wrong path type for their role
+      if ((profile.role === 'company' && isCustomerPath) || (profile.role === 'customer' && isCompanyPath)) {
+        console.log("User on incorrect path for their role, redirecting");
+        
+        if (profile.role === 'company') {
+          navigate('/company/dashboard', { replace: true });
+        } else if (profile.role === 'customer') {
+          navigate('/customer/dashboard', { replace: true });
+        }
+      } else if (!isCompanyPath && !isCustomerPath) {
+        // If not on a role-specific path, redirect to appropriate dashboard
+        console.log("User not on role-specific path, redirecting to appropriate dashboard");
+        
+        if (profile.role === 'company') {
+          navigate('/company/dashboard', { replace: true });
+        } else if (profile.role === 'customer') {
+          navigate('/customer/dashboard', { replace: true });
+        } else {
+          toast({
+            title: "Unknown user role",
+            description: "Your account has an invalid role. Please contact support.",
+            variant: "destructive",
+          });
+          // Redirect to login if role is invalid
+          navigate('/login', { replace: true });
+        }
       }
     }
   }, [profile, loading, navigate, toast, location.pathname, bypassRoleCheck]);

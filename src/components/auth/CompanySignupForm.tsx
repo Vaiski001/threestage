@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -126,7 +125,8 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
         success: !!data.user, 
         hasError: !!error,
         user: data.user,
-        session: data.session
+        session: data.session,
+        role: data.user?.user_metadata?.role
       });
       
       if (error) {
