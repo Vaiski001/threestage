@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { validateRole } from "@/lib/supabase/roleUtils";
 
 interface AuthContextType {
   user: User | null;
@@ -147,14 +148,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error fetching profile:", error);
         
         if (error.code === 'PGRST116') {
-          const storedRole = localStorage.getItem('oauth_role');
-          const role = (storedRole === 'company' || storedRole === 'customer') 
-            ? storedRole as UserProfile['role'] 
-            : 'customer';
-            
-          console.log("Using role from localStorage:", role);
+          const storedRole = localStorage.getItem("oauth_role");
+          const validatedRole = validateRole(storedRole) || 'customer';
           
-          const createdProfile = await handleOAuthSignIn(user!, role);
+          console.log("Using role from localStorage:", validatedRole);
+          
+          const createdProfile = await handleOAuthSignIn(user!, validatedRole);
           if (createdProfile) {
             console.log("Created new profile during fetch:", createdProfile);
             setProfile(createdProfile);

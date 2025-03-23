@@ -19,6 +19,13 @@ export {
   hasCompleteProfile
 } from './auth';
 
+// Export role utility functions
+export {
+  validateRole,
+  determineUserRole,
+  getDashboardPathForRole
+} from './roleUtils';
+
 // Export sign-out functions
 export {
   signOut,

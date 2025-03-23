@@ -27,13 +27,19 @@ export const signUpWithEmail = async (
     // IMPORTANT FIX: Ensure role is properly set in user metadata
     console.log("Setting explicit role in auth metadata:", userData.role);
     
+    const role = userData.role as UserRole;
+    const accountType = role; // Make account_type match role for consistency
+    
+    // Create redirect URL with role and account_type
+    const redirectUrl = `${window.location.origin}/auth/callback?role=${role}&account_type=${accountType}`;
+    
     // Create the auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          role: userData.role, // Explicitly set role
+          role: role, // Explicitly set role
           name: userData.name,
           company_name: userData.company_name,
           // Include all other necessary fields
@@ -41,7 +47,7 @@ export const signUpWithEmail = async (
           ...(userData.website && { website: userData.website }),
           ...(userData.phone && { phone: userData.phone }),
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback?role=${userData.role}`
+        emailRedirectTo: redirectUrl
       }
     });
 
@@ -61,7 +67,7 @@ export const signUpWithEmail = async (
     const profileData: Record<string, unknown> = {
       id: authData.user.id,
       email,
-      role: userData.role,
+      role: role,
       name: userData.name || "",
       created_at: new Date().toISOString(),
     };
@@ -164,8 +170,7 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
           prompt: 'consent',
           // Include role in query params to ensure it's passed through the OAuth flow
           role: role
-        },
-        // Fix: Use redirectTo instead of emailRedirectTo as it's the correct property
+        }
       }
     });
     
@@ -331,9 +336,9 @@ export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 
     console.log("Handling OAuth sign-in for user:", user.id, "with role:", role);
     
     // IMPORTANT FIX: Check user metadata for role first
-    const metadataRole = user.user_metadata?.role as UserProfile['role'] | undefined;
-    if (metadataRole) {
-      console.log("Found role in user metadata:", metadataRole);
+    const metadataRole = user.user_metadata?.role as UserRole | undefined;
+    if (metadataRole && (metadataRole === 'customer' || metadataRole === 'company')) {
+      console.log("Found valid role in user metadata:", metadataRole);
       role = metadataRole; // Use role from metadata if available
     } else {
       console.log("Using provided role:", role);
@@ -347,7 +352,7 @@ export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 
       .single();
     
     if (profileError) {
-      console.error("Error checking profile:", profileError);
+      console.log("Error checking profile:", profileError.message);
       
       if (profileError.code === 'PGRST116') {
         console.log("Profile doesn't exist, creating new one");
@@ -374,6 +379,14 @@ export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 
           created_at: new Date().toISOString()
         };
         
+        // Add company-specific fields if role is company
+        if (role === 'company') {
+          const companyName = user.user_metadata?.company_name as string || 
+                             user.user_metadata?.organization as string || 
+                             'New Company';
+          newProfileData.company_name = companyName;
+        }
+        
         console.log("Creating profile with data:", newProfileData);
         
         try {
@@ -398,6 +411,12 @@ export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 
             name: data.name as string,
             created_at: data.created_at as string
           };
+          
+          // Add company-specific fields if they exist
+          if (data.company_name) createdProfile.company_name = data.company_name as string;
+          if (data.industry) createdProfile.industry = data.industry as string;
+          if (data.website) createdProfile.website = data.website as string;
+          if (data.phone) createdProfile.phone = data.phone as string;
           
           return createdProfile;
         } catch (error) {

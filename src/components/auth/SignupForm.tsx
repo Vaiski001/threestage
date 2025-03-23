@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -140,7 +141,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
             name: values.name,
             role: "customer",
           },
-          emailRedirectTo: window.location.origin + "/auth/callback?role=customer&account_type=customer"
+          emailRedirectTo: `${window.location.origin}/auth/callback?role=customer&account_type=customer`
         }
       });
       
