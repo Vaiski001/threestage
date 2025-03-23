@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Building, MessageCircle, Plus, PlusCircle } from "lucide-react";
+import { MessageCircle, Plus, PlusCircle } from "lucide-react";
 
 interface EmptyStateProps {
   title: string;
@@ -22,7 +22,7 @@ export const EmptyState = ({
   onSecondaryButtonClick
 }: EmptyStateProps) => {
   return (
-    <div className="bg-card rounded-lg border shadow-sm p-8 text-center my-8">
+    <div className="bg-card rounded-lg border shadow-sm p-8 text-center my-6">
       <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
         {icon}
       </div>

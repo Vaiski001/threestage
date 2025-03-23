@@ -106,21 +106,29 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
   ]
 };
 
-export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
+interface KanbanBoardProps {
+  isDemo?: boolean;
+  readOnly?: boolean;
+}
+
+export function KanbanBoard({ isDemo = false, readOnly = false }: KanbanBoardProps) {
   // Use sample data for demo, empty for new users
   const [enquiries, setEnquiries] = useState(isDemo ? sampleEnquiries : emptyEnquiries);
   const { toast } = useToast();
 
   const handleDragStart = (e: React.DragEvent, id: string, fromColumn: string) => {
+    if (readOnly) return;
     e.dataTransfer.setData("id", id);
     e.dataTransfer.setData("fromColumn", fromColumn);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (readOnly) return;
     e.preventDefault();
   };
 
   const handleDrop = (e: React.DragEvent, toColumn: string) => {
+    if (readOnly) return;
     e.preventDefault();
     const id = e.dataTransfer.getData("id");
     const fromColumn = e.dataTransfer.getData("fromColumn") as keyof typeof enquiries;
@@ -140,21 +148,6 @@ export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
   return (
     <div className="pt-6 pb-12">
       <Container size="full">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-medium">Enquiry Board</h2>
-          <div className="flex gap-3">
-            <Button variant="outline" size="sm" onClick={() => toast({ title: "Feature coming soon", description: "Filter functionality is coming soon." })}>
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
-            <Button size="sm" onClick={() => toast({ title: "Feature coming soon", description: "New enquiry creation is coming soon." })}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Enquiry
-            </Button>
-          </div>
-        </div>
-
-        {/* Always show the Kanban board, even if empty */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto">
           <KanbanColumn
             title="New"
@@ -165,6 +158,7 @@ export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             columnId="new"
+            readOnly={readOnly}
           />
           
           <KanbanColumn
@@ -176,6 +170,7 @@ export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             columnId="pending"
+            readOnly={readOnly}
           />
           
           <KanbanColumn
@@ -187,6 +182,7 @@ export function KanbanBoard({ isDemo = false }: { isDemo?: boolean }) {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             columnId="completed"
+            readOnly={readOnly}
           />
         </div>
       </Container>

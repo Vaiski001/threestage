@@ -3,7 +3,7 @@ import { CustomerStats } from "./CustomerStats";
 import { EmptyState } from "./EmptyState";
 import { DashboardSection } from "./DashboardSection";
 import { NotificationsSection } from "./NotificationsSection";
-import { MessageCircle, Building, FileText, Heart } from "lucide-react";
+import { MessageCircle, Building, FileText, Heart, Filter, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Container } from "@/components/ui/Container";
@@ -96,6 +96,10 @@ export const DashboardView = ({
     }
   ];
 
+  // Active enquiries section
+  const activeEnquiries = customerEnquiries.filter(e => e.status !== "completed");
+  const hasActiveEnquiries = activeEnquiries.length > 0;
+
   return (
     <>
       <Container size="full">
@@ -127,10 +131,21 @@ export const DashboardView = ({
         </div>
       </Container>
 
+      {/* Enquiry Board Section */}
       <div className="my-8">
         <Container size="full">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-medium">Enquiry Board</h2>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" onClick={() => toast({ title: "Feature coming soon", description: "Filter functionality is coming soon." })}>
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+              </Button>
+              <Button size="sm" onClick={createNewEnquiry}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Enquiry
+              </Button>
+            </div>
           </div>
         </Container>
         
@@ -148,7 +163,7 @@ export const DashboardView = ({
             })}
           />
         ) : (
-          <KanbanBoard isDemo={true} />
+          <KanbanBoard isDemo={true} readOnly={true} />
         )}
       </div>
 

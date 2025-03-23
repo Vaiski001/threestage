@@ -21,6 +21,7 @@ interface KanbanColumnProps {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, column: string) => void;
   columnId: string;
+  readOnly?: boolean;
 }
 
 export function KanbanColumn({
@@ -31,13 +32,14 @@ export function KanbanColumn({
   onDragStart,
   onDragOver,
   onDrop,
-  columnId
+  columnId,
+  readOnly = false
 }: KanbanColumnProps) {
   return (
     <div
       className="flex flex-col h-[calc(100vh-200px)] glass-card rounded-lg shadow-sm border border-gray-100 dark:border-gray-800"
-      onDragOver={onDragOver}
-      onDrop={(e) => onDrop(e, columnId)}
+      onDragOver={!readOnly ? onDragOver : undefined}
+      onDrop={!readOnly ? (e) => onDrop(e, columnId) : undefined}
     >
       <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
         <div className="flex items-center">
@@ -47,9 +49,11 @@ export function KanbanColumn({
             {count}
           </span>
         </div>
-        <button className="text-muted-foreground hover:text-foreground transition-all-200 p-1 rounded-md hover:bg-secondary">
-          <Plus className="h-4 w-4" />
-        </button>
+        {!readOnly && (
+          <button className="text-muted-foreground hover:text-foreground transition-all-200 p-1 rounded-md hover:bg-secondary">
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
       </div>
       
       <div className="p-2 flex-1 overflow-y-auto space-y-2">
@@ -57,7 +61,8 @@ export function KanbanColumn({
           <EnquiryCard
             key={enquiry.id}
             enquiry={enquiry}
-            onDragStart={(e) => onDragStart(e, enquiry.id, columnId)}
+            onDragStart={!readOnly ? (e) => onDragStart(e, enquiry.id, columnId) : undefined}
+            readOnly={readOnly}
           />
         ))}
       </div>

@@ -14,10 +14,11 @@ interface Enquiry {
 
 interface EnquiryCardProps {
   enquiry: Enquiry;
-  onDragStart: (e: React.DragEvent) => void;
+  onDragStart?: (e: React.DragEvent) => void;
+  readOnly?: boolean;
 }
 
-export function EnquiryCard({ enquiry, onDragStart }: EnquiryCardProps) {
+export function EnquiryCard({ enquiry, onDragStart, readOnly = false }: EnquiryCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   
   const formatDate = (dateString: string) => {
@@ -40,19 +41,21 @@ export function EnquiryCard({ enquiry, onDragStart }: EnquiryCardProps) {
 
   return (
     <div
-      draggable
+      draggable={!readOnly}
       onDragStart={onDragStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="glass-card rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all-200 hover:shadow-md hover:-translate-y-1 overflow-hidden"
+      className={`glass-card rounded-lg p-3 ${!readOnly ? 'cursor-grab active:cursor-grabbing' : ''} transition-all-200 hover:shadow-md hover:-translate-y-1 overflow-hidden`}
     >
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-medium text-sm">{enquiry.title}</h4>
-        <div className="relative">
-          <button className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-all-200">
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="relative">
+            <button className="text-muted-foreground hover:text-foreground p-1 rounded-md transition-all-200">
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
       
       <p className="text-muted-foreground text-sm line-clamp-2 mb-3">{enquiry.content}</p>
