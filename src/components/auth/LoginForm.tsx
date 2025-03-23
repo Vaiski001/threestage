@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmail, signInWithGoogle } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, AlertCircle, Info } from "lucide-react";
+import { Loader2, Eye, EyeOff, AlertCircle, Info, AlertTriangle } from "lucide-react";
 import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { isSupabaseAvailable } from "@/lib/supabase/client";
+import { isSupabaseAvailable, getServiceStatus } from "@/lib/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -30,37 +31,57 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [serviceCheckCount, setServiceCheckCount] = useState(0);
+  const [serviceStatus, setServiceStatus] = useState<'available' | 'degraded' | 'unavailable'>('available');
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [captchaDetected, setCaptchaDetected] = useState(false);
 
-  useEffect(() => {
-    const checkSupabaseAvailability = async () => {
-      setIsCheckingConnection(true);
-      try {
-        const isAvailable = await isSupabaseAvailable();
-        if (!isAvailable) {
-          const errorMsg = "Supabase services are currently unavailable. Please try again later.";
-          setSupabaseError(errorMsg);
-          if (onError) onError(errorMsg);
-        } else {
-          setSupabaseError(null);
-        }
-      } catch (error) {
-        console.error("Error checking Supabase availability:", error);
-        const errorMsg = "Unable to connect to authentication services. Please try again later.";
+  // Check Supabase availability
+  const checkSupabaseAvailability = useCallback(async () => {
+    setIsCheckingConnection(true);
+    try {
+      const isAvailable = await isSupabaseAvailable();
+      const status = getServiceStatus();
+      setServiceStatus(status.status);
+      
+      if (!isAvailable) {
+        const errorMsg = "Supabase services are currently experiencing issues. Please try again later or use Google login.";
         setSupabaseError(errorMsg);
         if (onError) onError(errorMsg);
-      } finally {
-        setIsCheckingConnection(false);
+      } else {
+        setSupabaseError(null);
       }
-    };
-    
-    checkSupabaseAvailability();
+    } catch (error) {
+      console.error("Error checking Supabase availability:", error);
+      const errorMsg = "Unable to connect to authentication services. Please try again later or use Google login.";
+      setSupabaseError(errorMsg);
+      if (onError) onError(errorMsg);
+    } finally {
+      setIsCheckingConnection(false);
+      setServiceCheckCount(prev => prev + 1);
+    }
   }, [onError]);
 
+  // Check service status on mount and periodically if issues detected
+  useEffect(() => {
+    checkSupabaseAvailability();
+    
+    // If service is degraded, check more frequently
+    const interval = serviceStatus !== 'available' 
+      ? setInterval(checkSupabaseAvailability, 15000) 
+      : null;
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [checkSupabaseAvailability, serviceStatus]);
+
+  // Handle cleanup of timeouts
   useEffect(() => {
     return () => {
       if (loginTimeout) {
@@ -97,10 +118,22 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       return;
     }
     
+    setLoginAttempts(prev => prev + 1);
+    
+    // If we've detected CAPTCHA issues and they're still trying with password
+    if (captchaDetected && loginAttempts > 1) {
+      toast({
+        title: "CAPTCHA Protection Active",
+        description: "We strongly recommend using Google login instead of password login at this time.",
+        variant: "warning",
+      });
+    }
+    
+    // Do a fresh service check before attempting login
     try {
       const isAvailable = await isSupabaseAvailable();
-      if (!isAvailable) {
-        const errorMsg = "Authentication services are temporarily unavailable. Please try again later.";
+      if (!isAvailable && serviceStatus !== 'available') {
+        const errorMsg = "Authentication services are temporarily unavailable. Please try again later or use Google login.";
         toast({
           title: "Service Unavailable",
           description: errorMsg,
@@ -111,13 +144,14 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         return;
       }
     } catch (error) {
+      // Continue anyway, the login might still work
     }
     
     setIsLoading(true);
     
     const timeout = setTimeout(() => {
       setIsLoading(false);
-      const timeoutMsg = "Login request timed out. Please try again.";
+      const timeoutMsg = "Login request timed out. Please try Google login instead.";
       setErrorMessage(timeoutMsg);
       
       if (onError) {
@@ -126,7 +160,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       
       toast({
         title: "Login timed out",
-        description: "The login request took too long to complete. Please try again.",
+        description: "The login request took too long to complete. Please try Google login instead.",
         variant: "destructive",
       });
     }, 15000);
@@ -146,14 +180,15 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         console.error("Login error from Supabase:", error);
         let errorMsg = "Invalid email or password. Please double-check your credentials and try again.";
         
-        if (error.message.includes("Email not confirmed")) {
+        if (error.message && error.message.includes("Email not confirmed")) {
           errorMsg = "Please confirm your email before logging in.";
-        } else if (error.message.includes("rate limit")) {
+        } else if (error.message && error.message.includes("rate limit")) {
           errorMsg = "Too many login attempts. Please wait a minute and try again.";
-        } else if (error.message.includes("captcha")) {
-          errorMsg = "CAPTCHA verification failed. Please try again or use Google login instead.";
-        } else if (error.message.includes("unavailable") || error.message.includes("maintenance")) {
-          errorMsg = "Supabase services are currently unavailable. Please try again later.";
+        } else if (error.message && (error.message.includes("captcha") || error.message.includes("CAPTCHA"))) {
+          errorMsg = "CAPTCHA verification failed. Please try Google login instead.";
+          setCaptchaDetected(true);
+        } else if (error.message && (error.message.includes("unavailable") || error.message.includes("maintenance"))) {
+          errorMsg = "Supabase services are currently unavailable. Please try again later or use Google login.";
         }
         
         setErrorMessage(errorMsg);
@@ -210,10 +245,11 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           errorMsg = "Please confirm your email before logging in.";
         } else if (error.message.includes("rate limit")) {
           errorMsg = "Too many login attempts. Please wait a minute and try again.";
-        } else if (error.message.includes("captcha")) {
-          errorMsg = "CAPTCHA verification failed. Please try again or use Google login instead.";
+        } else if (error.message.includes("captcha") || error.message.includes("CAPTCHA")) {
+          errorMsg = "CAPTCHA verification failed. Please try Google login instead.";
+          setCaptchaDetected(true);
         } else if (error.message.includes("unavailable") || error.message.includes("maintenance")) {
-          errorMsg = "Supabase services are currently unavailable. Please try again later.";
+          errorMsg = "Supabase services are currently unavailable. Please try again later or use Google login.";
         } else {
           errorMsg = error.message;
         }
@@ -236,31 +272,17 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   };
 
   const handleGoogleLogin = async () => {
-    try {
-      const isAvailable = await isSupabaseAvailable();
-      if (!isAvailable) {
-        const errorMsg = "Authentication services are temporarily unavailable. Please try again later.";
-        toast({
-          title: "Service Unavailable",
-          description: errorMsg,
-          variant: "destructive",
-        });
-        setErrorMessage(errorMsg);
-        if (onError) onError(errorMsg);
-        return;
-      }
-    } catch (error) {
-    }
-    
+    // Always allow Google login regardless of service status
     setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
+      // Don't need to set loading to false because we'll be redirected
     } catch (error: any) {
       console.error("Google login error:", error);
       
       let errorMsg = "Failed to initiate Google login. Please try again.";
       if (error.message?.includes("unavailable") || error.message?.includes("maintenance")) {
-        errorMsg = "Supabase services are currently unavailable. Please try again later.";
+        errorMsg = "Authentication services are currently unavailable. Please try again later.";
       } else if (error.message) {
         errorMsg = error.message;
       }
@@ -282,6 +304,25 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
   return (
     <div className="space-y-6">
+      {serviceStatus === 'unavailable' && (
+        <Alert className="bg-red-50 border-red-200">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-700">
+            Authentication services appear to be down. Please try again later or use Google login.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {serviceStatus === 'degraded' && (
+        <Alert className="bg-orange-50 border-orange-200">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-700">
+            Supabase services may be experiencing issues. Login might be unreliable.
+            We recommend using Google login for more reliable authentication.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {supabaseError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -340,7 +381,11 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           )}
         </div>
         
-        <Button type="submit" className="w-full" disabled={isLoading || isCheckingConnection}>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading || isCheckingConnection || serviceStatus === 'unavailable'}
+        >
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -380,7 +425,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading || isCheckingConnection}
+        disabled={isGoogleLoading}
         className="w-full"
         onClick={handleGoogleLogin}
       >
@@ -397,24 +442,25 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         Continue with Google
       </Button>
       
-      {(supabaseError || isCheckingConnection) && (
+      {(captchaDetected || serviceStatus !== 'available') && (
         <Alert className="bg-blue-50 border-blue-200">
           <Info className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-700">
-            Supabase may be experiencing issues or maintenance. If login problems persist, please try again later.
+            <p><strong>Recommended:</strong> Use Google login instead of password login for more reliable authentication during this time.</p>
           </AlertDescription>
         </Alert>
       )}
       
-      {errorMessage && errorMessage.includes("CAPTCHA") && (
+      {captchaDetected && (
         <Alert className="bg-yellow-50 border-yellow-200">
           <Info className="h-4 w-4 text-yellow-600" />
           <AlertDescription className="text-yellow-700">
             <p>CAPTCHA verification is preventing direct login. Please try:</p>
             <ul className="list-disc ml-5 mt-2 space-y-1">
               <li>Using Google login instead (recommended)</li>
-              <li>Waiting 15 minutes before trying again</li>
+              <li>Waiting 15-30 minutes before trying again</li>
               <li>Clearing your browser cookies and cache</li>
+              <li>Using a different network connection</li>
             </ul>
           </AlertDescription>
         </Alert>

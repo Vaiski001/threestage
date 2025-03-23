@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -8,13 +9,14 @@ import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { isSupabaseAvailable } from "@/lib/supabase/client";
+import { isSupabaseAvailable, getServiceStatus } from "@/lib/supabase/client";
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [serviceStatus, setServiceStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [serviceStatus, setServiceStatus] = useState<'available' | 'degraded' | 'unavailable'>('available');
+  const [lastServiceCheck, setLastServiceCheck] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile, user } = useAuth();
@@ -24,7 +26,9 @@ export default function Login() {
     const checkServiceStatus = async () => {
       try {
         const isAvailable = await isSupabaseAvailable();
-        setServiceStatus(isAvailable ? 'available' : 'unavailable');
+        const status = getServiceStatus();
+        setServiceStatus(status.status);
+        setLastServiceCheck(Date.now());
       } catch (error) {
         console.error('Error checking service status:', error);
         setServiceStatus('unavailable');
@@ -33,28 +37,32 @@ export default function Login() {
     
     checkServiceStatus();
     
-    const statusInterval = setInterval(checkServiceStatus, 30000);
+    // Check more frequently if there are issues
+    const statusInterval = setInterval(
+      checkServiceStatus, 
+      serviceStatus === 'available' ? 30000 : 15000
+    );
     
     return () => clearInterval(statusInterval);
-  }, []);
+  }, [serviceStatus]);
 
   useEffect(() => {
-    if (location.state && location.state.message) {
-      setSuccessMessage(location.state.message);
+    if (location.state) {
+      if (location.state.message) {
+        setSuccessMessage(location.state.message);
+        window.history.replaceState({}, document.title);
+        
+        const timer = setTimeout(() => {
+          setSuccessMessage(null);
+        }, 15000);
+        
+        return () => clearTimeout(timer);
+      }
       
-      window.history.replaceState({}, document.title);
-      
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 15000);
-      
-      return () => clearTimeout(timer);
-    }
-    
-    if (location.state && location.state.error) {
-      setError(location.state.error);
-      
-      window.history.replaceState({}, document.title);
+      if (location.state.error) {
+        setError(location.state.error);
+        window.history.replaceState({}, document.title);
+      }
     }
   }, [location]);
 
@@ -107,6 +115,45 @@ export default function Login() {
     }
   };
 
+  // Calculate time since last check
+  const getTimeSinceLastCheck = () => {
+    if (!lastServiceCheck) return "never";
+    const seconds = Math.floor((Date.now() - lastServiceCheck) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    return `${Math.floor(seconds / 60)}m ${seconds % 60}s ago`;
+  };
+
+  // Get appropriate alert for service status
+  const getServiceAlert = () => {
+    if (serviceStatus === 'unavailable') {
+      return (
+        <Alert className="mb-6 border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-700">
+            <p className="font-semibold">Supabase authentication services are currently down.</p>
+            <p className="mt-1">Login with password is unavailable. Please use Google login or try again later.</p>
+            <p className="mt-1 text-xs">Last checked: {getTimeSinceLastCheck()}</p>
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    
+    if (serviceStatus === 'degraded') {
+      return (
+        <Alert className="mb-6 border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-700">
+            <p>Supabase authentication services may be experiencing intermittent issues.</p>
+            <p className="mt-1">Password login might be unreliable. Google login is recommended.</p>
+            <p className="mt-1 text-xs">Last checked: {getTimeSinceLastCheck()}</p>
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -115,14 +162,7 @@ export default function Login() {
           <div className="max-w-md mx-auto">
             <h1 className="text-2xl font-bold mb-6 text-center">Log In</h1>
             
-            {serviceStatus === 'unavailable' && (
-              <Alert className="mb-6 border-orange-200 bg-orange-50">
-                <AlertTriangle className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-orange-700">
-                  Supabase authentication services may be experiencing issues. Login functionality might be limited.
-                </AlertDescription>
-              </Alert>
-            )}
+            {getServiceAlert()}
             
             {successMessage && (
               <Alert className="mb-6 border-green-200 bg-green-50">
@@ -162,12 +202,14 @@ export default function Login() {
               <Alert className="mb-6 border-yellow-200 bg-yellow-50">
                 <Info className="h-4 w-4 text-yellow-600" />
                 <AlertDescription className="text-yellow-700">
-                  <p>We're experiencing some CAPTCHA verification issues. Please try:</p>
+                  <p className="font-semibold">CAPTCHA verification is preventing password login.</p>
+                  <p className="mt-1">This typically happens when there are too many login attempts from your location.</p>
                   <ol className="list-decimal ml-5 mt-2 space-y-1">
-                    <li>Using Google login instead (recommended)</li>
-                    <li>Waiting a few minutes before trying again</li>
-                    <li>Clearing your browser cookies and cache</li>
-                    <li>Using a different browser or device</li>
+                    <li><strong>Use Google login</strong> - Recommended and most reliable option</li>
+                    <li>Wait 15-30 minutes before trying password login again</li>
+                    <li>Clear your browser cookies and cache</li>
+                    <li>Try using a different network connection</li>
+                    <li>If the issue persists, contact support</li>
                   </ol>
                 </AlertDescription>
               </Alert>

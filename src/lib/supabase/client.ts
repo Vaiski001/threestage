@@ -27,6 +27,9 @@ console.log("Supabase configuration:", {
 // Use a singleton pattern to ensure only one instance is created
 let supabaseInstance: ReturnType<typeof createClient> | null = null;
 let connectionError: Error | null = null;
+let lastServiceCheck = 0;
+let serviceStatus: 'available' | 'degraded' | 'unavailable' = 'available';
+let consecutiveErrors = 0;
 
 // Function to get the Supabase client instance
 const getSupabaseClient = () => {
@@ -46,11 +49,33 @@ const getSupabaseClient = () => {
         },
         global: {
           fetch: (url: RequestInfo | URL, init?: RequestInit) => {
-            return fetch(url, init).catch(err => {
-              console.error('Fetch error in Supabase client:', err);
-              connectionError = err;
-              throw err;
-            });
+            return fetch(url, init)
+              .then(response => {
+                if (response.ok) {
+                  // Reset consecutive errors counter on successful requests
+                  consecutiveErrors = 0;
+                  if (serviceStatus !== 'available') {
+                    console.log('Supabase service recovered');
+                    serviceStatus = 'available';
+                  }
+                }
+                return response;
+              })
+              .catch(err => {
+                console.error('Fetch error in Supabase client:', err);
+                connectionError = err;
+                consecutiveErrors++;
+                
+                // After multiple consecutive errors, mark service as degraded or unavailable
+                if (consecutiveErrors > 2) {
+                  serviceStatus = 'degraded';
+                }
+                if (consecutiveErrors > 5) {
+                  serviceStatus = 'unavailable';
+                }
+                
+                throw err;
+              });
           }
         }
       });
@@ -60,11 +85,14 @@ const getSupabaseClient = () => {
         .catch(err => {
           console.error('Error connecting to Supabase:', err);
           connectionError = err;
+          consecutiveErrors++;
+          serviceStatus = 'degraded';
         });
         
     } catch (err) {
       console.error('Error creating Supabase client:', err);
       connectionError = err instanceof Error ? err : new Error(String(err));
+      serviceStatus = 'unavailable';
       // Create a dummy client that will handle errors gracefully
       supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
     }
@@ -75,13 +103,48 @@ const getSupabaseClient = () => {
 // Export the singleton instance
 export const supabase = getSupabaseClient();
 
+// Export service status information
+export const getServiceStatus = () => {
+  return {
+    status: serviceStatus,
+    lastCheck: lastServiceCheck,
+    consecutiveErrors
+  };
+};
+
 // Export a check function to verify if Supabase is currently available
 export const isSupabaseAvailable = async (): Promise<boolean> => {
   try {
+    // Only run a full check if it's been more than 20 seconds since the last check
+    const now = Date.now();
+    if (now - lastServiceCheck < 20000 && serviceStatus !== 'available') {
+      return serviceStatus === 'available';
+    }
+    
+    lastServiceCheck = now;
     const { error } = await supabase.from('profiles').select('id').limit(1);
-    return !error;
+    
+    if (error) {
+      consecutiveErrors++;
+      if (consecutiveErrors > 2) {
+        serviceStatus = 'degraded';
+      }
+      if (consecutiveErrors > 5) {
+        serviceStatus = 'unavailable';
+      }
+      return false;
+    }
+    
+    // Reset consecutive errors counter on successful requests
+    consecutiveErrors = 0;
+    serviceStatus = 'available';
+    return true;
   } catch (error) {
     console.error('Supabase availability check failed:', error);
+    consecutiveErrors++;
+    if (consecutiveErrors > 2) {
+      serviceStatus = 'degraded';
+    }
     return false;
   }
 };
