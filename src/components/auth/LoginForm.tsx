@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmail, signInWithGoogle } from "@/lib/supabase";
@@ -41,7 +40,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [captchaDetected, setCaptchaDetected] = useState(false);
 
-  // Check Supabase availability
   const checkSupabaseAvailability = useCallback(async () => {
     setIsCheckingConnection(true);
     try {
@@ -67,11 +65,9 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     }
   }, [onError]);
 
-  // Check service status on mount and periodically if issues detected
   useEffect(() => {
     checkSupabaseAvailability();
     
-    // If service is degraded, check more frequently
     const interval = serviceStatus !== 'available' 
       ? setInterval(checkSupabaseAvailability, 15000) 
       : null;
@@ -81,7 +77,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     };
   }, [checkSupabaseAvailability, serviceStatus]);
 
-  // Handle cleanup of timeouts
   useEffect(() => {
     return () => {
       if (loginTimeout) {
@@ -120,16 +115,14 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     
     setLoginAttempts(prev => prev + 1);
     
-    // If we've detected CAPTCHA issues and they're still trying with password
     if (captchaDetected && loginAttempts > 1) {
       toast({
         title: "CAPTCHA Protection Active",
         description: "We strongly recommend using Google login instead of password login at this time.",
-        variant: "warning",
+        variant: "destructive",
       });
     }
     
-    // Do a fresh service check before attempting login
     try {
       const isAvailable = await isSupabaseAvailable();
       if (!isAvailable && serviceStatus !== 'available') {
@@ -144,7 +137,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         return;
       }
     } catch (error) {
-      // Continue anyway, the login might still work
     }
     
     setIsLoading(true);
@@ -272,11 +264,9 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   };
 
   const handleGoogleLogin = async () => {
-    // Always allow Google login regardless of service status
     setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // Don't need to set loading to false because we'll be redirected
     } catch (error: any) {
       console.error("Google login error:", error);
       

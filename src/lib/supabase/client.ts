@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // For local development, use environment variables
