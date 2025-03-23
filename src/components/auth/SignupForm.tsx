@@ -46,32 +46,59 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const { toast } = useToast();
   
-  // Check Supabase availability on component mount
+  // Check Supabase availability on component mount - with a timeout to prevent UI getting stuck
   useEffect(() => {
+    let isMounted = true;
+    
     const checkSupabaseAvailability = async () => {
+      if (!isMounted) return;
+      
       setIsCheckingConnection(true);
+      
+      // Add a timeout to make sure we don't block the UI indefinitely
+      const timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.log("Availability check timed out, allowing form interaction");
+          setIsCheckingConnection(false);
+        }
+      }, 3000); // 3 second timeout
+      
       try {
         const isAvailable = await isSupabaseAvailable();
-        if (!isAvailable) {
-          setSupabaseError("Supabase services are currently unavailable. Please try again later.");
-          onError("Supabase services are currently unavailable. Please try again later.");
-        } else {
-          setSupabaseError(null);
+        if (isMounted) {
+          if (!isAvailable) {
+            setSupabaseError("Supabase services may be experiencing issues. Some features might not work correctly.");
+            toast({
+              title: "Connection Issue",
+              description: "Having trouble connecting to our services. You can still try to sign up.",
+              variant: "default"
+            });
+          } else {
+            setSupabaseError(null);
+          }
         }
       } catch (error) {
-        console.error("Error checking Supabase availability:", error);
-        setSupabaseError("Unable to connect to authentication services. Please try again later.");
-        onError("Unable to connect to authentication services. Please try again later.");
+        if (isMounted) {
+          console.error("Error checking Supabase availability:", error);
+          setSupabaseError("Unable to verify connection to authentication services.");
+        }
       } finally {
-        setIsCheckingConnection(false);
+        clearTimeout(timeoutId);
+        if (isMounted) {
+          setIsCheckingConnection(false);
+        }
       }
     };
     
     checkSupabaseAvailability();
-  }, [onError]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [toast]);
   
   // Initialize form
   const form = useForm<SignupFormValues>({
@@ -85,22 +112,6 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
 
   const handleSubmit = async (values: SignupFormValues) => {
     if (isLoading) return;
-    
-    // Check Supabase availability again before submitting
-    try {
-      const isAvailable = await isSupabaseAvailable();
-      if (!isAvailable) {
-        toast({
-          title: "Service Unavailable",
-          description: "Authentication services are temporarily unavailable. Please try again later.",
-          variant: "destructive",
-        });
-        onError("Authentication services are temporarily unavailable. Please try again later.");
-        return;
-      }
-    } catch (error) {
-      // Continue anyway, the actual signup will catch any errors
-    }
     
     setIsLoading(true);
     
@@ -220,22 +231,6 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
   };
 
   const handleGoogleSignup = async () => {
-    // Check Supabase availability before proceeding
-    try {
-      const isAvailable = await isSupabaseAvailable();
-      if (!isAvailable) {
-        toast({
-          title: "Service Unavailable",
-          description: "Authentication services are temporarily unavailable. Please try again later.",
-          variant: "destructive",
-        });
-        onError("Authentication services are temporarily unavailable. Please try again later.");
-        return;
-      }
-    } catch (error) {
-      // Continue anyway as the actual Google sign in will catch errors
-    }
-    
     setIsGoogleLoading(true);
     try {
       // Store role in localStorage for post-OAuth processing
@@ -282,7 +277,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
               <FormItem>
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" {...field} disabled={isLoading || isCheckingConnection} />
+                  <Input placeholder="John Doe" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -300,7 +295,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
                     type="email" 
                     placeholder="you@example.com" 
                     {...field} 
-                    disabled={isLoading || isCheckingConnection}
+                    disabled={isLoading}
                   />
                 </FormControl>
                 <FormMessage />
@@ -320,7 +315,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       {...field}
-                      disabled={isLoading || isCheckingConnection}
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
@@ -338,7 +333,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
             )}
           />
           
-          <Button type="submit" className="w-full" disabled={isLoading || isCheckingConnection}>
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -370,7 +365,7 @@ export function SignupForm({ onSuccess, onError }: SignupFormProps) {
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading || isCheckingConnection}
+        disabled={isGoogleLoading}
         className="w-full"
         onClick={handleGoogleSignup}
       >

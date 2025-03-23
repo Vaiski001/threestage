@@ -119,14 +119,19 @@ export const isSupabaseAvailable = async (): Promise<boolean> => {
   try {
     // Only run a full check if it's been more than 20 seconds since the last check
     const now = Date.now();
+    
+    // Using separate conditionals to avoid TypeScript comparison issues
     if (now - lastServiceCheck < 20000) {
-      // If we've checked recently and service isn't available, return false
       if (serviceStatus === 'degraded' || serviceStatus === 'unavailable') {
         return false;
       }
+      return true; // If recent check says available, return true without rechecking
     }
     
+    // If it's been more than 20 seconds, perform a new check
     lastServiceCheck = now;
+    
+    // Simple lightweight query to check connectivity
     const { error } = await supabase.from('profiles').select('id').limit(1);
     
     if (error) {

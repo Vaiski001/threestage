@@ -30,7 +30,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const [serviceCheckCount, setServiceCheckCount] = useState(0);
   const [serviceStatus, setServiceStatus] = useState<'available' | 'degraded' | 'unavailable'>('available');
   
@@ -42,14 +42,24 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [captchaDetected, setCaptchaDetected] = useState(false);
 
   const checkSupabaseAvailability = useCallback(async () => {
+    let isMounted = true;
     setIsCheckingConnection(true);
+    
+    // Add a timeout to make sure we don't block the UI indefinitely
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.log("Availability check timed out, allowing form interaction");
+        setIsCheckingConnection(false);
+      }
+    }, 3000); // 3 second timeout
+    
     try {
       const isAvailable = await isSupabaseAvailable();
       const status = getServiceStatus();
       setServiceStatus(status.status);
       
       if (!isAvailable) {
-        const errorMsg = "Supabase services are currently experiencing issues. Please try again later or use Google login.";
+        const errorMsg = "Supabase services may be experiencing issues. Some features might not work correctly.";
         setSupabaseError(errorMsg);
         if (onError) onError(errorMsg);
       } else {
@@ -57,24 +67,31 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       }
     } catch (error) {
       console.error("Error checking Supabase availability:", error);
-      const errorMsg = "Unable to connect to authentication services. Please try again later or use Google login.";
+      const errorMsg = "Unable to verify connection to authentication services.";
       setSupabaseError(errorMsg);
       if (onError) onError(errorMsg);
     } finally {
+      clearTimeout(timeoutId);
       setIsCheckingConnection(false);
       setServiceCheckCount(prev => prev + 1);
     }
+    
+    return () => {
+      isMounted = false;
+    };
   }, [onError]);
 
   useEffect(() => {
-    checkSupabaseAvailability();
+    const checkHandler = checkSupabaseAvailability();
     
+    // If service has issues, set up periodic rechecks
     const interval = serviceStatus !== 'available' 
-      ? setInterval(checkSupabaseAvailability, 15000) 
+      ? setInterval(() => checkSupabaseAvailability(), 15000) 
       : null;
     
     return () => {
       if (interval) clearInterval(interval);
+      checkHandler;
     };
   }, [checkSupabaseAvailability, serviceStatus]);
 
@@ -346,7 +363,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
             placeholder="you@example.com"
             value={emailValue}
             onChange={handleEmailChange}
-            disabled={isLoading || isCheckingConnection}
+            disabled={isLoading}
             aria-invalid={!!errors.email}
           />
           {errors.email && (
@@ -363,7 +380,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
               placeholder="••••••••"
               value={passwordValue}
               onChange={handlePasswordChange}
-              disabled={isLoading || isCheckingConnection}
+              disabled={isLoading}
               aria-invalid={!!errors.password}
             />
             <Button
@@ -384,7 +401,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         <Button 
           type="submit" 
           className="w-full" 
-          disabled={isLoading || isCheckingConnection || serviceStatus === 'unavailable'}
+          disabled={isLoading || serviceStatus === 'unavailable'}
         >
           {isLoading ? (
             <>
