@@ -73,12 +73,12 @@ const DemoDashboard = () => {
     { label: "Conversion Rate", value: "26%", change: "+2%", changeType: "positive" }
   ];
 
-  // Stats for demo customer dashboard
+  // Stats for demo customer dashboard with proper zero values
   const customerStats = [
-    { label: "Active Enquiries", value: "3", change: "+1", changeType: "positive" },
-    { label: "Completed", value: "12", change: "+2", changeType: "positive" },
-    { label: "Pending Invoices", value: "1", change: "0", changeType: "neutral" },
-    { label: "Total Spent", value: "$750", change: "+$120", changeType: "positive" }
+    { label: "Total Inquiries", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Active Inquiries", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Pending Inquiries", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Resolved Inquiries", value: "0", change: "0%", changeType: "neutral" }
   ];
 
   // Get the current active stats based on portal selection
