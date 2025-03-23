@@ -106,12 +106,13 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
   ]
 };
 
-interface KanbanBoardProps {
+export interface KanbanBoardProps {
   isDemo?: boolean;
   readOnly?: boolean;
+  isCompanyView?: boolean;
 }
 
-export function KanbanBoard({ isDemo = false, readOnly = false }: KanbanBoardProps) {
+export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = false }: KanbanBoardProps) {
   // Use sample data for demo, empty for new users
   const [enquiries, setEnquiries] = useState(isDemo ? sampleEnquiries : emptyEnquiries);
   const { toast } = useToast();

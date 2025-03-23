@@ -7,8 +7,39 @@ import { FormManagement } from "@/components/forms/FormManagement";
 import { FormBuilder as BuilderComponent } from "@/components/forms/FormBuilder";
 import { FormIntegration } from "@/components/forms/FormIntegration";
 
+// Default empty form template to use when creating a new form
+const emptyFormTemplate = {
+  id: `form-${Date.now()}`,
+  name: "",
+  description: "",
+  active: true,
+  fields: [],
+  branding: {
+    primaryColor: "#0070f3",
+    fontFamily: "Inter",
+    logo: ""
+  },
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+};
+
 export default function FormBuilder() {
   const [activeTab, setActiveTab] = useState("manage");
+  const [selectedForm, setSelectedForm] = useState(emptyFormTemplate);
+
+  const handleCreateNew = () => {
+    setSelectedForm(emptyFormTemplate);
+    setActiveTab("create");
+  };
+
+  const handleSaveForm = (form: any) => {
+    console.log("Form saved:", form);
+    setActiveTab("manage");
+  };
+
+  const handleCloseForm = () => {
+    setActiveTab("manage");
+  };
 
   return (
     <div className="min-h-screen">
@@ -30,15 +61,22 @@ export default function FormBuilder() {
             </TabsList>
             
             <TabsContent value="manage">
-              <FormManagement onCreateNew={() => setActiveTab("create")} />
+              <FormManagement onCreateNew={handleCreateNew} />
             </TabsContent>
             
             <TabsContent value="create">
-              <BuilderComponent onSave={() => setActiveTab("manage")} />
+              <BuilderComponent 
+                form={selectedForm}
+                onSave={handleSaveForm} 
+                onCancel={handleCloseForm}
+              />
             </TabsContent>
             
             <TabsContent value="integration">
-              <FormIntegration />
+              <FormIntegration 
+                form={selectedForm}
+                onClose={() => setActiveTab("manage")} 
+              />
             </TabsContent>
           </Tabs>
         </div>
