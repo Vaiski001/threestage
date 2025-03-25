@@ -33,9 +33,13 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
       if (profile?.profile_services_json) {
         try {
           // Safely parse the JSON string with error handling
-          const parsedServices = typeof profile.profile_services_json === 'string' 
-            ? JSON.parse(profile.profile_services_json) 
-            : [];
+          let parsedServices = [];
+          
+          if (typeof profile.profile_services_json === 'string') {
+            parsedServices = JSON.parse(profile.profile_services_json);
+          } else if (Array.isArray(profile.profile_services_json)) {
+            parsedServices = profile.profile_services_json;
+          }
             
           if (Array.isArray(parsedServices)) {
             setServices(
