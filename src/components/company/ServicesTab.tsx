@@ -32,8 +32,11 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
     try {
       if (profile?.profile_services_json) {
         try {
-          // Type assertion to ensure we know this is a string being parsed
-          const parsedServices = JSON.parse(profile.profile_services_json as string);
+          // Safely parse the JSON string with error handling
+          const parsedServices = typeof profile.profile_services_json === 'string' 
+            ? JSON.parse(profile.profile_services_json) 
+            : [];
+            
           if (Array.isArray(parsedServices)) {
             setServices(
               parsedServices.map((service, index) => ({
@@ -94,7 +97,7 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
       id: newId,
       title: `New Service`,
       description: "Description of what this service includes",
-      price: "Starting at $0",
+      price: "$0",
       category: selectedCategory
     };
     
