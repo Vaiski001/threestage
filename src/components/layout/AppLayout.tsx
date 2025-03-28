@@ -1,3 +1,4 @@
+
 import { ReactNode } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CustomerSidebar } from "@/components/customer/CustomerSidebar";
@@ -22,6 +23,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const [activeNavItem, setActiveNavItem] = useState("");
   
   const userRole = profile?.role || "customer";
+  const isCompany = userRole === "company";
 
   const toggleGroup = (id: string) => {
     setExpandedGroups(prev => ({
@@ -30,6 +32,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }));
   };
 
+  // Customer-specific navigation items
   const customerNavigationItems = [
     { 
       id: "dashboard", 
@@ -46,51 +49,36 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       path: "/customer/enquiries" 
     },
     { 
-      id: "communication", 
-      label: "Communication", 
-      icon: <MessageCircle className="h-5 w-5" />, 
-      description: "Your messages and communications", 
-      children: [
-        { 
-          id: "messages", 
-          label: "Messages", 
-          icon: <MessageCircle className="h-4 w-4" />, 
-          description: "Direct messages with companies" 
-        },
-        { 
-          id: "emails", 
-          label: "Emails", 
-          icon: <Mail className="h-4 w-4" />, 
-          description: "Email communications" 
-        },
-      ]
-    },
-    { 
       id: "billing", 
       label: "Billing & Payments", 
       icon: <CreditCard className="h-5 w-5" />, 
-      description: "View invoices and make payments" 
+      description: "View invoices and make payments",
+      path: "/customer/billing"
     },
     { 
       id: "profile", 
       label: "Profile Settings", 
       icon: <User className="h-5 w-5" />, 
-      description: "Update account details" 
+      description: "Update account details",
+      path: "/customer/settings"
     },
     { 
       id: "notifications", 
       label: "Notifications", 
       icon: <Bell className="h-5 w-5" />, 
-      description: "View alerts and messages" 
+      description: "View alerts and messages",
+      path: "/customer/notifications"
     },
     { 
       id: "support", 
       label: "Support", 
       icon: <HelpCircle className="h-5 w-5" />, 
-      description: "Contact customer service or FAQs" 
+      description: "Contact customer service or FAQs",
+      path: "/customer/support"
     }
   ];
 
+  // Company-specific navigation items
   const companyNavigationItems = [
     { 
       id: "dashboard", 
@@ -110,19 +98,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       id: "customers", 
       label: "Customers", 
       icon: <Users className="h-5 w-5" />, 
-      description: "List of customers with their details" 
-    },
-    { 
-      id: "communication", 
-      label: "Communication", 
-      icon: <MessageCircle className="h-5 w-5" />, 
-      description: "Manage all communications", 
-      children: [
-        { id: "messages", label: "Messages", icon: <MessageSquare className="h-4 w-4" />, description: "Instant messages" },
-        { id: "email", label: "Email", icon: <Mail className="h-4 w-4" />, description: "Email communications" },
-        { id: "phone", label: "Phone", icon: <Phone className="h-4 w-4" />, description: "Phone calls" },
-        { id: "website", label: "Website", icon: <Globe className="h-4 w-4" />, description: "Website inquiries" },
-      ]
+      description: "List of customers with their details",
+      path: "/company/customers"
     },
     { 
       id: "forms", 
@@ -135,25 +112,29 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       id: "invoices", 
       label: "Invoices", 
       icon: <Receipt className="h-5 w-5" />, 
-      description: "Manage invoices and billing" 
+      description: "Manage invoices and billing",
+      path: "/company/invoices"
     },
     { 
       id: "payments", 
       label: "Payments", 
       icon: <DollarSign className="h-5 w-5" />, 
-      description: "Track payments and transactions" 
+      description: "Track payments and transactions",
+      path: "/company/payments"
     },
     { 
       id: "reports", 
       label: "Reports & Analytics", 
       icon: <PieChart className="h-5 w-5" />, 
-      description: "Insights and trends" 
+      description: "Insights and trends",
+      path: "/company/reports"
     },
     { 
       id: "team", 
       label: "Team Management", 
       icon: <UserPlus className="h-5 w-5" />, 
-      description: "Manage company users and roles" 
+      description: "Manage company users and roles",
+      path: "/company/team"
     },
     { 
       id: "settings", 
@@ -164,7 +145,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }
   ];
 
-  const navigationItems = userRole === "company" ? companyNavigationItems : customerNavigationItems;
+  const navigationItems = isCompany ? companyNavigationItems : customerNavigationItems;
 
   const handleNavigation = (item: any) => {
     if (item.children && item.children.length > 0) {
@@ -184,13 +165,16 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <div className="min-h-screen flex w-full">
         <Sidebar>
           <div className="h-16 flex items-center px-4 border-b border-sidebar-border">
-            {userRole === "company" ? (
-              <>
+            {isCompany ? (
+              <div className="flex items-center">
                 <Building className="h-5 w-5 mr-2 text-primary" />
                 <h1 className="font-semibold">Company Portal</h1>
-              </>
+              </div>
             ) : (
-              <h1 className="font-semibold text-lg">Customer Portal</h1>
+              <div className="flex items-center">
+                <User className="h-5 w-5 mr-2 text-primary" />
+                <h1 className="font-semibold">Customer Portal</h1>
+              </div>
             )}
           </div>
           <SidebarContent>
@@ -245,11 +229,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium">
-                    {userRole === "company" 
+                    {isCompany
                       ? (profile?.company_name || profile?.name || 'Company User')
                       : (profile?.name || 'Customer')}
                   </p>
-                  <p className="text-xs text-sidebar-foreground/70">{userRole === "company" ? 'Company' : 'Customer'}</p>
+                  <p className="text-xs text-sidebar-foreground/70">{isCompany ? 'Company' : 'Customer'}</p>
                 </div>
               </div>
               <Button 
@@ -268,7 +252,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           {children}
         </div>
         
-        {userRole === "company" ? (
+        {isCompany ? (
           <WorkPartnersSidebar />
         ) : (
           <CustomerWorkPartnersSidebar />
