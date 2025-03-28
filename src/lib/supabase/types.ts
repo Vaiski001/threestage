@@ -84,4 +84,5 @@ export interface FormTemplate {
   branding: FormBranding;
   is_public?: boolean;
   company_id?: string;
+  active?: boolean; // Added for compatibility with FormBuilder.tsx
 }

@@ -17,7 +17,7 @@ export const getCompanyForms = async (companyId: string) => {
     throw error;
   }
 
-  return data as FormTemplate[];
+  return data as unknown as FormTemplate[];
 };
 
 /**
@@ -35,7 +35,7 @@ export const getFormById = async (formId: string) => {
     throw error;
   }
 
-  return data as FormTemplate;
+  return data as unknown as FormTemplate;
 };
 
 /**
@@ -53,7 +53,7 @@ export const createForm = async (form: Partial<FormTemplate>) => {
     throw error;
   }
 
-  return data as FormTemplate;
+  return data as unknown as FormTemplate;
 };
 
 /**
@@ -72,7 +72,7 @@ export const updateForm = async (formId: string, updates: Partial<FormTemplate>)
     throw error;
   }
 
-  return data as FormTemplate;
+  return data as unknown as FormTemplate;
 };
 
 /**
@@ -108,5 +108,5 @@ export const toggleFormActive = async (formId: string, isActive: boolean) => {
     throw error;
   }
 
-  return data as FormTemplate;
+  return data as unknown as FormTemplate;
 };

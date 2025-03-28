@@ -54,8 +54,8 @@ import {
 } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FormTemplate, FormFieldType } from "./FormManagement";
-import { FormField as CustomFormField } from "./FormField";
+import { FormTemplate, FormField as CustomFormField, FormFieldType } from "@/lib/supabase/types";
+import { FormField } from "./FormField";
 import { FormPreview } from "./FormPreview";
 
 interface FormBuilderProps {

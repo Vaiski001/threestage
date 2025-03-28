@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { FormFieldType } from "./FormManagement";
+import { FormField as FormFieldType, FormFieldType as FieldType } from "@/lib/supabase/types";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
