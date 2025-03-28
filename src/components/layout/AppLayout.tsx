@@ -7,7 +7,7 @@ import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/ui/sidebar";
 import { SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { ChevronDown, User, Settings, LayoutDashboard, MessageSquare, CreditCard, Bell, HelpCircle, Building, FormInput, Receipt, DollarSign, PieChart, UserPlus, Users } from "lucide-react";
+import { ChevronDown, User, Settings, LayoutDashboard, MessageSquare, CreditCard, Bell, HelpCircle, Building, FormInput, Receipt, DollarSign, PieChart, UserPlus, Users, Mail, Phone, MessageCircle, Inbox, AtSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -60,6 +60,35 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       description: "Track and manage your conversations with companies", 
       path: "/customer/enquiries" 
     },
+    {
+      id: "messaging",
+      label: "Messaging",
+      icon: <Mail className="h-5 w-5" />,
+      description: "Message channels and communication",
+      children: [
+        {
+          id: "messaging-email",
+          label: "Email",
+          icon: <AtSign className="h-5 w-5" />,
+          description: "Email messages",
+          path: "/customer/messaging/email"
+        },
+        {
+          id: "messaging-chat",
+          label: "Live Chat",
+          icon: <MessageCircle className="h-5 w-5" />,
+          description: "Live chat messages",
+          path: "/customer/messaging/chat"
+        },
+        {
+          id: "messaging-inbox",
+          label: "Inbox",
+          icon: <Inbox className="h-5 w-5" />,
+          description: "All messages inbox",
+          path: "/customer/messaging/inbox"
+        }
+      ]
+    },
     { 
       id: "billing", 
       label: "Billing & Payments", 
@@ -105,6 +134,35 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       icon: <MessageSquare className="h-5 w-5" />, 
       description: "View and manage customer enquiries",
       path: "/company/enquiries"
+    },
+    {
+      id: "messaging",
+      label: "Messaging",
+      icon: <Mail className="h-5 w-5" />,
+      description: "Message channels and communication",
+      children: [
+        {
+          id: "messaging-email",
+          label: "Email",
+          icon: <AtSign className="h-5 w-5" />,
+          description: "Email messages",
+          path: "/company/messaging/email"
+        },
+        {
+          id: "messaging-chat",
+          label: "Live Chat",
+          icon: <MessageCircle className="h-5 w-5" />,
+          description: "Live chat messages",
+          path: "/company/messaging/chat"
+        },
+        {
+          id: "messaging-sms",
+          label: "SMS",
+          icon: <Phone className="h-5 w-5" />,
+          description: "SMS messages",
+          path: "/company/messaging/sms"
+        }
+      ]
     },
     { 
       id: "forms", 

@@ -91,6 +91,25 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            {/* Company messaging routes */}
+            <Route path="/company/messaging/email" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/company/messaging/chat" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/company/messaging/sms" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/company/invoices" element={
               <ProtectedRoute allowPreview={true}>
                 <NotFound />
@@ -143,6 +162,25 @@ const App = () => (
             <Route path="/customer/enquiries" element={
               <ProtectedRoute allowPreview={true}>
                 <Enquiries />
+              </ProtectedRoute>
+            } />
+            
+            {/* Customer messaging routes */}
+            <Route path="/customer/messaging/email" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/messaging/chat" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/messaging/inbox" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
               </ProtectedRoute>
             } />
             
