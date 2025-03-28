@@ -5,9 +5,16 @@ import {
   Sidebar,
   SidebarContent,
   SidebarNavItem,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { Settings, User } from "lucide-react";
+import { ChevronDown, Settings, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 interface NavigationItem {
   id: string;
@@ -15,6 +22,7 @@ interface NavigationItem {
   icon: React.ReactNode;
   description: string;
   path?: string;
+  children?: NavigationItem[];
 }
 
 interface CustomerSidebarProps {
@@ -30,8 +38,21 @@ export const CustomerSidebar = ({
 }: CustomerSidebarProps) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (id: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   const handleNavItemClick = (item: NavigationItem) => {
+    if (item.children && item.children.length > 0) {
+      toggleGroup(item.id);
+      return;
+    }
+    
     if (item.path) {
       navigate(item.path);
     } else {
@@ -45,19 +66,51 @@ export const CustomerSidebar = ({
         <h1 className="font-semibold text-lg">Customer Portal</h1>
       </div>
       <SidebarContent>
-        <div className="space-y-1 py-4">
-          {navigationItems.map((item) => (
-            <SidebarNavItem
-              key={item.id}
-              id={item.id}
-              label={item.label}
-              icon={item.icon}
-              description={item.description}
-              isActive={activeNavItem === item.id}
-              onClick={() => handleNavItemClick(item)}
-            />
-          ))}
-        </div>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    isActive={activeNavItem === item.id}
+                    onClick={() => handleNavItemClick(item)}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                    {item.children && item.children.length > 0 && (
+                      <ChevronDown 
+                        className={`ml-auto h-4 w-4 transition-transform ${
+                          expandedGroups[item.id] ? 'rotate-180' : ''
+                        }`}
+                      />
+                    )}
+                  </SidebarMenuButton>
+                  {item.children && item.children.length > 0 && expandedGroups[item.id] && (
+                    <div className="pl-8 mt-1 space-y-1">
+                      {item.children.map((child) => (
+                        <SidebarMenuButton
+                          key={child.id}
+                          isActive={activeNavItem === child.id}
+                          onClick={() => {
+                            if (child.path) {
+                              navigate(child.path);
+                            } else {
+                              setActiveNavItem(child.id);
+                            }
+                          }}
+                          size="sm"
+                        >
+                          {child.icon}
+                          <span>{child.label}</span>
+                        </SidebarMenuButton>
+                      ))}
+                    </div>
+                  )}
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <div className="border-t border-sidebar-border px-3 py-4 mt-auto">
         <div className="flex items-center justify-between">

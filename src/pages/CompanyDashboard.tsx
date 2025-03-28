@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
@@ -8,7 +9,12 @@ import {
   Sidebar, 
   SidebarContent, 
   SidebarTrigger,
-  SidebarNavItem
+  SidebarNavItem,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { 
   MessageSquare, 
@@ -26,10 +32,16 @@ import {
   Filter,
   Plus,
   PlusCircle,
-  FormInput
+  FormInput,
+  ChevronDown,
+  MessageCircle,
+  Mail,
+  Phone,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
 
 const CompanyDashboard = () => {
   const navigate = useNavigate();
@@ -37,6 +49,7 @@ const CompanyDashboard = () => {
   const { profile, loading, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [localProfile, setLocalProfile] = useState(profile);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setLocalProfile(profile);
@@ -59,27 +72,96 @@ const CompanyDashboard = () => {
     { label: "Conversion Rate", value: "0%", change: "0%", changeType: "neutral" }
   ];
 
+  const toggleGroup = (id: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of key stats and activities" },
-    { id: "enquiries", label: "Enquiries", icon: <MessageSquare className="h-5 w-5" />, description: "View and manage customer enquiries" },
-    { id: "customers", label: "Customers", icon: <Users className="h-5 w-5" />, description: "List of customers with their details" },
-    { id: "forms", label: "Form Builder", icon: <FormInput className="h-5 w-5" />, description: "Create and manage forms" },
-    { id: "invoices", label: "Invoices", icon: <Receipt className="h-5 w-5" />, description: "Manage invoices and billing" },
-    { id: "payments", label: "Payments", icon: <DollarSign className="h-5 w-5" />, description: "Track payments and transactions" },
-    { id: "reports", label: "Reports & Analytics", icon: <PieChart className="h-5 w-5" />, description: "Insights and trends" },
-    { id: "team", label: "Team Management", icon: <UserPlus className="h-5 w-5" />, description: "Manage company users and roles" },
-    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, description: "Configure company details and preferences" }
+    { 
+      id: "dashboard", 
+      label: "Dashboard", 
+      icon: <LayoutDashboard className="h-5 w-5" />, 
+      description: "Overview of key stats and activities" 
+    },
+    { 
+      id: "enquiries", 
+      label: "Enquiries", 
+      icon: <MessageSquare className="h-5 w-5" />, 
+      description: "View and manage customer enquiries" 
+    },
+    { 
+      id: "customers", 
+      label: "Customers", 
+      icon: <Users className="h-5 w-5" />, 
+      description: "List of customers with their details" 
+    },
+    { 
+      id: "communication", 
+      label: "Communication", 
+      icon: <MessageCircle className="h-5 w-5" />, 
+      description: "Manage all communications", 
+      children: [
+        { id: "messages", label: "Messages", icon: <MessageSquare className="h-4 w-4" />, description: "Instant messages" },
+        { id: "email", label: "Email", icon: <Mail className="h-4 w-4" />, description: "Email communications" },
+        { id: "phone", label: "Phone", icon: <Phone className="h-4 w-4" />, description: "Phone calls" },
+        { id: "website", label: "Website", icon: <Globe className="h-4 w-4" />, description: "Website inquiries" },
+      ]
+    },
+    { 
+      id: "forms", 
+      label: "Form Builder", 
+      icon: <FormInput className="h-5 w-5" />, 
+      description: "Create and manage forms" 
+    },
+    { 
+      id: "invoices", 
+      label: "Invoices", 
+      icon: <Receipt className="h-5 w-5" />, 
+      description: "Manage invoices and billing" 
+    },
+    { 
+      id: "payments", 
+      label: "Payments", 
+      icon: <DollarSign className="h-5 w-5" />, 
+      description: "Track payments and transactions" 
+    },
+    { 
+      id: "reports", 
+      label: "Reports & Analytics", 
+      icon: <PieChart className="h-5 w-5" />, 
+      description: "Insights and trends" 
+    },
+    { 
+      id: "team", 
+      label: "Team Management", 
+      icon: <UserPlus className="h-5 w-5" />, 
+      description: "Manage company users and roles" 
+    },
+    { 
+      id: "settings", 
+      label: "Settings", 
+      icon: <Settings className="h-5 w-5" />, 
+      description: "Configure company details and preferences" 
+    }
   ];
 
-  const handleNavigation = (id: string) => {
-    if (id === "forms") {
+  const handleNavigation = (item: any) => {
+    if (item.children && item.children.length > 0) {
+      toggleGroup(item.id);
+      return;
+    }
+    
+    if (item.id === "forms") {
       navigate("/company/forms");
-    } else if (id === "enquiries") {
+    } else if (item.id === "enquiries") {
       navigate("/company/enquiries");
-    } else if (id === "settings") {
+    } else if (item.id === "settings") {
       navigate("/company/settings");
     } else {
-      setActiveNavItem(id);
+      setActiveNavItem(item.id);
     }
   };
 
@@ -234,23 +316,59 @@ const CompanyDashboard = () => {
       <div className="min-h-screen flex w-full">
         <Sidebar>
           <div className="h-16 flex items-center px-4 border-b border-sidebar-border">
-            <Building className="h-5 w-5 mr-2" />
+            <Building className="h-5 w-5 mr-2 text-primary" />
             <h1 className="font-semibold">Company Portal</h1>
           </div>
           <SidebarContent>
-            <div className="space-y-1 py-4">
-              {navigationItems.map((item) => (
-                <SidebarNavItem
-                  key={item.id}
-                  id={item.id}
-                  label={item.label}
-                  icon={item.icon}
-                  description={item.description}
-                  isActive={activeNavItem === item.id}
-                  onClick={handleNavigation}
-                />
-              ))}
-            </div>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navigationItems.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        isActive={activeNavItem === item.id}
+                        onClick={() => handleNavigation(item)}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                        {item.children && item.children.length > 0 && (
+                          <ChevronDown 
+                            className={`ml-auto h-4 w-4 transition-transform ${
+                              expandedGroups[item.id] ? 'rotate-180' : ''
+                            }`}
+                          />
+                        )}
+                      </SidebarMenuButton>
+                      {item.children && item.children.length > 0 && expandedGroups[item.id] && (
+                        <div className="pl-8 mt-1 space-y-1">
+                          {item.children.map((child: any) => (
+                            <SidebarMenuButton
+                              key={child.id}
+                              isActive={activeNavItem === child.id}
+                              onClick={() => {
+                                if (child.path) {
+                                  navigate(child.path);
+                                } else {
+                                  setActiveNavItem(child.id);
+                                  toast({
+                                    title: `${child.label}`,
+                                    description: "This feature is coming soon.",
+                                  });
+                                }
+                              }}
+                              size="sm"
+                            >
+                              {child.icon}
+                              <span>{child.label}</span>
+                            </SidebarMenuButton>
+                          ))}
+                        </div>
+                      )}
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           </SidebarContent>
           <div className="border-t border-sidebar-border px-3 py-4 mt-auto">
             <div className="flex items-center justify-between">
@@ -319,6 +437,8 @@ const CompanyDashboard = () => {
             </div>
           </main>
         </div>
+        
+        <WorkPartnersSidebar />
       </div>
     </SidebarProvider>
   );

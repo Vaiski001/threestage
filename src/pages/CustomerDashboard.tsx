@@ -10,7 +10,10 @@ import {
   User, 
   Settings, 
   Bell, 
-  HelpCircle
+  HelpCircle,
+  MessageCircle,
+  Mail,
+  ChevronDown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerSidebar } from "@/components/customer/CustomerSidebar";
@@ -22,6 +25,7 @@ import { ProfileSection } from "@/components/customer/ProfileSection";
 import { NotificationsPreferencesSection } from "@/components/customer/NotificationsPreferencesSection";
 import { SupportSection } from "@/components/customer/SupportSection";
 import { useNavigate } from "react-router-dom";
+import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
 
 // Define the enquiry type with response status
 interface CustomerEnquiry {
@@ -47,14 +51,65 @@ const CustomerDashboard = () => {
   const [customerEnquiries] = useState<CustomerEnquiry[]>([]);
   const isDemo = window.location.pathname.includes("demo");
 
-  // Customer navigation items with paths for direct navigation
+  // Customer navigation items with paths for direct navigation and nested items
   const navigationItems = [
-    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of your enquiries and activities" },
-    { id: "enquiries", label: "My Enquiries", icon: <FileText className="h-5 w-5" />, description: "Track and manage your conversations with companies", path: "/customer/enquiries" },
-    { id: "billing", label: "Billing & Payments", icon: <CreditCard className="h-5 w-5" />, description: "View invoices and make payments" },
-    { id: "profile", label: "Profile Settings", icon: <User className="h-5 w-5" />, description: "Update account details" },
-    { id: "notifications", label: "Notifications", icon: <Bell className="h-5 w-5" />, description: "View alerts and messages" },
-    { id: "support", label: "Support", icon: <HelpCircle className="h-5 w-5" />, description: "Contact customer service or FAQs" }
+    { 
+      id: "dashboard", 
+      label: "Dashboard", 
+      icon: <LayoutDashboard className="h-5 w-5" />, 
+      description: "Overview of your enquiries and activities" 
+    },
+    { 
+      id: "enquiries", 
+      label: "My Enquiries", 
+      icon: <FileText className="h-5 w-5" />, 
+      description: "Track and manage your conversations with companies", 
+      path: "/customer/enquiries" 
+    },
+    { 
+      id: "communication", 
+      label: "Communication", 
+      icon: <MessageCircle className="h-5 w-5" />, 
+      description: "Your messages and communications", 
+      children: [
+        { 
+          id: "messages", 
+          label: "Messages", 
+          icon: <MessageCircle className="h-4 w-4" />, 
+          description: "Direct messages with companies" 
+        },
+        { 
+          id: "emails", 
+          label: "Emails", 
+          icon: <Mail className="h-4 w-4" />, 
+          description: "Email communications" 
+        },
+      ]
+    },
+    { 
+      id: "billing", 
+      label: "Billing & Payments", 
+      icon: <CreditCard className="h-5 w-5" />, 
+      description: "View invoices and make payments" 
+    },
+    { 
+      id: "profile", 
+      label: "Profile Settings", 
+      icon: <User className="h-5 w-5" />, 
+      description: "Update account details" 
+    },
+    { 
+      id: "notifications", 
+      label: "Notifications", 
+      icon: <Bell className="h-5 w-5" />, 
+      description: "View alerts and messages" 
+    },
+    { 
+      id: "support", 
+      label: "Support", 
+      icon: <HelpCircle className="h-5 w-5" />, 
+      description: "Contact customer service or FAQs" 
+    }
   ];
 
   // Customer dashboard stats in a more realistic format
@@ -108,8 +163,19 @@ const CustomerDashboard = () => {
             {activeNavItem === "notifications" && <NotificationsPreferencesSection />}
             
             {activeNavItem === "support" && <SupportSection />}
+            
+            {(activeNavItem === "messages" || activeNavItem === "emails") && (
+              <div className="bg-card rounded-lg p-8 text-center">
+                <h2 className="text-2xl font-semibold mb-4">{
+                  activeNavItem === "messages" ? "Messages" : "Email Communications"
+                }</h2>
+                <p className="text-muted-foreground mb-6">This feature is coming soon.</p>
+              </div>
+            )}
           </main>
         </div>
+        
+        <WorkPartnersSidebar />
       </div>
     </SidebarProvider>
   );
