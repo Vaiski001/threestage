@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -65,21 +64,25 @@ const CompanyProfile = () => {
         profile_description: 'Acme Corporation is a leading technology company specializing in innovative solutions for businesses of all sizes. Our mission is to empower organizations through cutting-edge technology and exceptional service.',
         profile_services: [
           {
+            id: "service-1",
             title: 'Web Development',
             description: 'Custom websites and web applications',
             image: undefined
           },
           {
+            id: "service-2",
             title: 'Mobile Apps',
             description: 'iOS and Android application development',
             image: undefined
           },
           {
+            id: "service-3",
             title: 'Cloud Solutions',
             description: 'Scalable cloud infrastructure and migration',
             image: undefined
           },
           {
+            id: "service-4",
             title: 'IT Consulting',
             description: 'Strategic technology planning and advice',
             image: undefined

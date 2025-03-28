@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import { Enquiry } from './types';
 
 /**
  * Submit a form entry to Supabase
@@ -118,7 +119,7 @@ export const getCompanySubmissions = async (companyId: string) => {
 /**
  * Get all enquiries for a company
  */
-export const getCompanyEnquiries = async (companyId: string) => {
+export const getCompanyEnquiries = async (companyId: string): Promise<Enquiry[]> => {
   const { data, error } = await supabase
     .from('enquiries')
     .select('*')
@@ -130,13 +131,13 @@ export const getCompanyEnquiries = async (companyId: string) => {
     throw error;
   }
 
-  return data;
+  return data as Enquiry[];
 };
 
 /**
  * Get enquiries for a customer by email
  */
-export const getCustomerEnquiries = async (customerEmail: string) => {
+export const getCustomerEnquiries = async (customerEmail: string): Promise<Enquiry[]> => {
   const { data, error } = await supabase
     .from('enquiries')
     .select('*')
@@ -148,13 +149,13 @@ export const getCustomerEnquiries = async (customerEmail: string) => {
     throw error;
   }
 
-  return data;
+  return data as Enquiry[];
 };
 
 /**
  * Update enquiry status
  */
-export const updateEnquiryStatus = async (enquiryId: string, status: 'new' | 'pending' | 'completed') => {
+export const updateEnquiryStatus = async (enquiryId: string, status: 'new' | 'pending' | 'completed'): Promise<Enquiry> => {
   const { data, error } = await supabase
     .from('enquiries')
     .update({ status })
@@ -167,5 +168,5 @@ export const updateEnquiryStatus = async (enquiryId: string, status: 'new' | 'pe
     throw error;
   }
 
-  return data;
+  return data as Enquiry;
 };

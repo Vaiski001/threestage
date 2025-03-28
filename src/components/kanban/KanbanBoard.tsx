@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { KanbanColumn } from "./KanbanColumn";
 import { Container } from "@/components/ui/Container";
@@ -7,19 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCompanyEnquiries, getCustomerEnquiries, updateEnquiryStatus } from "@/lib/supabase/submissions";
-
-// Define the Enquiry type to match our database structure
-interface Enquiry {
-  id: string;
-  title: string;
-  customer_name: string;
-  customer_email: string;
-  created_at: string;
-  form_name: string;
-  content: string;
-  status: "new" | "pending" | "completed";
-  priority?: "high" | "medium" | "low";
-}
+import { Enquiry } from "@/lib/supabase/types";
 
 // Sample data for demo purposes
 const sampleEnquiries: Record<string, Enquiry[]> = {
@@ -29,6 +18,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Product Enquiry",
       customer_name: "John Smith",
       customer_email: "john@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-15",
       form_name: "Website",
       content: "I'm interested in your premium package. Could you provide more details?",
@@ -40,6 +30,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Service Question",
       customer_name: "Emma Johnson",
       customer_email: "emma@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-16",
       form_name: "WhatsApp",
       content: "Do you offer same-day delivery for your services?",
@@ -51,6 +42,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Pricing Information",
       customer_name: "Michael Brown",
       customer_email: "michael@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-17",
       form_name: "Facebook",
       content: "What are your current rates for ongoing support?",
@@ -64,6 +56,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Refund Request",
       customer_name: "Sarah Wilson",
       customer_email: "sarah@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-10",
       form_name: "Instagram",
       content: "I'd like to request a refund for my recent purchase.",
@@ -75,6 +68,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Technical Support",
       customer_name: "David Lee",
       customer_email: "david@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-12",
       form_name: "Website",
       content: "I'm having trouble with the login functionality.",
@@ -88,6 +82,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Order Confirmation",
       customer_name: "Jennifer Taylor",
       customer_email: "jennifer@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-05",
       form_name: "Website",
       content: "Thank you for confirming my order details.",
@@ -99,6 +94,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Feature Request",
       customer_name: "Robert Martin",
       customer_email: "robert@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-07",
       form_name: "WhatsApp",
       content: "I suggested a new feature and appreciate your response.",
@@ -110,6 +106,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       title: "Partnership Inquiry",
       customer_name: "Olivia Williams",
       customer_email: "olivia@example.com",
+      company_id: "demo-company",
       created_at: "2023-05-08",
       form_name: "Facebook",
       content: "Thank you for the information about your partnership program.",
@@ -147,12 +144,12 @@ export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = 
         let result: Enquiry[] = [];
         
         if (profile?.role === 'company') {
-          result = await getCompanyEnquiries(user.id);
+          result = await getCompanyEnquiries(user.id) as Enquiry[];
         } else {
           // Assuming customer email is stored in profile or user object
           const email = profile?.email || user.email;
           if (email) {
-            result = await getCustomerEnquiries(email);
+            result = await getCustomerEnquiries(email) as Enquiry[];
           }
         }
         
@@ -178,12 +175,18 @@ export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = 
     }
     
     if (fetchedEnquiries) {
-      const grouped = {
-        new: fetchedEnquiries.filter(e => e.status === 'new'),
-        pending: fetchedEnquiries.filter(e => e.status === 'pending'),
-        completed: fetchedEnquiries.filter(e => e.status === 'completed')
-      };
-      setEnquiries(grouped);
+      // Check if fetchedEnquiries is the grouped object or an array
+      if (Array.isArray(fetchedEnquiries)) {
+        const grouped: Record<string, Enquiry[]> = {
+          new: fetchedEnquiries.filter(e => e.status === 'new'),
+          pending: fetchedEnquiries.filter(e => e.status === 'pending'),
+          completed: fetchedEnquiries.filter(e => e.status === 'completed')
+        };
+        setEnquiries(grouped);
+      } else {
+        // It's already grouped
+        setEnquiries(fetchedEnquiries as Record<string, Enquiry[]>);
+      }
     }
   }, [fetchedEnquiries, isDemo]);
 
