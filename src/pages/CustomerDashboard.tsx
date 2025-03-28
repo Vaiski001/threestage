@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   SidebarProvider
@@ -13,7 +12,6 @@ import {
   HelpCircle,
   MessageCircle,
   Mail,
-  ChevronDown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerSidebar } from "@/components/customer/CustomerSidebar";
@@ -25,7 +23,7 @@ import { ProfileSection } from "@/components/customer/ProfileSection";
 import { NotificationsPreferencesSection } from "@/components/customer/NotificationsPreferencesSection";
 import { SupportSection } from "@/components/customer/SupportSection";
 import { useNavigate } from "react-router-dom";
-import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
+import { CustomerWorkPartnersSidebar } from "@/components/customer/CustomerWorkPartnersSidebar";
 
 // Define the enquiry type with response status
 interface CustomerEnquiry {
@@ -175,7 +173,7 @@ const CustomerDashboard = () => {
           </main>
         </div>
         
-        <WorkPartnersSidebar />
+        <CustomerWorkPartnersSidebar />
       </div>
     </SidebarProvider>
   );
