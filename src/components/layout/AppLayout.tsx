@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CustomerSidebar } from "@/components/customer/CustomerSidebar";
@@ -31,7 +30,6 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }));
   };
 
-  // Customer navigation items
   const customerNavigationItems = [
     { 
       id: "dashboard", 
@@ -93,7 +91,6 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }
   ];
 
-  // Company navigation items
   const companyNavigationItems = [
     { 
       id: "dashboard", 
