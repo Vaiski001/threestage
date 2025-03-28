@@ -35,6 +35,9 @@ import { FormEmbedded } from "./components/forms/FormEmbedded";
 
 const queryClient = new QueryClient();
 
+// Import the Dashboard component we're referencing
+import Dashboard from "./pages/Dashboard";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -127,4 +130,3 @@ const App = () => (
 );
 
 export default App;
-
