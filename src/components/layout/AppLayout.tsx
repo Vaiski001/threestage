@@ -10,7 +10,7 @@ import { SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from 
 import { ChevronDown, User, Settings, LayoutDashboard, MessageSquare, CreditCard, Bell, HelpCircle, Building, FormInput, Receipt, DollarSign, PieChart, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -29,10 +29,12 @@ interface NavigationItem {
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [activeNavItem, setActiveNavItem] = useState("");
   
-  const userRole = profile?.role || "customer";
+  // Determine user role from profile or from the current path as fallback
+  const userRole = profile?.role || (location.pathname.startsWith('/company/') ? "company" : "customer");
   const isCompany = userRole === "company";
 
   const toggleGroup = (id: string) => {
@@ -199,8 +201,8 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    isActive={window.location.pathname.includes(item.id) || 
-                             (item.path && window.location.pathname === item.path)}
+                    isActive={location.pathname.includes(item.id) || 
+                             (item.path && location.pathname === item.path)}
                     onClick={() => handleNavigation(item)}
                   >
                     {item.icon}
@@ -218,7 +220,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                       {item.children.map((child) => (
                         <SidebarMenuButton
                           key={child.id}
-                          isActive={window.location.pathname.includes(child.id)}
+                          isActive={location.pathname.includes(child.id)}
                           onClick={() => {
                             if (child.path) {
                               navigate(child.path);
@@ -242,7 +244,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-sidebar-accent flex items-center justify-center">
-                  <User className="h-5 w-5" />
+                  {isCompany ? <Building className="h-5 w-5" /> : <User className="h-5 w-5" />}
                 </div>
                 <div>
                   <p className="text-sm font-medium">
