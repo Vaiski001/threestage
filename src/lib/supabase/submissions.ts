@@ -135,19 +135,19 @@ export const getCompanyEnquiries = async (companyId: string): Promise<Enquiry[]>
   if (!data) return [];
   
   const typedEnquiries: Enquiry[] = data.map(item => ({
-    id: item.id,
-    title: item.title,
-    customer_name: item.customer_name,
-    customer_email: item.customer_email,
-    company_id: item.company_id,
-    form_id: item.form_id,
-    form_name: item.form_name,
-    submission_id: item.submission_id,
-    content: item.content,
-    status: item.status as 'new' | 'pending' | 'completed',
-    priority: item.priority as 'high' | 'medium' | 'low' | undefined,
-    created_at: item.created_at,
-    updated_at: item.updated_at
+    id: String(item.id),
+    title: String(item.title),
+    customer_name: String(item.customer_name),
+    customer_email: String(item.customer_email),
+    company_id: String(item.company_id),
+    form_id: item.form_id ? String(item.form_id) : undefined,
+    form_name: item.form_name ? String(item.form_name) : undefined,
+    submission_id: item.submission_id ? String(item.submission_id) : undefined,
+    content: String(item.content),
+    status: (item.status || 'new') as 'new' | 'pending' | 'completed',
+    priority: item.priority ? (String(item.priority) as 'high' | 'medium' | 'low') : undefined,
+    created_at: String(item.created_at),
+    updated_at: item.updated_at ? String(item.updated_at) : undefined
   }));
 
   return typedEnquiries;
@@ -172,19 +172,19 @@ export const getCustomerEnquiries = async (customerEmail: string): Promise<Enqui
   if (!data) return [];
   
   const typedEnquiries: Enquiry[] = data.map(item => ({
-    id: item.id,
-    title: item.title,
-    customer_name: item.customer_name,
-    customer_email: item.customer_email,
-    company_id: item.company_id,
-    form_id: item.form_id,
-    form_name: item.form_name,
-    submission_id: item.submission_id,
-    content: item.content,
-    status: item.status as 'new' | 'pending' | 'completed',
-    priority: item.priority as 'high' | 'medium' | 'low' | undefined,
-    created_at: item.created_at,
-    updated_at: item.updated_at
+    id: String(item.id),
+    title: String(item.title),
+    customer_name: String(item.customer_name),
+    customer_email: String(item.customer_email),
+    company_id: String(item.company_id),
+    form_id: item.form_id ? String(item.form_id) : undefined,
+    form_name: item.form_name ? String(item.form_name) : undefined,
+    submission_id: item.submission_id ? String(item.submission_id) : undefined,
+    content: String(item.content),
+    status: (item.status || 'new') as 'new' | 'pending' | 'completed',
+    priority: item.priority ? (String(item.priority) as 'high' | 'medium' | 'low') : undefined,
+    created_at: String(item.created_at),
+    updated_at: item.updated_at ? String(item.updated_at) : undefined
   }));
 
   return typedEnquiries;
@@ -210,19 +210,19 @@ export const updateEnquiryStatus = async (enquiryId: string, status: 'new' | 'pe
   if (!data) throw new Error('No data returned from update operation');
   
   const typedEnquiry: Enquiry = {
-    id: data.id,
-    title: data.title,
-    customer_name: data.customer_name,
-    customer_email: data.customer_email,
-    company_id: data.company_id,
-    form_id: data.form_id,
-    form_name: data.form_name,
-    submission_id: data.submission_id,
-    content: data.content,
-    status: data.status as 'new' | 'pending' | 'completed',
-    priority: data.priority as 'high' | 'medium' | 'low' | undefined,
-    created_at: data.created_at,
-    updated_at: data.updated_at
+    id: String(data.id),
+    title: String(data.title),
+    customer_name: String(data.customer_name),
+    customer_email: String(data.customer_email),
+    company_id: String(data.company_id),
+    form_id: data.form_id ? String(data.form_id) : undefined,
+    form_name: data.form_name ? String(data.form_name) : undefined,
+    submission_id: data.submission_id ? String(data.submission_id) : undefined,
+    content: String(data.content),
+    status: (data.status || 'new') as 'new' | 'pending' | 'completed',
+    priority: data.priority ? (String(data.priority) as 'high' | 'medium' | 'low') : undefined,
+    created_at: String(data.created_at),
+    updated_at: data.updated_at ? String(data.updated_at) : undefined
   };
 
   return typedEnquiry;
