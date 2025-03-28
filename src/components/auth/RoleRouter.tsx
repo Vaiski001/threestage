@@ -42,7 +42,7 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
       location.pathname.startsWith('/forms/')
     );
     
-    // Skip redirection for public paths or if already on correct dashboard
+    // Skip redirection for public paths
     if (isPublicPath) {
       return;
     }
@@ -55,10 +55,15 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
       const isCompanyPath = currentPath.startsWith('/company/');
       const isCustomerPath = currentPath.startsWith('/customer/');
       
-      // If user is on the wrong path type for their role
-      // Use string comparison to fix type checking
+      // If user is on the wrong path type for their role, redirect them
       if ((profile.role === 'company' && isCustomerPath) || (profile.role === 'customer' && isCompanyPath)) {
         console.log("User on incorrect path for their role, redirecting");
+        
+        toast({
+          title: "Access Restricted",
+          description: "You don't have permission to access this area.",
+          variant: "destructive",
+        });
         
         if (profile.role === 'company') {
           console.log("Company user detected, redirecting to company dashboard");
@@ -87,6 +92,10 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
           navigate('/login', { replace: true });
         }
       }
+    } else if (!loading) {
+      // If not authenticated and not loading, redirect to login
+      console.log("User not authenticated, redirecting to login");
+      navigate('/login', { replace: true });
     }
   }, [profile, loading, navigate, toast, location.pathname, bypassRoleCheck]);
 

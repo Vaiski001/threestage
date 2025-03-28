@@ -42,7 +42,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }));
   };
 
-  // Customer-specific navigation items
+  // Customer-specific navigation items with descriptions
   const customerNavigationItems: NavigationItem[] = [
     { 
       id: "dashboard", 
@@ -88,7 +88,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }
   ];
 
-  // Company-specific navigation items
+  // Company-specific navigation items with descriptions
   const companyNavigationItems: NavigationItem[] = [
     { 
       id: "dashboard", 
@@ -152,6 +152,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       icon: <Settings className="h-5 w-5" />, 
       description: "Configure company details and preferences",
       path: "/company/settings"
+    },
+    { 
+      id: "support", 
+      label: "Support", 
+      icon: <HelpCircle className="h-5 w-5" />, 
+      description: "Get help and support",
+      path: "/company/support"
     }
   ];
 
