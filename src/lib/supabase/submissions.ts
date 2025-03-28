@@ -20,6 +20,44 @@ export const submitFormEntry = async (formId: string, formData: Record<string, a
     throw error;
   }
 
+  // After successfully submitting the form, create an enquiry
+  const formResult = await supabase
+    .from('forms')
+    .select('company_id, name')
+    .eq('id', formId)
+    .single();
+    
+  if (formResult.error) {
+    console.error('Error fetching form details:', formResult.error);
+    // Still return the form submission data even if enquiry creation fails
+    return data;
+  }
+  
+  // Create an enquiry based on the form submission
+  const enquiryData = {
+    title: formData.subject || `Enquiry from ${formData.name || 'Website'}`,
+    customer_name: formData.name || 'Anonymous',
+    customer_email: formData.email || '',
+    company_id: formResult.data.company_id,
+    form_id: formId,
+    form_name: formResult.data.name,
+    submission_id: data.id,
+    content: formData.message || JSON.stringify(formData),
+    status: 'new', // Initial status is "new"
+    created_at: new Date().toISOString(),
+  };
+  
+  const { data: enquiryResult, error: enquiryError } = await supabase
+    .from('enquiries')
+    .insert(enquiryData)
+    .select()
+    .single();
+    
+  if (enquiryError) {
+    console.error('Error creating enquiry:', enquiryError);
+    // Still return the form submission data even if enquiry creation fails
+  }
+
   return data;
 };
 
@@ -71,6 +109,61 @@ export const getCompanySubmissions = async (companyId: string) => {
 
   if (error) {
     console.error('Error fetching form submissions:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+/**
+ * Get all enquiries for a company
+ */
+export const getCompanyEnquiries = async (companyId: string) => {
+  const { data, error } = await supabase
+    .from('enquiries')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching company enquiries:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+/**
+ * Get enquiries for a customer by email
+ */
+export const getCustomerEnquiries = async (customerEmail: string) => {
+  const { data, error } = await supabase
+    .from('enquiries')
+    .select('*')
+    .eq('customer_email', customerEmail)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching customer enquiries:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+/**
+ * Update enquiry status
+ */
+export const updateEnquiryStatus = async (enquiryId: string, status: 'new' | 'pending' | 'completed') => {
+  const { data, error } = await supabase
+    .from('enquiries')
+    .update({ status })
+    .eq('id', enquiryId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating enquiry status:', error);
     throw error;
   }
 

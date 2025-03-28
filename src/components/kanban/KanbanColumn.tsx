@@ -5,11 +5,12 @@ import { Plus } from "lucide-react";
 interface Enquiry {
   id: string;
   title: string;
-  customer: string;
-  date: string;
-  channel: string;
+  customer_name: string;
+  created_at: string;
+  form_name?: string;
   content: string;
-  priority: "high" | "medium" | "low";
+  priority?: "high" | "medium" | "low";
+  status: "new" | "pending" | "completed";
 }
 
 interface KanbanColumnProps {
@@ -60,7 +61,15 @@ export function KanbanColumn({
         {enquiries.map((enquiry) => (
           <EnquiryCard
             key={enquiry.id}
-            enquiry={enquiry}
+            enquiry={{
+              id: enquiry.id,
+              title: enquiry.title,
+              customer: enquiry.customer_name,
+              date: new Date(enquiry.created_at).toLocaleDateString(),
+              channel: enquiry.form_name || "Website",
+              content: enquiry.content,
+              priority: enquiry.priority || "medium"
+            }}
             onDragStart={!readOnly ? (e) => onDragStart(e, enquiry.id, columnId) : undefined}
             readOnly={readOnly}
           />

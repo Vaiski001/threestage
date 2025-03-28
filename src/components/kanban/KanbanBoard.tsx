@@ -1,28 +1,25 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { KanbanColumn } from "./KanbanColumn";
 import { Container } from "@/components/ui/Container";
 import { Plus, Filter, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCompanyEnquiries, getCustomerEnquiries, updateEnquiryStatus } from "@/lib/supabase/submissions";
 
-// Define the Enquiry type to match the type in KanbanColumn.tsx
+// Define the Enquiry type to match our database structure
 interface Enquiry {
   id: string;
   title: string;
-  customer: string;
-  date: string;
-  channel: string;
+  customer_name: string;
+  customer_email: string;
+  created_at: string;
+  form_name: string;
   content: string;
-  priority: "high" | "medium" | "low";
+  status: "new" | "pending" | "completed";
+  priority?: "high" | "medium" | "low";
 }
-
-// Empty initial state for new users
-const emptyEnquiries: Record<string, Enquiry[]> = {
-  new: [],
-  pending: [],
-  completed: []
-};
 
 // Sample data for demo purposes
 const sampleEnquiries: Record<string, Enquiry[]> = {
@@ -30,28 +27,34 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
     {
       id: "1",
       title: "Product Enquiry",
-      customer: "John Smith",
-      date: "2023-05-15",
-      channel: "Website",
+      customer_name: "John Smith",
+      customer_email: "john@example.com",
+      created_at: "2023-05-15",
+      form_name: "Website",
       content: "I'm interested in your premium package. Could you provide more details?",
+      status: "new",
       priority: "high"
     },
     {
       id: "2",
       title: "Service Question",
-      customer: "Emma Johnson",
-      date: "2023-05-16",
-      channel: "WhatsApp",
+      customer_name: "Emma Johnson",
+      customer_email: "emma@example.com",
+      created_at: "2023-05-16",
+      form_name: "WhatsApp",
       content: "Do you offer same-day delivery for your services?",
+      status: "new",
       priority: "medium"
     },
     {
       id: "3",
       title: "Pricing Information",
-      customer: "Michael Brown",
-      date: "2023-05-17",
-      channel: "Facebook",
+      customer_name: "Michael Brown",
+      customer_email: "michael@example.com",
+      created_at: "2023-05-17",
+      form_name: "Facebook",
       content: "What are your current rates for ongoing support?",
+      status: "new",
       priority: "low"
     }
   ],
@@ -59,19 +62,23 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
     {
       id: "4",
       title: "Refund Request",
-      customer: "Sarah Wilson",
-      date: "2023-05-10",
-      channel: "Instagram",
+      customer_name: "Sarah Wilson",
+      customer_email: "sarah@example.com",
+      created_at: "2023-05-10",
+      form_name: "Instagram",
       content: "I'd like to request a refund for my recent purchase.",
+      status: "pending",
       priority: "high"
     },
     {
       id: "5",
       title: "Technical Support",
-      customer: "David Lee",
-      date: "2023-05-12",
-      channel: "Website",
+      customer_name: "David Lee",
+      customer_email: "david@example.com",
+      created_at: "2023-05-12",
+      form_name: "Website",
       content: "I'm having trouble with the login functionality.",
+      status: "pending",
       priority: "medium"
     }
   ],
@@ -79,28 +86,34 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
     {
       id: "6",
       title: "Order Confirmation",
-      customer: "Jennifer Taylor",
-      date: "2023-05-05",
-      channel: "Website",
+      customer_name: "Jennifer Taylor",
+      customer_email: "jennifer@example.com",
+      created_at: "2023-05-05",
+      form_name: "Website",
       content: "Thank you for confirming my order details.",
+      status: "completed",
       priority: "medium"
     },
     {
       id: "7",
       title: "Feature Request",
-      customer: "Robert Martin",
-      date: "2023-05-07",
-      channel: "WhatsApp",
+      customer_name: "Robert Martin",
+      customer_email: "robert@example.com",
+      created_at: "2023-05-07",
+      form_name: "WhatsApp",
       content: "I suggested a new feature and appreciate your response.",
+      status: "completed",
       priority: "low"
     },
     {
       id: "8",
       title: "Partnership Inquiry",
-      customer: "Olivia Williams",
-      date: "2023-05-08",
-      channel: "Facebook",
+      customer_name: "Olivia Williams",
+      customer_email: "olivia@example.com",
+      created_at: "2023-05-08",
+      form_name: "Facebook",
       content: "Thank you for the information about your partnership program.",
+      status: "completed",
       priority: "high"
     }
   ]
@@ -113,9 +126,86 @@ export interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = false }: KanbanBoardProps) {
-  // Use sample data for demo, empty for new users
-  const [enquiries, setEnquiries] = useState(isDemo ? sampleEnquiries : emptyEnquiries);
+  const [enquiries, setEnquiries] = useState<Record<string, Enquiry[]>>({
+    new: [],
+    pending: [],
+    completed: []
+  });
+  const { user, profile } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Fetch enquiries based on user role
+  const { data: fetchedEnquiries, isLoading } = useQuery({
+    queryKey: ['enquiries', user?.id, profile?.role],
+    queryFn: async () => {
+      if (isDemo) return sampleEnquiries;
+      
+      if (!user) return null;
+      
+      try {
+        let result: Enquiry[] = [];
+        
+        if (profile?.role === 'company') {
+          result = await getCompanyEnquiries(user.id);
+        } else {
+          // Assuming customer email is stored in profile or user object
+          const email = profile?.email || user.email;
+          if (email) {
+            result = await getCustomerEnquiries(email);
+          }
+        }
+        
+        return result;
+      } catch (error) {
+        console.error("Error fetching enquiries:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load enquiries. Please try again.",
+          variant: "destructive"
+        });
+        return null;
+      }
+    },
+    enabled: !isDemo && !!user?.id
+  });
+
+  // Group enquiries by status
+  useEffect(() => {
+    if (isDemo) {
+      setEnquiries(sampleEnquiries);
+      return;
+    }
+    
+    if (fetchedEnquiries) {
+      const grouped = {
+        new: fetchedEnquiries.filter(e => e.status === 'new'),
+        pending: fetchedEnquiries.filter(e => e.status === 'pending'),
+        completed: fetchedEnquiries.filter(e => e.status === 'completed')
+      };
+      setEnquiries(grouped);
+    }
+  }, [fetchedEnquiries, isDemo]);
+
+  // Update enquiry status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ enquiryId, newStatus }: { enquiryId: string, newStatus: 'new' | 'pending' | 'completed' }) => 
+      updateEnquiryStatus(enquiryId, newStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enquiries'] });
+      toast({
+        title: "Status Updated",
+        description: "Enquiry status has been updated successfully."
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update status. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleDragStart = (e: React.DragEvent, id: string, fromColumn: string) => {
     if (readOnly) return;
@@ -139,12 +229,32 @@ export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = 
     const enquiryCopy = { ...enquiries[fromColumn].find(item => item.id === id) };
     if (!enquiryCopy) return;
 
+    // Update local state first for immediate feedback
     setEnquiries(prev => ({
       ...prev,
       [fromColumn]: prev[fromColumn].filter(item => item.id !== id),
-      [toColumn]: [...prev[toColumn], enquiryCopy]
+      [toColumn]: [...prev[toColumn], {...enquiryCopy, status: toColumn as 'new' | 'pending' | 'completed'}]
     }));
+
+    // Then update in the database
+    if (!isDemo) {
+      updateStatusMutation.mutate({
+        enquiryId: id,
+        newStatus: toColumn as 'new' | 'pending' | 'completed'
+      });
+    }
   };
+
+  if (isLoading && !isDemo) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading enquiries...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-6 pb-12">

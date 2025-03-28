@@ -31,12 +31,15 @@ export interface UserProfile {
     address?: string;
   };
   profile_featured_images?: string[];
+  profile_services_json?: string;
   profile_services?: Array<{
+    id: string;
     title: string;
     description: string;
     price?: string;
     image?: string;
     category?: string;
+    linkedForms?: string[];
   }>;
   
   // Inquiry form settings
@@ -84,5 +87,24 @@ export interface FormTemplate {
   branding: FormBranding;
   is_public?: boolean;
   company_id?: string;
-  active?: boolean; // Added for compatibility with FormBuilder.tsx
+  active?: boolean;
+  service_id?: string;
+  service_name?: string;
+}
+
+// Enquiry type
+export interface Enquiry {
+  id: string;
+  title: string;
+  customer_name: string;
+  customer_email: string;
+  company_id: string;
+  form_id?: string;
+  form_name?: string;
+  submission_id?: string;
+  content: string;
+  status: 'new' | 'pending' | 'completed';
+  priority?: 'high' | 'medium' | 'low';
+  created_at: string;
+  updated_at?: string;
 }

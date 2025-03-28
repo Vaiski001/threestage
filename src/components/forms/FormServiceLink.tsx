@@ -62,6 +62,27 @@ export function FormServiceLink({ services, onUpdate }: FormServiceLinkProps) {
   // Save the updated services
   const handleSave = () => {
     onUpdate(updatedServices);
+    
+    // Also update form-service links in the database for easier queries
+    updatedServices.forEach(service => {
+      const formIds = service.linkedForms || [];
+      
+      formIds.forEach(async formId => {
+        try {
+          // Update forms with service information
+          await supabase
+            .from('forms')
+            .update({ 
+              service_id: service.id,
+              service_name: service.title
+            })
+            .eq('id', formId);
+        } catch (error) {
+          console.error(`Error updating form ${formId} with service info:`, error);
+        }
+      });
+    });
+    
     toast({
       title: "Form Links Updated",
       description: "Service and form connections have been updated."
