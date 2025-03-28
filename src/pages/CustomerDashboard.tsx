@@ -1,29 +1,16 @@
+
 import { useState } from "react";
-import { 
-  SidebarProvider
-} from "@/components/ui/sidebar";
-import { 
-  LayoutDashboard, 
-  FileText, 
-  CreditCard, 
-  User, 
-  Settings, 
-  Bell, 
-  HelpCircle,
-  MessageCircle,
-  Mail,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { CustomerSidebar } from "@/components/customer/CustomerSidebar";
-import { CustomerHeader } from "@/components/customer/CustomerHeader";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardView } from "@/components/customer/DashboardView";
 import { EnquiriesSection } from "@/components/customer/EnquiriesSection";
 import { BillingSection } from "@/components/customer/BillingSection";
 import { ProfileSection } from "@/components/customer/ProfileSection";
 import { NotificationsPreferencesSection } from "@/components/customer/NotificationsPreferencesSection";
 import { SupportSection } from "@/components/customer/SupportSection";
-import { useNavigate } from "react-router-dom";
-import { CustomerWorkPartnersSidebar } from "@/components/customer/CustomerWorkPartnersSidebar";
+import { useToast } from "@/hooks/use-toast";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Bell, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Define the enquiry type with response status
 interface CustomerEnquiry {
@@ -43,72 +30,10 @@ interface CustomerEnquiry {
 const CustomerDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
   const { toast } = useToast();
-  const navigate = useNavigate();
   
-  // Use sample data for demonstration
+  // Use empty array for demonstration - no default data
   const [customerEnquiries] = useState<CustomerEnquiry[]>([]);
   const isDemo = window.location.pathname.includes("demo");
-
-  // Customer navigation items with paths for direct navigation and nested items
-  const navigationItems = [
-    { 
-      id: "dashboard", 
-      label: "Dashboard", 
-      icon: <LayoutDashboard className="h-5 w-5" />, 
-      description: "Overview of your enquiries and activities" 
-    },
-    { 
-      id: "enquiries", 
-      label: "My Enquiries", 
-      icon: <FileText className="h-5 w-5" />, 
-      description: "Track and manage your conversations with companies", 
-      path: "/customer/enquiries" 
-    },
-    { 
-      id: "communication", 
-      label: "Communication", 
-      icon: <MessageCircle className="h-5 w-5" />, 
-      description: "Your messages and communications", 
-      children: [
-        { 
-          id: "messages", 
-          label: "Messages", 
-          icon: <MessageCircle className="h-4 w-4" />, 
-          description: "Direct messages with companies" 
-        },
-        { 
-          id: "emails", 
-          label: "Emails", 
-          icon: <Mail className="h-4 w-4" />, 
-          description: "Email communications" 
-        },
-      ]
-    },
-    { 
-      id: "billing", 
-      label: "Billing & Payments", 
-      icon: <CreditCard className="h-5 w-5" />, 
-      description: "View invoices and make payments" 
-    },
-    { 
-      id: "profile", 
-      label: "Profile Settings", 
-      icon: <User className="h-5 w-5" />, 
-      description: "Update account details" 
-    },
-    { 
-      id: "notifications", 
-      label: "Notifications", 
-      icon: <Bell className="h-5 w-5" />, 
-      description: "View alerts and messages" 
-    },
-    { 
-      id: "support", 
-      label: "Support", 
-      icon: <HelpCircle className="h-5 w-5" />, 
-      description: "Contact customer service or FAQs" 
-    }
-  ];
 
   // Customer dashboard stats in a more realistic format
   const customerStats = [
@@ -126,56 +51,44 @@ const CustomerDashboard = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <CustomerSidebar
-          navigationItems={navigationItems}
-          activeNavItem={activeNavItem}
-          setActiveNavItem={setActiveNavItem}
-        />
-
-        <div className="flex-1 flex flex-col">
-          <CustomerHeader onNewEnquiry={createNewEnquiry} />
-
-          <main className="flex-1 overflow-y-auto p-6">
-            {activeNavItem === "dashboard" && (
-              <DashboardView
-                customerStats={customerStats}
-                customerEnquiries={customerEnquiries}
-                createNewEnquiry={createNewEnquiry}
-                isDemo={isDemo}
-              />
-            )}
-            
-            {activeNavItem === "enquiries" && (
-              <EnquiriesSection
-                customerEnquiries={customerEnquiries}
-                createNewEnquiry={createNewEnquiry}
-              />
-            )}
-            
-            {activeNavItem === "billing" && <BillingSection />}
-            
-            {activeNavItem === "profile" && <ProfileSection />}
-            
-            {activeNavItem === "notifications" && <NotificationsPreferencesSection />}
-            
-            {activeNavItem === "support" && <SupportSection />}
-            
-            {(activeNavItem === "messages" || activeNavItem === "emails") && (
-              <div className="bg-card rounded-lg p-8 text-center">
-                <h2 className="text-2xl font-semibold mb-4">{
-                  activeNavItem === "messages" ? "Messages" : "Email Communications"
-                }</h2>
-                <p className="text-muted-foreground mb-6">This feature is coming soon.</p>
-              </div>
-            )}
-          </main>
+    <AppLayout>
+      <header className="h-16 border-b border-border flex items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-4">
+          <SidebarTrigger />
+          <div className="relative hidden sm:block">
+            <Search className="h-4 w-4 absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search..."
+              className="w-64 pl-10 pr-4 py-2 text-sm rounded-md bg-secondary/50 focus:bg-secondary border-0 focus:ring-1 focus:ring-primary/30 focus:outline-none"
+            />
+          </div>
         </div>
-        
-        <CustomerWorkPartnersSidebar />
-      </div>
-    </SidebarProvider>
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={createNewEnquiry}
+            className="hidden sm:flex"
+          >
+            Create Enquiry
+          </Button>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive"></span>
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto p-6">
+        <DashboardView
+          customerStats={customerStats}
+          customerEnquiries={customerEnquiries}
+          createNewEnquiry={createNewEnquiry}
+          isDemo={isDemo}
+        />
+      </main>
+    </AppLayout>
   );
 };
 

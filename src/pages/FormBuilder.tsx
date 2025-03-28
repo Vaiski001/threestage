@@ -1,143 +1,72 @@
 
-import { useState } from 'react';
-import { Header } from "@/components/layout/Header";
+import { useState } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Container } from "@/components/ui/Container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { FormManagement } from "@/components/forms/FormManagement";
-import { FormBuilder as BuilderComponent } from "@/components/forms/FormBuilder";
+import { FormBuilder as FormBuilderComponent } from "@/components/forms/FormBuilder";
 import { FormIntegration } from "@/components/forms/FormIntegration";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { createForm, updateForm } from "@/lib/supabase/forms";
-import { FormTemplate } from "@/lib/supabase/types";
+import { Bell, Search } from "lucide-react";
 
-// Default empty form template to use when creating a new form
-const createEmptyFormTemplate = (userId?: string): FormTemplate => ({
-  id: '',
-  name: "",
-  description: "",
-  fields: [],
-  branding: {
-    primaryColor: "#0070f3",
-    fontFamily: "Inter",
-    logo: ""
-  },
-  company_id: userId,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-});
-
-export default function FormBuilder() {
-  const { user } = useAuth();
-  const { toast } = useToast();
+const FormBuilder = () => {
   const [activeTab, setActiveTab] = useState("manage");
-  const [selectedForm, setSelectedForm] = useState(createEmptyFormTemplate(user?.id));
-
-  // Create form mutation
-  const createFormMutation = useMutation({
-    mutationFn: createForm,
-    onSuccess: () => {
-      toast({
-        title: "Form Created",
-        description: "Your form has been created successfully."
-      });
-      setActiveTab("manage");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error Creating Form",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Update form mutation
-  const updateFormMutation = useMutation({
-    mutationFn: ({ formId, updates }: { formId: string; updates: Partial<FormTemplate> }) => 
-      updateForm(formId, updates),
-    onSuccess: () => {
-      toast({
-        title: "Form Updated",
-        description: "Your form has been updated successfully."
-      });
-      setActiveTab("manage");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error Updating Form",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleCreateNew = () => {
-    setSelectedForm(createEmptyFormTemplate(user?.id));
-    setActiveTab("create");
-  };
-
-  const handleSaveForm = (form: FormTemplate) => {
-    if (form.id) {
-      // Update existing form
-      updateFormMutation.mutate({
-        formId: form.id,
-        updates: form
-      });
-    } else {
-      // Create new form
-      createFormMutation.mutate({
-        ...form,
-        company_id: user?.id
-      });
-    }
-  };
-
-  const handleCloseForm = () => {
-    setActiveTab("manage");
-  };
 
   return (
-    <div className="min-h-screen">
-      <Header />
-      <Container>
-        <div className="pt-8 pb-20">
-          <h1 className="text-3xl font-bold mb-8">Form Builder</h1>
-          
-          <Tabs 
-            defaultValue="manage" 
-            value={activeTab} 
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="mb-8">
-              <TabsTrigger value="manage">Manage Forms</TabsTrigger>
-              <TabsTrigger value="create">Create Form</TabsTrigger>
-              <TabsTrigger value="integration">Integration</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="manage">
-              <FormManagement onCreateNew={handleCreateNew} />
-            </TabsContent>
-            
-            <TabsContent value="create">
-              <BuilderComponent 
-                form={selectedForm}
-                onSave={handleSaveForm} 
-                onCancel={handleCloseForm}
-              />
-            </TabsContent>
-            
-            <TabsContent value="integration">
-              <FormIntegration 
-                form={selectedForm}
-                onClose={() => setActiveTab("manage")} 
-              />
-            </TabsContent>
-          </Tabs>
+    <AppLayout>
+      <header className="h-16 border-b border-border flex items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-4">
+          <SidebarTrigger />
+          <div className="relative hidden sm:block">
+            <Search className="h-4 w-4 absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search forms..."
+              className="w-64 pl-10 pr-4 py-2 text-sm rounded-md bg-secondary/50 focus:bg-secondary border-0 focus:ring-1 focus:ring-primary/30 focus:outline-none"
+            />
+          </div>
         </div>
-      </Container>
-    </div>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive"></span>
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto">
+        <div className="pt-8 pb-4 px-4 sm:px-6">
+          <Container>
+            <div className="mb-6">
+              <h1 className="text-2xl font-semibold mb-1">Form Builder</h1>
+              <p className="text-muted-foreground">Create and manage custom forms for your business</p>
+            </div>
+            
+            <Tabs defaultValue="manage" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="manage">Manage Forms</TabsTrigger>
+                <TabsTrigger value="create">Create Form</TabsTrigger>
+                <TabsTrigger value="integrate">Integration</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="manage">
+                <FormManagement setActiveTab={setActiveTab} />
+              </TabsContent>
+              
+              <TabsContent value="create">
+                <FormBuilderComponent />
+              </TabsContent>
+              
+              <TabsContent value="integrate">
+                <FormIntegration />
+              </TabsContent>
+            </Tabs>
+          </Container>
+        </div>
+      </main>
+    </AppLayout>
   );
-}
+};
+
+export default FormBuilder;
