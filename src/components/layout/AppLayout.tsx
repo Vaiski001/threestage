@@ -105,13 +105,6 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       path: "/company/enquiries"
     },
     { 
-      id: "customers", 
-      label: "Customers", 
-      icon: <Users className="h-5 w-5" />, 
-      description: "List of customers with their details",
-      path: "/company/customers"
-    },
-    { 
       id: "forms", 
       label: "Form Builder", 
       icon: <FormInput className="h-5 w-5" />, 
@@ -145,6 +138,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       icon: <UserPlus className="h-5 w-5" />, 
       description: "Manage company users and roles",
       path: "/company/team"
+    },
+    { 
+      id: "customers", 
+      label: "Customers", 
+      icon: <Users className="h-5 w-5" />, 
+      description: "List of customers with their details",
+      path: "/company/customers"
     },
     { 
       id: "settings", 
