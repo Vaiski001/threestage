@@ -9,3 +9,6 @@ export { FormEmbedded } from "./FormEmbedded";
 
 // Export builder subcomponents
 export * from "./builder";
+
+// Export management subcomponents
+export * from "./management";
