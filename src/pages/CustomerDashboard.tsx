@@ -8,6 +8,9 @@ import { Bell, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Define change type
+type ChangeType = "positive" | "negative" | "neutral";
+
 // Define the enquiry type with response status
 interface CustomerEnquiry {
   id: string;
@@ -23,6 +26,14 @@ interface CustomerEnquiry {
   submitted?: string;
 }
 
+// Define customer stat interface with proper types
+interface CustomerStat {
+  label: string;
+  value: string;
+  change: string;
+  changeType: ChangeType;
+}
+
 const CustomerDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
   const { toast } = useToast();
@@ -31,12 +42,12 @@ const CustomerDashboard = () => {
   const [customerEnquiries] = useState<CustomerEnquiry[]>([]);
   const isDemo = window.location.pathname.includes("demo");
 
-  // Customer dashboard stats in a more realistic format
-  const customerStats = [
-    { label: "Total Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
-    { label: "Active Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
-    { label: "Pending Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
-    { label: "Resolved Inquiries", value: "0", change: "0%", changeType: "neutral" as const }
+  // Customer dashboard stats with proper type for changeType
+  const customerStats: CustomerStat[] = [
+    { label: "Total Inquiries", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Active Inquiries", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Pending Inquiries", value: "0", change: "0%", changeType: "neutral" },
+    { label: "Resolved Inquiries", value: "0", change: "0%", changeType: "neutral" }
   ];
 
   const createNewEnquiry = () => {

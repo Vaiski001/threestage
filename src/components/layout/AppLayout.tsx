@@ -7,13 +7,23 @@ import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "@/components/ui/sidebar";
 import { SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
-import { ChevronDown, User, Settings, LayoutDashboard, MessageSquare, CreditCard, Bell, HelpCircle, Building, FormInput, Receipt, DollarSign, PieChart, UserPlus, Users, MessageCircle, Mail, Phone, Globe } from "lucide-react";
+import { ChevronDown, User, Settings, LayoutDashboard, MessageSquare, CreditCard, Bell, HelpCircle, Building, FormInput, Receipt, DollarSign, PieChart, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface AppLayoutProps {
   children: ReactNode;
+}
+
+// Define the navigation item interface with optional children property
+interface NavigationItem {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+  path?: string;
+  children?: NavigationItem[];
 }
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
@@ -33,7 +43,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   };
 
   // Customer-specific navigation items
-  const customerNavigationItems = [
+  const customerNavigationItems: NavigationItem[] = [
     { 
       id: "dashboard", 
       label: "Dashboard", 
@@ -79,7 +89,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   ];
 
   // Company-specific navigation items
-  const companyNavigationItems = [
+  const companyNavigationItems: NavigationItem[] = [
     { 
       id: "dashboard", 
       label: "Dashboard", 
@@ -147,7 +157,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
   const navigationItems = isCompany ? companyNavigationItems : customerNavigationItems;
 
-  const handleNavigation = (item: any) => {
+  const handleNavigation = (item: NavigationItem) => {
     if (item.children && item.children.length > 0) {
       toggleGroup(item.id);
       return;
@@ -198,7 +208,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   </SidebarMenuButton>
                   {item.children && item.children.length > 0 && expandedGroups[item.id] && (
                     <div className="pl-8 mt-1 space-y-1">
-                      {item.children.map((child: any) => (
+                      {item.children.map((child) => (
                         <SidebarMenuButton
                           key={child.id}
                           isActive={window.location.pathname.includes(child.id)}
