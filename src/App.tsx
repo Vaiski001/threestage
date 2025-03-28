@@ -58,7 +58,7 @@ const App = () => (
             
             {/* Role router - redirects based on user role */}
             <Route path="/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <RoleRouter>
                   <CustomerDashboard />
                 </RoleRouter>
@@ -67,44 +67,44 @@ const App = () => (
             
             {/* Company routes */}
             <Route path="/company/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <CompanyDashboard />
               </ProtectedRoute>
             } />
             
             <Route path="/company/settings" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <CompanySettings />
               </ProtectedRoute>
             } />
             
             <Route path="/company/forms" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <FormBuilder />
               </ProtectedRoute>
             } />
             
             <Route path="/company/enquiries" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <Enquiries />
               </ProtectedRoute>
             } />
             
             {/* Customer routes */}
             <Route path="/customer/dashboard" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <CustomerDashboard />
               </ProtectedRoute>
             } />
             
             <Route path="/customer/settings" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <CustomerSettings />
               </ProtectedRoute>
             } />
             
             <Route path="/customer/enquiries" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowPreview={true}>
                 <Enquiries />
               </ProtectedRoute>
             } />

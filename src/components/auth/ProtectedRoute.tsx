@@ -7,23 +7,27 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  allowPreview?: boolean;
 }
 
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, allowPreview = false }: ProtectedRouteProps) => {
   const { isAuthenticated, loading, refreshProfile } = useAuth();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const location = useLocation();
   
-  // Development mode bypass - always allow access in development
+  // Development mode and preview bypass
   const isDevelopment = import.meta.env.DEV;
-  const bypassAuth = isDevelopment && process.env.NODE_ENV !== 'production';
+  const isPreview = window.location.hostname.includes('preview') || 
+                   window.location.hostname.includes('lovable.app');
+  const bypassAuth = (isDevelopment && process.env.NODE_ENV !== 'production') || 
+                    (allowPreview && isPreview);
 
   useEffect(() => {
     const checkSessionDirectly = async () => {
-      // Skip session check if in development mode with bypass enabled
+      // Skip session check if in development mode or preview with bypass enabled
       if (bypassAuth) {
-        console.log("Protected route: Auth bypassed in development mode");
+        console.log("Protected route: Auth bypassed in development/preview mode");
         setHasSession(true);
         setIsCheckingSession(false);
         return;
@@ -71,7 +75,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // Set up auth state change listener
   useEffect(() => {
-    // Skip in development bypass mode
+    // Skip in development/preview bypass mode
     if (bypassAuth) return;
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -101,7 +105,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // Allow access in development mode with bypass enabled
+  // Allow access in development mode, preview mode, or with valid authentication
   if (bypassAuth || isAuthenticated || hasSession) {
     return <>{children}</>;
   }

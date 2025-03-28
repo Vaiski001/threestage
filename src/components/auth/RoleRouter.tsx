@@ -14,9 +14,11 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
   const location = useLocation();
   const { toast } = useToast();
 
-  // Development mode bypass
+  // Development mode and preview bypass
   const isDevelopment = import.meta.env.DEV;
-  const bypassRoleCheck = isDevelopment && process.env.NODE_ENV !== 'production';
+  const isPreview = window.location.hostname.includes('preview') || 
+                   window.location.hostname.includes('lovable.app');
+  const bypassRoleCheck = (isDevelopment && process.env.NODE_ENV !== 'production') || isPreview;
 
   // Refresh profile on mount and path change
   useEffect(() => {
@@ -26,7 +28,7 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
   }, [refreshProfile, location.pathname, bypassRoleCheck]);
 
   useEffect(() => {
-    // Skip in development bypass mode
+    // Skip in development/preview bypass mode
     if (bypassRoleCheck) return;
     
     if (loading) return;
