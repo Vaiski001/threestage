@@ -9,9 +9,48 @@ import { FormManagement } from "@/components/forms/FormManagement";
 import { FormBuilder as FormBuilderComponent } from "@/components/forms/FormBuilder";
 import { FormIntegration } from "@/components/forms/FormIntegration";
 import { Bell, Search } from "lucide-react";
+import { FormTemplate } from "@/lib/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 const FormBuilder = () => {
   const [activeTab, setActiveTab] = useState("manage");
+  const [selectedForm, setSelectedForm] = useState<FormTemplate | null>(null);
+  const { toast } = useToast();
+
+  // Empty form template for creating a new form
+  const emptyForm: FormTemplate = {
+    id: `form-${Date.now()}`,
+    name: "New Form",
+    description: "",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    fields: [],
+    branding: {
+      primaryColor: "#0070f3",
+      fontFamily: "Inter",
+    }
+  };
+
+  // Event handler to create a new form
+  const handleCreateForm = () => {
+    setSelectedForm(emptyForm);
+    setActiveTab("create");
+  };
+
+  // Event handlers for form operations
+  const handleSaveForm = (form: FormTemplate) => {
+    toast({
+      title: "Form Saved",
+      description: "Your form has been saved successfully.",
+    });
+    setSelectedForm(null);
+    setActiveTab("manage");
+  };
+
+  const handleCancelForm = () => {
+    setSelectedForm(null);
+    setActiveTab("manage");
+  };
 
   return (
     <AppLayout>
@@ -51,15 +90,49 @@ const FormBuilder = () => {
               </TabsList>
               
               <TabsContent value="manage">
-                <FormManagement setActiveTab={setActiveTab} />
+                <FormManagement onCreateNew={handleCreateForm} />
               </TabsContent>
               
               <TabsContent value="create">
-                <FormBuilderComponent />
+                {selectedForm ? (
+                  <FormBuilderComponent 
+                    form={selectedForm} 
+                    onSave={handleSaveForm} 
+                    onCancel={handleCancelForm} 
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <p>Please create a new form from the Manage Forms tab</p>
+                    <Button 
+                      className="mt-4" 
+                      onClick={() => setActiveTab("manage")}
+                    >
+                      Go to Manage Forms
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="integrate">
-                <FormIntegration />
+                {selectedForm ? (
+                  <FormIntegration 
+                    form={selectedForm} 
+                    onClose={() => {
+                      setSelectedForm(null);
+                      setActiveTab("manage");
+                    }} 
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <p>Please select a form from the Manage Forms tab to see integration options</p>
+                    <Button 
+                      className="mt-4" 
+                      onClick={() => setActiveTab("manage")}
+                    >
+                      Go to Manage Forms
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </Container>
