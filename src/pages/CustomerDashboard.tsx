@@ -21,6 +21,7 @@ import { BillingSection } from "@/components/customer/BillingSection";
 import { ProfileSection } from "@/components/customer/ProfileSection";
 import { NotificationsPreferencesSection } from "@/components/customer/NotificationsPreferencesSection";
 import { SupportSection } from "@/components/customer/SupportSection";
+import { useNavigate } from "react-router-dom";
 
 // Define the enquiry type with response status
 interface CustomerEnquiry {
@@ -40,15 +41,16 @@ interface CustomerEnquiry {
 const CustomerDashboard = () => {
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Use sample data for demonstration
   const [customerEnquiries] = useState<CustomerEnquiry[]>([]);
   const isDemo = window.location.pathname.includes("demo");
 
-  // Customer navigation items
+  // Customer navigation items with paths for direct navigation
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of your enquiries and activities" },
-    { id: "enquiries", label: "My Enquiries", icon: <FileText className="h-5 w-5" />, description: "Track and manage your conversations with companies" },
+    { id: "enquiries", label: "My Enquiries", icon: <FileText className="h-5 w-5" />, description: "Track and manage your conversations with companies", path: "/customer/enquiries" },
     { id: "billing", label: "Billing & Payments", icon: <CreditCard className="h-5 w-5" />, description: "View invoices and make payments" },
     { id: "profile", label: "Profile Settings", icon: <User className="h-5 w-5" />, description: "Update account details" },
     { id: "notifications", label: "Notifications", icon: <Bell className="h-5 w-5" />, description: "View alerts and messages" },

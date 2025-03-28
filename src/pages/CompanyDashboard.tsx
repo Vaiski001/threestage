@@ -38,17 +38,13 @@ const CompanyDashboard = () => {
   const { toast } = useToast();
   const [localProfile, setLocalProfile] = useState(profile);
 
-  // Update local profile state when profile changes
   useEffect(() => {
     setLocalProfile(profile);
   }, [profile]);
 
-  // Refresh profile data on mount and periodically
   useEffect(() => {
-    // Refresh on mount
     refreshProfile();
     
-    // Set up periodic refresh every 30 seconds
     const intervalId = setInterval(() => {
       refreshProfile();
     }, 30000);
@@ -56,7 +52,6 @@ const CompanyDashboard = () => {
     return () => clearInterval(intervalId);
   }, [refreshProfile]);
 
-  // Stats for all company users (showing zero values initially)
   const stats = [
     { label: "Total Enquiries", value: "0", change: "0%", changeType: "neutral" },
     { label: "Pending", value: "0", change: "0%", changeType: "neutral" },
@@ -64,7 +59,6 @@ const CompanyDashboard = () => {
     { label: "Conversion Rate", value: "0%", change: "0%", changeType: "neutral" }
   ];
 
-  // Company sidebar navigation items
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of key stats and activities" },
     { id: "enquiries", label: "Enquiries", icon: <MessageSquare className="h-5 w-5" />, description: "View and manage customer enquiries" },
@@ -77,18 +71,18 @@ const CompanyDashboard = () => {
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, description: "Configure company details and preferences" }
   ];
 
-  // Handle navigation
   const handleNavigation = (id: string) => {
     if (id === "forms") {
-      navigate("/forms");
+      navigate("/company/forms");
     } else if (id === "enquiries") {
-      navigate("/enquiries");
+      navigate("/company/enquiries");
+    } else if (id === "settings") {
+      navigate("/company/settings");
     } else {
       setActiveNavItem(id);
     }
   };
 
-  // Show loading state while profile data is loading
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">

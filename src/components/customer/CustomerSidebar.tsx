@@ -5,15 +5,16 @@ import {
   Sidebar,
   SidebarContent,
   SidebarNavItem,
-  SidebarMenu
 } from "@/components/ui/sidebar";
 import { Settings, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface NavigationItem {
   id: string;
   label: string;
   icon: React.ReactNode;
   description: string;
+  path?: string;
 }
 
 interface CustomerSidebarProps {
@@ -28,6 +29,15 @@ export const CustomerSidebar = ({
   setActiveNavItem
 }: CustomerSidebarProps) => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  const handleNavItemClick = (item: NavigationItem) => {
+    if (item.path) {
+      navigate(item.path);
+    } else {
+      setActiveNavItem(item.id);
+    }
+  };
 
   return (
     <Sidebar variant="sidebar">
@@ -44,7 +54,7 @@ export const CustomerSidebar = ({
               icon={item.icon}
               description={item.description}
               isActive={activeNavItem === item.id}
-              onClick={setActiveNavItem}
+              onClick={() => handleNavItemClick(item)}
             />
           ))}
         </div>
@@ -60,7 +70,7 @@ export const CustomerSidebar = ({
               <p className="text-xs text-sidebar-foreground/70">Customer</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="text-sidebar-foreground">
+          <Button variant="ghost" size="icon" className="text-sidebar-foreground" onClick={() => navigate('/customer/settings')}>
             <Settings className="h-4 w-4" />
           </Button>
         </div>

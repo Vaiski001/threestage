@@ -59,9 +59,7 @@ const App = () => (
             {/* Role router - redirects based on user role */}
             <Route path="/dashboard" element={
               <ProtectedRoute allowPreview={true}>
-                <RoleRouter>
-                  <CustomerDashboard />
-                </RoleRouter>
+                <Dashboard />
               </ProtectedRoute>
             } />
             
@@ -109,6 +107,10 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            {/* Remove duplicate routes and redirect */}
+            <Route path="/forms" element={<Navigate to="/company/forms" replace />} />
+            <Route path="/enquiries" element={<Navigate to="/dashboard" replace />} />
+            
             {/* Set Index as the fallback for empty path */}
             <Route path="" element={<Navigate to="/" />} />
             
@@ -125,3 +127,4 @@ const App = () => (
 );
 
 export default App;
+
