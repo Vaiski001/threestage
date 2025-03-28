@@ -18,7 +18,7 @@ import {
   Form,
   FormControl,
   FormDescription,
-  FormField,
+  FormField as UIFormField,
   FormItem,
   FormLabel,
   FormMessage
@@ -54,7 +54,7 @@ import {
 } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FormTemplate, FormField as CustomFormField, FormFieldType } from "@/lib/supabase/types";
+import { FormTemplate, FormField as FormFieldInterface, FormFieldType } from "@/lib/supabase/types";
 import { FormField } from "./FormField";
 import { FormPreview } from "./FormPreview";
 
@@ -78,14 +78,14 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
   };
 
   // Handle adding a new form field
-  const addField = (type: FormFieldType['type']) => {
-    const newField: FormFieldType = {
+  const addField = (type: FormFieldType) => {
+    const newField: FormFieldInterface = {
       id: `field-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      type,
+      type: type,
       label: `New ${type.charAt(0).toUpperCase() + type.slice(1)} Field`,
       placeholder: `Enter ${type}`,
       required: false,
-      options: type === 'dropdown' || type === 'radio' || type === 'checkbox' ? ['Option 1', 'Option 2'] : undefined
+      options: (type === 'dropdown' || type === 'radio' || type === 'checkbox') ? ['Option 1', 'Option 2'] : undefined
     };
 
     setFormData(prev => ({
@@ -100,7 +100,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
   };
 
   // Update a field property
-  const updateField = (fieldId: string, property: keyof FormFieldType, value: any) => {
+  const updateField = (fieldId: string, property: keyof FormFieldInterface, value: any) => {
     setFormData(prev => ({
       ...prev,
       fields: prev.fields.map(field => 
