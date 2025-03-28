@@ -1,59 +1,23 @@
+
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FormTemplate } from "@/lib/supabase/types";
 import { FormPreview } from "./FormPreview";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getFormById } from "@/lib/supabase/forms";
 
 export function FormEmbedded() {
   const { formId } = useParams<{ formId: string }>();
   
-  // Fetch form data
-  // In a real implementation, this would fetch from Supabase
-  const { data: form, isLoading } = useQuery({
+  // Fetch form data from Supabase
+  const { data: form, isLoading, error } = useQuery({
     queryKey: ['embeddedForm', formId],
     queryFn: async () => {
-      // Mock data for now
-      const mockForm: FormTemplate = {
-        id: formId || '1',
-        name: 'Contact Form',
-        description: 'General contact and enquiry form',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        fields: [
-          {
-            id: 'name',
-            type: 'text',
-            label: 'Your Name',
-            placeholder: 'John Doe',
-            required: true,
-          },
-          {
-            id: 'email',
-            type: 'email',
-            label: 'Email Address',
-            placeholder: 'john.doe@example.com',
-            required: true,
-          },
-          {
-            id: 'message',
-            type: 'textarea',
-            label: 'Message',
-            placeholder: 'How can we help you?',
-            required: true,
-          }
-        ],
-        branding: {
-          primaryColor: '#0070f3',
-          fontFamily: 'Inter, sans-serif',
-        }
-      };
-      
-      // Simulate API delay
-      await new Promise(r => setTimeout(r, 500));
-      
-      return mockForm;
-    }
+      if (!formId) throw new Error("Form ID is required");
+      return await getFormById(formId);
+    },
+    enabled: !!formId,
   });
   
   if (isLoading) {
@@ -71,7 +35,7 @@ export function FormEmbedded() {
     );
   }
   
-  if (!form) {
+  if (error || !form) {
     return (
       <div className="p-6 text-center">
         <h2 className="text-xl font-medium mb-2">Form not found</h2>
@@ -84,9 +48,7 @@ export function FormEmbedded() {
   
   return (
     <div className="max-w-xl mx-auto">
-      <FormPreview form={form as any} onClose={() => {}} isEmbedded={true} />
+      <FormPreview form={form} onClose={() => {}} isEmbedded={true} />
     </div>
   );
 }
-
-export default FormEmbedded;

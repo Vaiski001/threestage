@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FormTemplate } from "./FormManagement";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, ArrowLeft, Check, Code, ExternalLink } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { FormTemplate } from "@/lib/supabase/types";
 
 interface FormIntegrationProps {
   form: FormTemplate;
@@ -15,20 +15,23 @@ interface FormIntegrationProps {
 
 export function FormIntegration({ form, onClose }: FormIntegrationProps) {
   const [copied, setCopied] = useState(false);
-  const [integrationUrl, setIntegrationUrl] = useState<string>("https://example.com/form-embed/" + form.id);
   const { toast } = useToast();
+  
+  // Get the base URL for our app
+  const baseUrl = window.location.origin;
+  const formUrl = `${baseUrl}/forms/${form.id}`;
 
-  // Generate embed code
+  // Generate embed code (Script method)
   const generateEmbedCode = () => {
     return `<!-- ${form.name} Embed Code -->
 <div id="enquiry-form-${form.id}"></div>
-<script src="${integrationUrl}" async></script>`;
+<script src="${baseUrl}/api/embed-form.js?id=${form.id}" async></script>`;
   };
 
   // Generate iframe code
   const generateIframeCode = () => {
     return `<iframe
-  src="${integrationUrl}"
+  src="${formUrl}"
   width="100%"
   height="600"
   frameborder="0"
@@ -38,13 +41,13 @@ export function FormIntegration({ form, onClose }: FormIntegrationProps) {
   };
 
   // Copy code to clipboard
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     
     toast({
       title: "Copied to Clipboard",
-      description: "Integration code has been copied."
+      description: `${type} code has been copied.`
     });
     
     setTimeout(() => setCopied(false), 2000);
@@ -92,7 +95,7 @@ export function FormIntegration({ form, onClose }: FormIntegrationProps) {
                 size="sm"
                 variant="ghost"
                 className="absolute top-2 right-2"
-                onClick={() => copyToClipboard(generateEmbedCode())}
+                onClick={() => copyToClipboard(generateEmbedCode(), "Embed")}
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -115,7 +118,7 @@ export function FormIntegration({ form, onClose }: FormIntegrationProps) {
                 size="sm"
                 variant="ghost"
                 className="absolute top-2 right-2"
-                onClick={() => copyToClipboard(generateIframeCode())}
+                onClick={() => copyToClipboard(generateIframeCode(), "iFrame")}
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -124,20 +127,20 @@ export function FormIntegration({ form, onClose }: FormIntegrationProps) {
         </Tabs>
 
         <div className="mt-8 pt-4 border-t">
-          <h4 className="font-medium mb-2">Preview Link</h4>
+          <h4 className="font-medium mb-2">Direct Link</h4>
           <p className="text-sm text-muted-foreground mb-3">
             Share this link directly to let people fill out your form outside your website.
           </p>
           
           <div className="flex gap-2">
             <Input
-              value={`https://forms.yourcompany.com/${form.id}`}
+              value={formUrl}
               readOnly
               className="font-mono text-sm flex-1"
             />
             <Button
               variant="outline"
-              onClick={() => copyToClipboard(`https://forms.yourcompany.com/${form.id}`)}
+              onClick={() => copyToClipboard(formUrl, "Direct link")}
             >
               {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
               Copy
@@ -147,27 +150,21 @@ export function FormIntegration({ form, onClose }: FormIntegrationProps) {
       </div>
       
       <div className="bg-card rounded-lg border p-6">
-        <h4 className="font-medium mb-2">Customize Integration URL</h4>
+        <h4 className="font-medium mb-2">Connect to Your Services</h4>
         <p className="text-sm text-muted-foreground mb-4">
-          Advanced: You can customize the integration endpoint for your form if needed.
+          Link this form to specific services you offer to manage related enquiries.
         </p>
         
-        <div className="flex gap-2">
-          <Input
-            value={integrationUrl}
-            onChange={(e) => setIntegrationUrl(e.target.value)}
-            placeholder="https://example.com/form-embed/123"
-            className="flex-1"
-          />
-          <Button onClick={() => {
+        <Button 
+          onClick={() => {
             toast({
-              title: "URL Updated",
-              description: "Integration URL has been updated."
+              title: "Linking Services",
+              description: "This feature will be available in a future update."
             });
-          }}>
-            Update URL
-          </Button>
-        </div>
+          }}
+        >
+          Link to Services
+        </Button>
       </div>
     </div>
   );

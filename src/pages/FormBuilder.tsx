@@ -6,35 +6,92 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FormManagement } from "@/components/forms/FormManagement";
 import { FormBuilder as BuilderComponent } from "@/components/forms/FormBuilder";
 import { FormIntegration } from "@/components/forms/FormIntegration";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { createForm, updateForm } from "@/lib/supabase/forms";
+import { FormTemplate } from "@/lib/supabase/types";
 
 // Default empty form template to use when creating a new form
-const emptyFormTemplate = {
-  id: `form-${Date.now()}`,
+const createEmptyFormTemplate = (userId?: string): FormTemplate => ({
+  id: '',
   name: "",
   description: "",
-  active: true,
   fields: [],
   branding: {
     primaryColor: "#0070f3",
     fontFamily: "Inter",
     logo: ""
   },
+  company_id: userId,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
-};
+});
 
 export default function FormBuilder() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("manage");
-  const [selectedForm, setSelectedForm] = useState(emptyFormTemplate);
+  const [selectedForm, setSelectedForm] = useState(createEmptyFormTemplate(user?.id));
+
+  // Create form mutation
+  const createFormMutation = useMutation({
+    mutationFn: createForm,
+    onSuccess: () => {
+      toast({
+        title: "Form Created",
+        description: "Your form has been created successfully."
+      });
+      setActiveTab("manage");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Creating Form",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update form mutation
+  const updateFormMutation = useMutation({
+    mutationFn: ({ formId, updates }: { formId: string; updates: Partial<FormTemplate> }) => 
+      updateForm(formId, updates),
+    onSuccess: () => {
+      toast({
+        title: "Form Updated",
+        description: "Your form has been updated successfully."
+      });
+      setActiveTab("manage");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Updating Form",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleCreateNew = () => {
-    setSelectedForm(emptyFormTemplate);
+    setSelectedForm(createEmptyFormTemplate(user?.id));
     setActiveTab("create");
   };
 
-  const handleSaveForm = (form: any) => {
-    console.log("Form saved:", form);
-    setActiveTab("manage");
+  const handleSaveForm = (form: FormTemplate) => {
+    if (form.id) {
+      // Update existing form
+      updateFormMutation.mutate({
+        formId: form.id,
+        updates: form
+      });
+    } else {
+      // Create new form
+      createFormMutation.mutate({
+        ...form,
+        company_id: user?.id
+      });
+    }
   };
 
   const handleCloseForm = () => {

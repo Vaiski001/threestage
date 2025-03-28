@@ -4,14 +4,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { FormField } from "./FormField";
 import { X, ArrowLeft } from "lucide-react";
-import { FormTemplate as FormManagementTemplate } from "./FormManagement";
-import { FormTemplate as SupabaseFormTemplate } from "@/lib/supabase/types";
-
-// Union type to accept both FormTemplate types
-type FormTemplateUnion = FormManagementTemplate | SupabaseFormTemplate;
+import { FormTemplate } from "@/lib/supabase/types";
+import { useMutation } from "@tanstack/react-query";
+import { submitFormEntry } from "@/lib/supabase/submissions";
 
 interface FormPreviewProps {
-  form: FormTemplateUnion;
+  form: FormTemplate;
   onClose: () => void;
   isEmbedded?: boolean;
 }
@@ -19,9 +17,35 @@ interface FormPreviewProps {
 export function FormPreview({ form, onClose, isEmbedded = false }: FormPreviewProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, boolean>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+
+  // Form submission mutation
+  const submitFormMutation = useMutation({
+    mutationFn: (data: Record<string, any>) => submitFormEntry(form.id, data),
+    onSuccess: () => {
+      setIsSubmitted(true);
+      toast({
+        title: "Form Submitted",
+        description: "Your form has been submitted successfully.",
+      });
+      
+      // Reset form after 3 seconds if not embedded
+      if (!isEmbedded) {
+        setTimeout(() => {
+          setFormData({});
+          setIsSubmitted(false);
+        }, 3000);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Submission Error",
+        description: error.message || "There was a problem submitting the form.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Update form field values
   const updateField = (fieldId: string, value: any) => {
@@ -66,25 +90,7 @@ export function FormPreview({ form, onClose, isEmbedded = false }: FormPreviewPr
     }
     
     // Submit form
-    setIsSubmitting(true);
-    
-    // Simulate API call for form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-      
-      toast({
-        title: "Form Submitted",
-        description: "Your form has been submitted successfully.",
-        variant: "default"
-      });
-      
-      // Reset form after 3 seconds
-      setTimeout(() => {
-        setFormData({});
-        setIsSubmitted(false);
-      }, 3000);
-    }, 1500);
+    submitFormMutation.mutate(formData);
   };
 
   // Style based on branding
@@ -158,14 +164,14 @@ export function FormPreview({ form, onClose, isEmbedded = false }: FormPreviewPr
             <div className="pt-4">
               <Button 
                 type="submit" 
-                disabled={isSubmitting}
+                disabled={submitFormMutation.isPending}
                 className="w-full"
                 style={{
                   backgroundColor: form.branding.primaryColor || '#0070f3',
                   borderColor: form.branding.primaryColor || '#0070f3'
                 }}
               >
-                {isSubmitting ? "Submitting..." : "Submit"}
+                {submitFormMutation.isPending ? "Submitting..." : "Submit"}
               </Button>
             </div>
           </form>
