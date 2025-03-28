@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ import {
   FormDescription,
   FormField as UIFormField,
   FormItem,
-  FormLabel,
   FormMessage
 } from "@/components/ui/form";
 import {
@@ -57,6 +55,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FormTemplate, FormField as FormFieldInterface, FormFieldType } from "@/lib/supabase/types";
 import { FormField } from "./FormField";
 import { FormPreview } from "./FormPreview";
+import { FormLabel } from "@/components/ui/form-label";
 
 interface FormBuilderProps {
   form: FormTemplate;
@@ -72,12 +71,10 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Update form basic information
   const updateFormInfo = (field: keyof FormTemplate, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Handle adding a new form field
   const addField = (type: FormFieldType) => {
     const newField: FormFieldInterface = {
       id: `field-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -99,7 +96,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     });
   };
 
-  // Update a field property
   const updateField = (fieldId: string, property: keyof FormFieldInterface, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -109,7 +105,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     }));
   };
 
-  // Handle field option management (for dropdowns, radios, etc.)
   const updateFieldOption = (fieldId: string, index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -124,7 +119,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     }));
   };
 
-  // Add a new option to a field
   const addFieldOption = (fieldId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -137,7 +131,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     }));
   };
 
-  // Remove an option from a field
   const removeFieldOption = (fieldId: string, index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -152,13 +145,11 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     }));
   };
 
-  // Prepare to delete a field
   const prepareDeleteField = (fieldId: string) => {
     setFieldToDelete(fieldId);
     setShowDeleteConfirm(true);
   };
 
-  // Confirm field deletion
   const confirmDeleteField = () => {
     if (fieldToDelete) {
       setFormData(prev => ({
@@ -176,7 +167,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     }
   };
 
-  // Handle drag and drop reordering
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     
@@ -190,7 +180,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     }));
   };
 
-  // Move a field up in the order
   const moveFieldUp = (index: number) => {
     if (index === 0) return;
     const fields = [...formData.fields];
@@ -198,7 +187,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     setFormData(prev => ({ ...prev, fields }));
   };
 
-  // Move a field down in the order
   const moveFieldDown = (index: number) => {
     if (index === formData.fields.length - 1) return;
     const fields = [...formData.fields];
@@ -206,9 +194,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     setFormData(prev => ({ ...prev, fields }));
   };
 
-  // Handle form save
   const handleSave = () => {
-    // Validate the form before saving
     if (!formData.name.trim()) {
       toast({
         title: "Validation Error",
@@ -218,7 +204,6 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
       return;
     }
 
-    // Ensure all required fields have labels
     for (const field of formData.fields) {
       if (!field.label.trim()) {
         toast({
@@ -237,12 +222,10 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
     });
   };
 
-  // Toggle preview mode
   const togglePreview = () => {
     setShowPreview(!showPreview);
   };
 
-  // Update branding settings
   const updateBranding = (field: keyof FormTemplate['branding'], value: string) => {
     setFormData(prev => ({
       ...prev,

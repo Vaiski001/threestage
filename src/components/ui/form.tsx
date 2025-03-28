@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
@@ -42,7 +43,13 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
+  const formContext = useFormContext()
+
+  if (!formContext) {
+    throw new Error("useFormField should be used within <FormField>")
+  }
+  
+  const { getFieldState, formState } = formContext
 
   const fieldState = getFieldState(fieldContext.name, formState)
 
@@ -88,7 +95,17 @@ const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField()
+  // Safe access of useFormField - don't throw errors if used outside Form context
+  let error: Record<string, any> | undefined
+  let formItemId: string | undefined
+  
+  try {
+    const field = useFormField()
+    error = field.error
+    formItemId = field.formItemId
+  } catch (e) {
+    // If not within a form context, these will be undefined
+  }
 
   return (
     <Label
@@ -105,6 +122,18 @@ const FormControl = React.forwardRef<
   React.ElementRef<typeof Slot>,
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
+  // Only attempt to get form field if we're in form context
+  let formContext
+  try {
+    formContext = useFormContext()
+  } catch (e) {
+    // Not in a form context
+  }
+
+  if (!formContext) {
+    return <Slot ref={ref} {...props} />
+  }
+
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
@@ -127,7 +156,15 @@ const FormDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => {
-  const { formDescriptionId } = useFormField()
+  let formDescriptionId
+  
+  try {
+    const { formDescriptionId: id } = useFormField()
+    formDescriptionId = id
+  } catch (e) {
+    // If not within a form context, use a generic ID
+    formDescriptionId = React.useId()
+  }
 
   return (
     <p
@@ -144,7 +181,17 @@ const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField()
+  let error
+  let formMessageId
+  
+  try {
+    const field = useFormField()
+    error = field.error
+    formMessageId = field.formMessageId
+  } catch (e) {
+    // Not in a form context
+  }
+  
   const body = error ? String(error?.message) : children
 
   if (!body) {
