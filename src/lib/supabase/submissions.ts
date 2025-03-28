@@ -131,7 +131,26 @@ export const getCompanyEnquiries = async (companyId: string): Promise<Enquiry[]>
     throw error;
   }
 
-  return data as Enquiry[];
+  // Explicitly convert the response data to match the Enquiry type
+  if (!data) return [];
+  
+  const typedEnquiries: Enquiry[] = data.map(item => ({
+    id: item.id,
+    title: item.title,
+    customer_name: item.customer_name,
+    customer_email: item.customer_email,
+    company_id: item.company_id,
+    form_id: item.form_id,
+    form_name: item.form_name,
+    submission_id: item.submission_id,
+    content: item.content,
+    status: item.status as 'new' | 'pending' | 'completed',
+    priority: item.priority as 'high' | 'medium' | 'low' | undefined,
+    created_at: item.created_at,
+    updated_at: item.updated_at
+  }));
+
+  return typedEnquiries;
 };
 
 /**
@@ -149,7 +168,26 @@ export const getCustomerEnquiries = async (customerEmail: string): Promise<Enqui
     throw error;
   }
 
-  return data as Enquiry[];
+  // Explicitly convert the response data to match the Enquiry type
+  if (!data) return [];
+  
+  const typedEnquiries: Enquiry[] = data.map(item => ({
+    id: item.id,
+    title: item.title,
+    customer_name: item.customer_name,
+    customer_email: item.customer_email,
+    company_id: item.company_id,
+    form_id: item.form_id,
+    form_name: item.form_name,
+    submission_id: item.submission_id,
+    content: item.content,
+    status: item.status as 'new' | 'pending' | 'completed',
+    priority: item.priority as 'high' | 'medium' | 'low' | undefined,
+    created_at: item.created_at,
+    updated_at: item.updated_at
+  }));
+
+  return typedEnquiries;
 };
 
 /**
@@ -168,5 +206,24 @@ export const updateEnquiryStatus = async (enquiryId: string, status: 'new' | 'pe
     throw error;
   }
 
-  return data as Enquiry;
+  // Explicitly convert the response data to match the Enquiry type
+  if (!data) throw new Error('No data returned from update operation');
+  
+  const typedEnquiry: Enquiry = {
+    id: data.id,
+    title: data.title,
+    customer_name: data.customer_name,
+    customer_email: data.customer_email,
+    company_id: data.company_id,
+    form_id: data.form_id,
+    form_name: data.form_name,
+    submission_id: data.submission_id,
+    content: data.content,
+    status: data.status as 'new' | 'pending' | 'completed',
+    priority: data.priority as 'high' | 'medium' | 'low' | undefined,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+
+  return typedEnquiry;
 };
