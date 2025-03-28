@@ -25,12 +25,21 @@ export function DevNavigation() {
     { path: "/customer/dashboard", label: "Customer Dashboard" },
     { path: "/customer/settings", label: "Customer Settings" },
     { path: "/customer/enquiries", label: "Customer Enquiries" },
+    { path: "/customer/billing", label: "Customer Billing" },
+    { path: "/customer/notifications", label: "Customer Notifications" },
+    { path: "/customer/support", label: "Customer Support" },
     
     // Company routes
     { path: "/company/dashboard", label: "Company Dashboard" },
     { path: "/company/settings", label: "Company Settings" },
     { path: "/company/forms", label: "Form Builder" },
     { path: "/company/enquiries", label: "Company Enquiries" },
+    { path: "/company/invoices", label: "Company Invoices" },
+    { path: "/company/payments", label: "Company Payments" },
+    { path: "/company/reports", label: "Company Reports" },
+    { path: "/company/team", label: "Team Management" },
+    { path: "/company/customers", label: "Company Customers" },
+    { path: "/company/support", label: "Company Support" },
     
     // Legacy/utility routes
     { path: "/dashboard", label: "Generic Dashboard" },

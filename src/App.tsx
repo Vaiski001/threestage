@@ -91,6 +91,42 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            <Route path="/company/invoices" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/company/payments" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/company/reports" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/company/team" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/company/customers" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/company/support" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
             {/* Customer routes */}
             <Route path="/customer/dashboard" element={
               <ProtectedRoute allowPreview={true}>
@@ -107,6 +143,24 @@ const App = () => (
             <Route path="/customer/enquiries" element={
               <ProtectedRoute allowPreview={true}>
                 <Enquiries />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/billing" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/notifications" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/customer/support" element={
+              <ProtectedRoute allowPreview={true}>
+                <NotFound />
               </ProtectedRoute>
             } />
             

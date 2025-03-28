@@ -201,8 +201,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    isActive={location.pathname.includes(item.id) || 
-                             (item.path && location.pathname === item.path)}
+                    isActive={location.pathname === item.path || location.pathname.includes(`/${userRole}/${item.id}`)}
                     onClick={() => handleNavigation(item)}
                   >
                     {item.icon}
@@ -220,7 +219,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                       {item.children.map((child) => (
                         <SidebarMenuButton
                           key={child.id}
-                          isActive={location.pathname.includes(child.id)}
+                          isActive={location.pathname === child.path}
                           onClick={() => {
                             if (child.path) {
                               navigate(child.path);
