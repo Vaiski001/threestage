@@ -158,101 +158,101 @@ export function ServicesTab({ profile, onUpdate }: ServicesTabProps) {
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="forms">Form Integration</TabsTrigger>
         </TabsList>
-      </Tabs>
-      
-      <TabsContent value="services" className="mt-0">
-        <div className="mb-6">
-          <FormLabel htmlFor="service-category">Service Categories</FormLabel>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger id="service-category" className="w-full">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-medium">Services</h3>
-          <Button onClick={handleAddService} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Service
-          </Button>
-        </div>
-        
-        <div className="space-y-4">
-          {services.map(service => (
-            <div key={service.id} className="p-4 border rounded-lg">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-semibold text-lg">{service.title}</h4>
-                  <p className="text-gray-600 my-1">{service.description}</p>
-                  <p className="font-medium">{service.price}</p>
-                  {service.category && (
-                    <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs mt-2">
-                      {service.category}
-                    </span>
-                  )}
-                  {service.linkedForms && service.linkedForms.length > 0 && (
-                    <div className="mt-2 flex items-center text-xs text-blue-600">
-                      <Link className="h-3 w-3 mr-1" />
-                      {service.linkedForms.length} form(s) linked
-                    </div>
-                  )}
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleEditService(service.id)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleDeleteService(service.id)}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {services.length === 0 && (
-          <div className="p-8 text-center border border-dashed rounded-lg bg-gray-50">
-            <p className="text-gray-500">You haven't added any services yet.</p>
-            <p className="text-gray-500 mb-4">Add services to showcase what your company offers.</p>
+        <TabsContent value="services" className="mt-0">
+          <div className="mb-6">
+            <FormLabel htmlFor="service-category">Service Categories</FormLabel>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger id="service-category" className="w-full">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-medium">Services</h3>
             <Button onClick={handleAddService} size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              Add Your First Service
+              Add Service
             </Button>
           </div>
-        )}
-      </TabsContent>
+          
+          <div className="space-y-4">
+            {services.map(service => (
+              <div key={service.id} className="p-4 border rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold text-lg">{service.title}</h4>
+                    <p className="text-gray-600 my-1">{service.description}</p>
+                    <p className="font-medium">{service.price}</p>
+                    {service.category && (
+                      <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs mt-2">
+                        {service.category}
+                      </span>
+                    )}
+                    {service.linkedForms && service.linkedForms.length > 0 && (
+                      <div className="mt-2 flex items-center text-xs text-blue-600">
+                        <Link className="h-3 w-3 mr-1" />
+                        {service.linkedForms.length} form(s) linked
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleEditService(service.id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDeleteService(service.id)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {services.length === 0 && (
+            <div className="p-8 text-center border border-dashed rounded-lg bg-gray-50">
+              <p className="text-gray-500">You haven't added any services yet.</p>
+              <p className="text-gray-500 mb-4">Add services to showcase what your company offers.</p>
+              <Button onClick={handleAddService} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Service
+              </Button>
+            </div>
+          )}
+        </TabsContent>
 
-      <TabsContent value="forms" className="mt-0">
-        {services.length === 0 ? (
-          <div className="p-8 text-center border border-dashed rounded-lg bg-gray-50">
-            <p className="text-gray-500">You need to add services before linking forms.</p>
-            <Button onClick={() => setActiveTab("services")} size="sm">
-              Go to Services
-            </Button>
-          </div>
-        ) : (
-          <FormServiceLink 
-            services={services}
-            onUpdate={handleUpdateFormLinks}
-          />
-        )}
-      </TabsContent>
+        <TabsContent value="forms" className="mt-0">
+          {services.length === 0 ? (
+            <div className="p-8 text-center border border-dashed rounded-lg bg-gray-50">
+              <p className="text-gray-500">You need to add services before linking forms.</p>
+              <Button onClick={() => setActiveTab("services")} size="sm">
+                Go to Services
+              </Button>
+            </div>
+          ) : (
+            <FormServiceLink 
+              services={services}
+              onUpdate={handleUpdateFormLinks}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
       
       <div className="mt-6">
         <Button 
