@@ -58,25 +58,25 @@ export const createForm = async (form: Partial<FormTemplate>) => {
     throw new Error('Form name is required');
   }
 
-  // Add timestamps if not provided
-  const formData = {
+  // Process form data before sending to Supabase
+  let processedFormData: Partial<FormTemplate> = {
     ...form,
     created_at: form.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
     is_public: form.is_public !== undefined ? form.is_public : false
   };
 
-  // Remove any temporary ID if it exists
-  if (formData.id && formData.id.startsWith('form-')) {
-    const { id, ...formDataWithoutId } = formData;
-    formData = formDataWithoutId;
+  // If there's a temporary ID, remove it as Supabase will generate a UUID
+  if (processedFormData.id && processedFormData.id.startsWith('form-')) {
+    const { id, ...formDataWithoutId } = processedFormData;
+    processedFormData = formDataWithoutId;
   }
 
-  console.log('Sending form data to Supabase:', formData);
+  console.log('Sending form data to Supabase:', processedFormData);
 
   const { data, error } = await supabase
     .from('forms')
-    .insert(formData)
+    .insert(processedFormData)
     .select()
     .single();
 
