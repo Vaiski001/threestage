@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -23,9 +22,10 @@ interface FormBuilderProps {
   form: FormTemplate;
   onSave: (form: FormTemplate) => void;
   onCancel: () => void;
+  isProcessing?: boolean;
 }
 
-export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
+export function FormBuilder({ form, onSave, onCancel, isProcessing = false }: FormBuilderProps) {
   const [formData, setFormData] = useState<FormTemplate>(form);
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState("fields");
@@ -200,6 +200,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
           onCancel={onCancel}
           togglePreview={togglePreview}
           showPreview={showPreview}
+          isProcessing={isProcessing}
         />
         <FormPreview form={formData} onClose={togglePreview} isEmbedded />
       </div>
@@ -214,6 +215,7 @@ export function FormBuilder({ form, onSave, onCancel }: FormBuilderProps) {
         onCancel={onCancel}
         togglePreview={togglePreview}
         showPreview={showPreview}
+        isProcessing={isProcessing}
       />
 
       <FormInfoSection

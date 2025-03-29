@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Save, X, Eye, Edit } from "lucide-react";
-import { FormTemplate } from "@/lib/supabase/types";
+import { Save, X, Eye, Edit, Loader2 } from "lucide-react";
 
 interface FormBuilderHeaderProps {
   isNewForm: boolean;
@@ -9,6 +8,7 @@ interface FormBuilderHeaderProps {
   onCancel: () => void;
   togglePreview: () => void;
   showPreview: boolean;
+  isProcessing?: boolean;
 }
 
 export function FormBuilderHeader({
@@ -16,7 +16,8 @@ export function FormBuilderHeader({
   onSave,
   onCancel,
   togglePreview,
-  showPreview
+  showPreview,
+  isProcessing = false
 }: FormBuilderHeaderProps) {
   return (
     <div className="flex justify-between items-center">
@@ -25,21 +26,25 @@ export function FormBuilderHeader({
       </h1>
       <div className="flex gap-2">
         {showPreview ? (
-          <Button onClick={togglePreview} variant="outline">
+          <Button onClick={togglePreview} variant="outline" disabled={isProcessing}>
             <Edit className="mr-2 h-4 w-4" />
             Back to Editor
           </Button>
         ) : (
           <>
-            <Button variant="outline" onClick={togglePreview}>
+            <Button variant="outline" onClick={togglePreview} disabled={isProcessing}>
               <Eye className="mr-2 h-4 w-4" />
               Preview
             </Button>
-            <Button onClick={onSave}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Form
+            <Button onClick={onSave} disabled={isProcessing}>
+              {isProcessing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              {isProcessing ? 'Saving...' : 'Save Form'}
             </Button>
-            <Button variant="ghost" onClick={onCancel}>
+            <Button variant="ghost" onClick={onCancel} disabled={isProcessing}>
               <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
