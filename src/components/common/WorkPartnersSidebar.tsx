@@ -21,69 +21,9 @@ export const WorkPartnersSidebar = ({ isCompanyView = false }: { isCompanyView?:
   const [activeTab, setActiveTab] = useState<"activities" | "online">("activities");
   const { toast } = useToast();
   
-  // Sample work partners for the company view
-  const companyWorkPartners: WorkPartner[] = [
-    {
-      id: "1",
-      name: "Sarah Wilson",
-      activity: "Responded to your message",
-      timeAgo: "10m ago",
-      isOnline: true
-    },
-    {
-      id: "2",
-      name: "David Lee",
-      activity: "Updated support ticket",
-      timeAgo: "1h ago",
-      isOnline: true
-    },
-    {
-      id: "3",
-      name: "Jennifer Taylor",
-      activity: "Paid invoice #INV-2023",
-      timeAgo: "3h ago",
-      isOnline: false
-    },
-    {
-      id: "4",
-      name: "Michael Brown",
-      activity: "Submitted new enquiry",
-      timeAgo: "5h ago",
-      isOnline: false
-    },
-    {
-      id: "5",
-      name: "Emma Johnson",
-      activity: "Updated account details",
-      timeAgo: "1d ago",
-      isOnline: true
-    }
-  ];
-  
-  // Sample work partners for the customer view - companies the customer is working with
-  const customerWorkPartners: WorkPartner[] = [
-    {
-      id: "1",
-      name: "Acme Design Studio",
-      activity: "Replied to your enquiry",
-      timeAgo: "30m ago",
-      isOnline: true
-    },
-    {
-      id: "2",
-      name: "TechSolutions Inc",
-      activity: "Sent you an invoice",
-      timeAgo: "2h ago",
-      isOnline: true
-    },
-    {
-      id: "3",
-      name: "Global Marketing",
-      activity: "Updated project status",
-      timeAgo: "6h ago",
-      isOnline: false
-    }
-  ];
+  // Empty work partners for new accounts
+  const companyWorkPartners: WorkPartner[] = [];
+  const customerWorkPartners: WorkPartner[] = [];
 
   // Use the appropriate partners list based on the view
   const workPartners = isCompanyView ? companyWorkPartners : customerWorkPartners;
@@ -181,15 +121,15 @@ export const WorkPartnersSidebar = ({ isCompanyView = false }: { isCompanyView?:
           <div className="bg-secondary/30 rounded-lg p-3">
             {isCompanyView ? (
               <>
-                <p className="text-sm mb-2">You have 7 active inquiries that need attention</p>
+                <p className="text-sm mb-2">You have 0 active inquiries</p>
                 <div className="flex gap-2">
-                  <Badge variant="outline" className="bg-secondary/50">Support (3)</Badge>
-                  <Badge variant="outline" className="bg-secondary/50">Sales (4)</Badge>
+                  <Badge variant="outline" className="bg-secondary/50">Support (0)</Badge>
+                  <Badge variant="outline" className="bg-secondary/50">Sales (0)</Badge>
                 </div>
               </>
             ) : (
               <>
-                <p className="text-sm mb-2">You have 4 active inquiries</p>
+                <p className="text-sm mb-2">You have 0 active inquiries</p>
                 <Button variant="outline" size="sm" className="w-full">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Create New Inquiry

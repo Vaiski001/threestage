@@ -7,53 +7,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageSquare, ChevronRight, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface ResponseItem {
-  id: string;
-  companyName: string;
-  avatarUrl?: string;
-  message: string;
-  timeAgo: string;
-  isNew: boolean;
-}
-
 export const CustomerWorkPartnersSidebar = () => {
   const { toast } = useToast();
   
-  // Sample new responses for the customer portal
-  const newResponses: ResponseItem[] = [
-    {
-      id: "1",
-      companyName: "Acme Design Studio",
-      message: "Updated your website redesign status to In Progress",
-      timeAgo: "30m ago",
-      isNew: true
-    },
-    {
-      id: "2",
-      companyName: "TechSolutions Inc",
-      message: "Your IT support package has been confirmed",
-      timeAgo: "2h ago",
-      isNew: true
-    },
-    {
-      id: "3",
-      companyName: "Acme Design Studio",
-      message: "Sent you a message about your logo design",
-      timeAgo: "6h ago",
-      isNew: false
-    },
-    {
-      id: "4",
-      companyName: "Global Marketing",
-      message: "Your email marketing has been completed",
-      timeAgo: "1d ago",
-      isNew: false
-    }
-  ];
+  // Empty responses for new accounts
+  const newResponses = [];
 
-  const handleResponseClick = (response: ResponseItem) => {
+  const handleResponseClick = (response: any) => {
     toast({
-      title: `View response from ${response.companyName}`,
+      title: `View response`,
       description: "This feature is coming soon.",
     });
   };
@@ -80,7 +42,7 @@ export const CustomerWorkPartnersSidebar = () => {
         
         {newResponses.length > 0 ? (
           <div className="space-y-3">
-            {newResponses.slice(0, 5).map((response) => (
+            {newResponses.slice(0, 5).map((response: any) => (
               <div 
                 key={response.id} 
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/40 cursor-pointer transition-colors"
@@ -117,7 +79,7 @@ export const CustomerWorkPartnersSidebar = () => {
             </Button>
           </div>
           <div className="bg-secondary/30 rounded-lg p-3">
-            <p className="text-sm mb-2">You have 4 active inquiries</p>
+            <p className="text-sm mb-2">You have 0 active inquiries</p>
             <Button variant="outline" size="sm" className="w-full">
               <MessageSquare className="h-4 w-4 mr-2" />
               Create New Inquiry
