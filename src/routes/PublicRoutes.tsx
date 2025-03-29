@@ -1,5 +1,6 @@
 
 import { Route, Navigate } from "react-router-dom";
+import { Fragment } from "react";
 import Index from "@/pages/Index";
 import DemoDashboard from "@/pages/DemoDashboard";
 import Signup from "@/pages/Signup";
@@ -15,7 +16,7 @@ import Dashboard from "@/pages/Dashboard";
 
 export const PublicRoutes = () => {
   return (
-    <>
+    <Fragment>
       {/* Public routes */}
       <Route path="/" element={<Index />} />
       <Route path="/signup" element={<Signup />} />
@@ -46,6 +47,6 @@ export const PublicRoutes = () => {
       
       {/* Set Index as the fallback for empty path */}
       <Route path="" element={<Navigate to="/" />} />
-    </>
+    </Fragment>
   );
 };

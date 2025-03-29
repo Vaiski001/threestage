@@ -4,7 +4,6 @@ import { PublicRoutes } from "./PublicRoutes";
 import { CompanyRoutes } from "./CompanyRoutes";
 import { CustomerRoutes } from "./CustomerRoutes";
 import NotFound from "@/pages/NotFound";
-import Dashboard from "@/pages/Dashboard";
 
 export const AppRouter = () => {
   return (

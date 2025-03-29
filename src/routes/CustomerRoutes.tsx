@@ -1,5 +1,6 @@
 
 import { Route } from "react-router-dom";
+import { Fragment } from "react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import CustomerSettings from "@/pages/CustomerSettings";
@@ -8,7 +9,7 @@ import NotFound from "@/pages/NotFound";
 
 export const CustomerRoutes = () => {
   return (
-    <>
+    <Fragment>
       <Route path="/customer/dashboard" element={
         <ProtectedRoute allowPreview={true}>
           <CustomerDashboard />
@@ -63,6 +64,6 @@ export const CustomerRoutes = () => {
           <NotFound />
         </ProtectedRoute>
       } />
-    </>
+    </Fragment>
   );
 };

@@ -7,6 +7,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { DevNavigation } from "@/components/dev/DevNavigation";
 import { AppRouter } from "./routes/AppRouter";
+import { RoleRouter } from "@/components/auth/RoleRouter";
 
 const queryClient = new QueryClient();
 
@@ -17,7 +18,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AppRouter />
+          <RoleRouter>
+            <AppRouter />
+          </RoleRouter>
           {/* Developer Navigation - only visible in development */}
           <DevNavigation />
         </BrowserRouter>
