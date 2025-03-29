@@ -11,21 +11,50 @@ import {
 } from "@/lib/supabase/forms";
 import { FormTemplate } from "@/lib/supabase/types";
 import { useAuth } from "@/context/AuthContext";
+import { isSupabaseAvailable } from "@/lib/supabase/client";
 
 export function useFormManagement(userId?: string) {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { user, profile } = useAuth();
+  const [supabaseAvailable, setSupabaseAvailable] = useState<boolean | null>(null);
   
   // Get the most reliable user ID
   const effectiveUserId = userId || user?.id || profile?.id || "";
   
+  // Check Supabase connection on mount
+  useEffect(() => {
+    const checkSupabase = async () => {
+      try {
+        const available = await isSupabaseAvailable();
+        console.log("Supabase connection check:", available ? "AVAILABLE" : "NOT AVAILABLE");
+        setSupabaseAvailable(available);
+        if (!available) {
+          toast({
+            title: "Database Connection Issue",
+            description: "There seems to be a problem connecting to the database. Form saving may not work properly.",
+            variant: "destructive"
+          });
+        }
+      } catch (err) {
+        console.error("Error checking Supabase availability:", err);
+        setSupabaseAvailable(false);
+      }
+    };
+    
+    checkSupabase();
+  }, [toast]);
+  
   // For debugging purposes
   useEffect(() => {
-    console.log("useFormManagement hook initialized with provided userId:", userId);
-    console.log("Using effective userId:", effectiveUserId);
-  }, [userId, effectiveUserId]);
+    console.log("useFormManagement hook initialized with:");
+    console.log("- Provided userId:", userId);
+    console.log("- Auth user ID:", user?.id);
+    console.log("- Profile ID:", profile?.id);
+    console.log("- Effective userId being used:", effectiveUserId);
+    console.log("- Supabase available:", supabaseAvailable);
+  }, [userId, user?.id, profile?.id, effectiveUserId, supabaseAvailable]);
 
   // Fetch all forms for the current company
   const { data: forms = [], isLoading } = useQuery({
@@ -35,10 +64,26 @@ export function useFormManagement(userId?: string) {
         console.log("No userId provided, returning empty forms array");
         return [];
       }
+      
+      if (supabaseAvailable === false) {
+        console.warn("Supabase unavailable, skipping form fetch");
+        return [];
+      }
+      
       console.log("Fetching forms for userId:", effectiveUserId);
-      return await getCompanyForms(effectiveUserId);
+      try {
+        return await getCompanyForms(effectiveUserId);
+      } catch (error) {
+        console.error("Error in query fetching forms:", error);
+        toast({
+          title: "Error Fetching Forms",
+          description: error instanceof Error ? error.message : "An unknown error occurred",
+          variant: "destructive"
+        });
+        return [];
+      }
     },
-    enabled: !!effectiveUserId,
+    enabled: !!effectiveUserId && supabaseAvailable !== false,
   });
 
   // Create a new form mutation
@@ -48,6 +93,10 @@ export function useFormManagement(userId?: string) {
       if (!effectiveUserId) {
         console.error("Error: No user ID available when creating form");
         throw new Error("User ID is required to create a form");
+      }
+      
+      if (supabaseAvailable === false) {
+        throw new Error("Cannot create form: Database connection unavailable");
       }
       
       // Always ensure company_id is set to the current user's ID
@@ -80,6 +129,10 @@ export function useFormManagement(userId?: string) {
   // Update an existing form mutation
   const updateFormMutation = useMutation({
     mutationFn: ({ formId, updates }: { formId: string; updates: Partial<FormTemplate> }) => {
+      if (supabaseAvailable === false) {
+        throw new Error("Cannot update form: Database connection unavailable");
+      }
+      
       // Ensure the company_id is maintained
       const updatesWithCompanyId = {
         ...updates,
@@ -107,7 +160,12 @@ export function useFormManagement(userId?: string) {
 
   // Delete a form mutation
   const deleteFormMutation = useMutation({
-    mutationFn: deleteForm,
+    mutationFn: (formId: string) => {
+      if (supabaseAvailable === false) {
+        throw new Error("Cannot delete form: Database connection unavailable");
+      }
+      return deleteForm(formId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['forms', effectiveUserId] });
       toast({
@@ -127,8 +185,12 @@ export function useFormManagement(userId?: string) {
 
   // Toggle form active status mutation
   const toggleFormMutation = useMutation({
-    mutationFn: ({ formId, isActive }: { formId: string; isActive: boolean }) => 
-      toggleFormActive(formId, isActive),
+    mutationFn: ({ formId, isActive }: { formId: string; isActive: boolean }) => {
+      if (supabaseAvailable === false) {
+        throw new Error("Cannot toggle form status: Database connection unavailable");
+      }
+      return toggleFormActive(formId, isActive);
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['forms', effectiveUserId] });
       toast({
@@ -161,6 +223,7 @@ export function useFormManagement(userId?: string) {
     createFormMutation,
     updateFormMutation,
     deleteFormMutation,
-    toggleFormMutation
+    toggleFormMutation,
+    supabaseAvailable
   };
 }

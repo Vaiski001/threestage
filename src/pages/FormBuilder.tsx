@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { FormManagement } from "@/components/forms/FormManagement";
 import { FormBuilder as FormBuilderComponent } from "@/components/forms/FormBuilder";
 import { FormIntegration } from "@/components/forms/FormIntegration";
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, AlertTriangle } from "lucide-react";
 import { FormTemplate } from "@/lib/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { createForm } from "@/lib/supabase/forms";
 import { isSupabaseAvailable } from "@/lib/supabase/client";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
 
 const FormBuilder = () => {
   const [activeTab, setActiveTab] = useState("manage");
@@ -21,20 +23,39 @@ const FormBuilder = () => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const [supabaseStatus, setSupabaseStatus] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("FormBuilder component mounted, current user:", user);
+    console.log("FormBuilder component mounted");
+    console.log("Current user:", user);
     console.log("User profile:", profile);
+    
+    // Check if user is authenticated
+    if (!user && !profile) {
+      console.warn("No authenticated user found");
+      toast({
+        title: "Authentication Required",
+        description: "You need to be logged in to access the form builder.",
+        variant: "destructive"
+      });
+      
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+    }
     
     // Check Supabase connection status
     const checkSupabaseStatus = async () => {
       try {
         const isAvailable = await isSupabaseAvailable();
+        console.log("Supabase availability check result:", isAvailable);
         setSupabaseStatus(isAvailable);
         if (!isAvailable) {
           toast({
             title: "Connection Issue",
-            description: "We're having trouble connecting to the database. Some features may be limited.",
+            description: "We're having trouble connecting to the database. Form saving will not work.",
             variant: "destructive"
           });
         }
@@ -45,15 +66,19 @@ const FormBuilder = () => {
     };
     
     checkSupabaseStatus();
-  }, [user, profile, toast]);
+  }, [user, profile, toast, navigate]);
 
   // Empty form template for creating a new form
   const getEmptyForm = (): FormTemplate => {
     const userId = user?.id || profile?.id || "";
     console.log("Creating empty form with user ID:", userId);
     
+    if (!userId) {
+      console.warn("Creating a form without a user ID");
+    }
+    
     return {
-      id: `form-${Date.now()}`,
+      id: `temp-${Date.now()}`,
       name: "New Form",
       description: "",
       created_at: new Date().toISOString(),
@@ -99,7 +124,14 @@ const FormBuilder = () => {
   // Event handlers for form operations
   const handleSaveForm = async (form: FormTemplate) => {
     try {
+      setIsLoading(true);
       const userId = user?.id || profile?.id;
+      
+      console.log("Save form initiated with user details:");
+      console.log("User ID from state:", userId);
+      console.log("User from context:", user);
+      console.log("Profile from context:", profile);
+      
       if (!userId) {
         console.error("No user ID available");
         toast({
@@ -120,18 +152,27 @@ const FormBuilder = () => {
       }
       
       console.log("Saving form. User ID:", userId);
+      console.log("Original form to save:", form);
       
-      // Create a new object to ensure we don't modify the original form
+      // Create a new object with the correct company_id
       const formToSave: FormTemplate = {
         ...form,
-        company_id: userId
+        company_id: userId,
+        // Ensure other required fields are present
+        branding: form.branding || {
+          primaryColor: "#0070f3",
+          fontFamily: "Inter"
+        },
+        fields: Array.isArray(form.fields) ? form.fields : [],
+        created_at: form.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
-      console.log("Form to save:", formToSave);
+      console.log("Processed form to save:", formToSave);
       
-      // If it's a new form (id starts with "form-"), create it
-      if (formToSave.id.startsWith('form-')) {
-        console.log("Creating new form (temporary ID detected)");
+      // If it's a new form (id starts with "form-" or "temp-"), create it
+      if (formToSave.id.startsWith('form-') || formToSave.id.startsWith('temp-')) {
+        console.log("Creating new form (temporary ID detected):", formToSave.id);
         const savedForm = await createForm(formToSave);
         console.log("Form saved successfully:", savedForm);
         
@@ -158,6 +199,8 @@ const FormBuilder = () => {
         description: error.message || "An error occurred while saving the form",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -191,6 +234,26 @@ const FormBuilder = () => {
       <main className="flex-1 overflow-y-auto">
         <div className="pt-8 pb-4 px-4 sm:px-6">
           <Container>
+            {!user && !profile && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Authentication Required</AlertTitle>
+                <AlertDescription>
+                  You need to be logged in to create and manage forms.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {!supabaseStatus && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Database Connection Issue</AlertTitle>
+                <AlertDescription>
+                  There's a problem connecting to the database. Form saving will not work until this is resolved.
+                </AlertDescription>
+              </Alert>
+            )}
+          
             <div className="mb-6">
               <h1 className="text-2xl font-semibold mb-1">Form Builder</h1>
               <p className="text-muted-foreground">Create and manage custom forms for your business</p>
@@ -214,7 +277,8 @@ const FormBuilder = () => {
                   <FormBuilderComponent 
                     form={selectedForm} 
                     onSave={handleSaveForm} 
-                    onCancel={handleCancelForm} 
+                    onCancel={handleCancelForm}
+                    isProcessing={isLoading}
                   />
                 ) : (
                   <div className="text-center py-12">

@@ -50,7 +50,7 @@ export const getFormById = async (formId: string) => {
  * Create a new form
  */
 export const createForm = async (form: Partial<FormTemplate>) => {
-  console.log('Creating form with data:', form);
+  console.log('Creating form with data:', JSON.stringify(form, null, 2));
   
   // Ensure required fields are present
   if (!form.company_id) {
@@ -61,6 +61,18 @@ export const createForm = async (form: Partial<FormTemplate>) => {
   if (!form.name) {
     console.error('Error creating form: name is required');
     throw new Error('Form name is required');
+  }
+
+  // Verify Supabase connection before attempting to save
+  try {
+    const { error: pingError } = await supabase.from('forms').select('count').limit(1);
+    if (pingError) {
+      console.error('Supabase connection test failed:', pingError);
+      throw new Error(`Supabase connection error: ${pingError.message}`);
+    }
+  } catch (e) {
+    console.error('Error testing Supabase connection:', e);
+    throw new Error(`Could not connect to Supabase: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // Process form data before sending to Supabase
@@ -78,13 +90,13 @@ export const createForm = async (form: Partial<FormTemplate>) => {
   }
 
   // If there's a temporary ID, remove it as Supabase will generate a UUID
-  if (formToInsert.id && formToInsert.id.startsWith('form-')) {
+  if (formToInsert.id && (formToInsert.id.startsWith('form-') || formToInsert.id.startsWith('temp-'))) {
     console.log('Removing temporary ID:', formToInsert.id);
     const { id, ...formDataWithoutId } = formToInsert;
     formToInsert = formDataWithoutId;
   }
 
-  console.log('Sending form data to Supabase:', JSON.stringify(formToInsert));
+  console.log('Sending form data to Supabase:', JSON.stringify(formToInsert, null, 2));
 
   try {
     const { data, error } = await supabase
@@ -94,8 +106,8 @@ export const createForm = async (form: Partial<FormTemplate>) => {
       .single();
 
     if (error) {
-      console.error('Error creating form:', error);
-      throw error;
+      console.error('Supabase error creating form:', error);
+      throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
     }
 
     console.log('Form created successfully:', data);
