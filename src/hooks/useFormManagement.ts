@@ -40,9 +40,11 @@ export function useFormManagement(userId?: string) {
     mutationFn: (formData: Partial<FormTemplate>) => {
       // Ensure the company_id is set
       if (!userId) {
+        console.error("Error: No user ID available when creating form");
         throw new Error("User ID is required to create a form");
       }
       
+      // Always ensure company_id is set to the current user's ID
       const formWithCompanyId = { 
         ...formData,
         company_id: userId

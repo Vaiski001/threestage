@@ -42,8 +42,18 @@ const FormBuilder = () => {
 
   // Event handler to create a new form
   const handleCreateForm = () => {
+    if (!user?.id) {
+      console.error("Cannot create form: No user ID available");
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a form",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const newForm = getEmptyForm();
-    console.log("Creating new form template:", newForm);
+    console.log("Creating new form template with user ID:", user.id);
     setSelectedForm(newForm);
     setActiveTab("create");
   };
@@ -71,12 +81,7 @@ const FormBuilder = () => {
       // If it's a new form (id starts with "form-"), create it
       if (form.id.startsWith('form-')) {
         console.log("Creating new form (temporary ID detected)");
-        
-        // Remove the temporary ID as Supabase will generate a UUID
-        const { id, ...formData } = form;
-        console.log("Form data without temporary ID:", formData);
-        
-        const savedForm = await createForm(formData as Partial<FormTemplate>);
+        const savedForm = await createForm(form);
         console.log("Form saved successfully:", savedForm);
       } else {
         // Update existing form handled by FormManagement component

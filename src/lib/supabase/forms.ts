@@ -59,7 +59,7 @@ export const createForm = async (form: Partial<FormTemplate>) => {
   }
 
   // Process form data before sending to Supabase
-  let processedFormData: Partial<FormTemplate> = {
+  let formToInsert: Partial<FormTemplate> = {
     ...form,
     created_at: form.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -67,16 +67,16 @@ export const createForm = async (form: Partial<FormTemplate>) => {
   };
 
   // If there's a temporary ID, remove it as Supabase will generate a UUID
-  if (processedFormData.id && processedFormData.id.startsWith('form-')) {
-    const { id, ...formDataWithoutId } = processedFormData;
-    processedFormData = formDataWithoutId;
+  if (formToInsert.id && formToInsert.id.startsWith('form-')) {
+    const { id, ...formDataWithoutId } = formToInsert;
+    formToInsert = formDataWithoutId;
   }
 
-  console.log('Sending form data to Supabase:', processedFormData);
+  console.log('Sending form data to Supabase:', formToInsert);
 
   const { data, error } = await supabase
     .from('forms')
-    .insert(processedFormData)
+    .insert(formToInsert)
     .select()
     .single();
 
