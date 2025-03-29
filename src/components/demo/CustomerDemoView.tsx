@@ -44,7 +44,7 @@ export const CustomerDemoView = ({ stats }: CustomerDemoViewProps) => {
             {/* Left column (2/3 width) */}
             <div className="lg:col-span-2 space-y-6">
               {/* Enquiry Board */}
-              <Card>
+              <Card className="border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                   <CardTitle className="text-xl font-bold">Enquiry Board</CardTitle>
                   <Button variant="ghost" size="sm" asChild>
@@ -54,9 +54,9 @@ export const CustomerDemoView = ({ stats }: CustomerDemoViewProps) => {
                     </Link>
                   </Button>
                 </CardHeader>
-                <CardContent className="h-[400px] overflow-hidden">
+                <CardContent className="h-[500px] overflow-hidden border-t border-border">
                   <div className="h-full">
-                    <KanbanBoard isDemo={true} readOnly={true} height="h-[360px]" />
+                    <KanbanBoard isDemo={true} readOnly={true} height="h-[460px]" />
                   </div>
                 </CardContent>
               </Card>

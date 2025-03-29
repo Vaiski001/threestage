@@ -409,15 +409,15 @@ export function KanbanBoard({
   // Set a dynamic height based on the number of items
   // but use the provided height prop if available
   const boardHeight = height || (maxItemCount <= 3 
-    ? "h-[400px]" 
+    ? "h-[500px]" // Increased from 400px to 500px
     : maxItemCount <= 5 
-      ? "h-[600px]" 
-      : "h-[700px]");
+      ? "h-[650px]" // Increased from 600px to 650px
+      : "h-[750px]"); // Increased from 700px to 750px
 
   return (
     <div className="pt-6 pb-12">
       <Container size="full">
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto ${boardHeight}`}>
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto ${boardHeight} border-b border-gray-200 dark:border-gray-800`}>
           <KanbanColumn
             title="New"
             count={enquiries.new.length}

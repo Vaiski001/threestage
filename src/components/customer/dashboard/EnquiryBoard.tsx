@@ -26,7 +26,7 @@ export function EnquiryBoard() {
   };
 
   return (
-    <Card>
+    <Card className="border shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
         <CardTitle className="text-xl font-bold">Enquiry Board</CardTitle>
         <Button variant="ghost" size="sm" asChild>

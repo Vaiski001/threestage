@@ -79,8 +79,8 @@ export const CompanyDemoView = ({
                   </Button>
                 </div>
               </div>
-              <div className="h-[500px] overflow-hidden">
-                <KanbanBoard isDemo={true} readOnly={false} isCompanyView={true} height="h-[500px]" />
+              <div className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 shadow-sm">
+                <KanbanBoard isDemo={true} readOnly={false} isCompanyView={true} height="h-[600px]" />
               </div>
             </Container>
           </div>
