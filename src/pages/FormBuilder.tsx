@@ -13,36 +13,65 @@ import { FormTemplate } from "@/lib/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { createForm } from "@/lib/supabase/forms";
+import { isSupabaseAvailable } from "@/lib/supabase/client";
 
 const FormBuilder = () => {
   const [activeTab, setActiveTab] = useState("manage");
   const [selectedForm, setSelectedForm] = useState<FormTemplate | null>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const [supabaseStatus, setSupabaseStatus] = useState<boolean>(true);
 
   useEffect(() => {
     console.log("FormBuilder component mounted, current user:", user);
-  }, [user]);
+    console.log("User profile:", profile);
+    
+    // Check Supabase connection status
+    const checkSupabaseStatus = async () => {
+      try {
+        const isAvailable = await isSupabaseAvailable();
+        setSupabaseStatus(isAvailable);
+        if (!isAvailable) {
+          toast({
+            title: "Connection Issue",
+            description: "We're having trouble connecting to the database. Some features may be limited.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error checking Supabase status:", error);
+        setSupabaseStatus(false);
+      }
+    };
+    
+    checkSupabaseStatus();
+  }, [user, profile, toast]);
 
   // Empty form template for creating a new form
-  const getEmptyForm = (): FormTemplate => ({
-    id: `form-${Date.now()}`,
-    name: "New Form",
-    description: "",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    fields: [],
-    branding: {
-      primaryColor: "#0070f3",
-      fontFamily: "Inter",
-    },
-    company_id: user?.id || "", // Set the company_id
-    is_public: false
-  });
+  const getEmptyForm = (): FormTemplate => {
+    const userId = user?.id || profile?.id || "";
+    console.log("Creating empty form with user ID:", userId);
+    
+    return {
+      id: `form-${Date.now()}`,
+      name: "New Form",
+      description: "",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      fields: [],
+      branding: {
+        primaryColor: "#0070f3",
+        fontFamily: "Inter",
+      },
+      company_id: userId,
+      is_public: false
+    };
+  };
 
   // Event handler to create a new form
   const handleCreateForm = () => {
-    if (!user?.id) {
+    const userId = user?.id || profile?.id;
+    if (!userId) {
       console.error("Cannot create form: No user ID available");
       toast({
         title: "Error",
@@ -52,8 +81,17 @@ const FormBuilder = () => {
       return;
     }
     
+    if (!supabaseStatus) {
+      toast({
+        title: "Database Connection Issue",
+        description: "Cannot create a form while offline. Please check your connection and try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const newForm = getEmptyForm();
-    console.log("Creating new form template with user ID:", user.id);
+    console.log("Creating new form template with user ID:", userId);
     setSelectedForm(newForm);
     setActiveTab("create");
   };
@@ -61,7 +99,8 @@ const FormBuilder = () => {
   // Event handlers for form operations
   const handleSaveForm = async (form: FormTemplate) => {
     try {
-      if (!user?.id) {
+      const userId = user?.id || profile?.id;
+      if (!userId) {
         console.error("No user ID available");
         toast({
           title: "Error",
@@ -71,12 +110,21 @@ const FormBuilder = () => {
         return;
       }
       
-      console.log("Saving form. User ID:", user.id);
+      if (!supabaseStatus) {
+        toast({
+          title: "Database Connection Issue",
+          description: "Cannot save the form while offline. Please check your connection and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
       
-      // Ensure company_id is set
-      const formToSave = {
+      console.log("Saving form. User ID:", userId);
+      
+      // Create a new object to ensure we don't modify the original form
+      const formToSave: FormTemplate = {
         ...form,
-        company_id: user.id
+        company_id: userId
       };
       
       console.log("Form to save:", formToSave);
@@ -86,15 +134,19 @@ const FormBuilder = () => {
         console.log("Creating new form (temporary ID detected)");
         const savedForm = await createForm(formToSave);
         console.log("Form saved successfully:", savedForm);
+        
+        toast({
+          title: "Form Saved",
+          description: "Your form has been created successfully.",
+        });
       } else {
         // Update existing form handled by FormManagement component
         console.log("This would be an update to an existing form:", formToSave.id);
+        toast({
+          title: "Form Updated",
+          description: "Your existing form would be updated here. Currently using FormManagement for updates.",
+        });
       }
-      
-      toast({
-        title: "Form Saved",
-        description: "Your form has been saved successfully.",
-      });
       
       // Reset form state and return to management view
       setSelectedForm(null);
@@ -152,7 +204,9 @@ const FormBuilder = () => {
               </TabsList>
               
               <TabsContent value="manage">
-                <FormManagement onCreateNew={handleCreateForm} />
+                <FormManagement 
+                  onCreateNew={handleCreateForm} 
+                />
               </TabsContent>
               
               <TabsContent value="create">

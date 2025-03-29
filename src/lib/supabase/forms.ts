@@ -8,6 +8,11 @@ import { FormTemplate } from './types';
 export const getCompanyForms = async (companyId: string) => {
   console.log('Fetching forms for company:', companyId);
   
+  if (!companyId) {
+    console.error('Error: No company ID provided to getCompanyForms');
+    throw new Error('Company ID is required to fetch forms');
+  }
+  
   const { data, error } = await supabase
     .from('forms')
     .select('*')
@@ -19,7 +24,7 @@ export const getCompanyForms = async (companyId: string) => {
     throw error;
   }
 
-  console.log('Forms fetched successfully:', data);
+  console.log('Forms fetched successfully:', data?.length || 0, 'forms found');
   return data as unknown as FormTemplate[];
 };
 
@@ -66,6 +71,12 @@ export const createForm = async (form: Partial<FormTemplate>) => {
     is_public: form.is_public !== undefined ? form.is_public : false
   };
 
+  // Check if the fields array exists and is valid
+  if (!formToInsert.fields || !Array.isArray(formToInsert.fields)) {
+    console.log('Initializing empty fields array for form');
+    formToInsert.fields = [];
+  }
+
   // If there's a temporary ID, remove it as Supabase will generate a UUID
   if (formToInsert.id && formToInsert.id.startsWith('form-')) {
     console.log('Removing temporary ID:', formToInsert.id);
@@ -73,7 +84,7 @@ export const createForm = async (form: Partial<FormTemplate>) => {
     formToInsert = formDataWithoutId;
   }
 
-  console.log('Sending form data to Supabase:', formToInsert);
+  console.log('Sending form data to Supabase:', JSON.stringify(formToInsert));
 
   try {
     const { data, error } = await supabase
@@ -101,26 +112,36 @@ export const createForm = async (form: Partial<FormTemplate>) => {
 export const updateForm = async (formId: string, updates: Partial<FormTemplate>) => {
   console.log('Updating form:', formId, 'with data:', updates);
   
+  if (!formId) {
+    console.error('Error: No form ID provided for update');
+    throw new Error('Form ID is required to update a form');
+  }
+  
   // Always update the timestamp
   const formUpdates = {
     ...updates,
     updated_at: new Date().toISOString()
   };
 
-  const { data, error } = await supabase
-    .from('forms')
-    .update(formUpdates)
-    .eq('id', formId)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('forms')
+      .update(formUpdates)
+      .eq('id', formId)
+      .select()
+      .single();
 
-  if (error) {
+    if (error) {
+      console.error('Error updating form:', error);
+      throw error;
+    }
+
+    console.log('Form updated successfully:', data);
+    return data as unknown as FormTemplate;
+  } catch (error) {
     console.error('Error updating form:', error);
     throw error;
   }
-
-  console.log('Form updated successfully:', data);
-  return data as unknown as FormTemplate;
 };
 
 /**
@@ -128,6 +149,11 @@ export const updateForm = async (formId: string, updates: Partial<FormTemplate>)
  */
 export const deleteForm = async (formId: string) => {
   console.log('Deleting form:', formId);
+  
+  if (!formId) {
+    console.error('Error: No form ID provided for deletion');
+    throw new Error('Form ID is required to delete a form');
+  }
   
   const { error } = await supabase
     .from('forms')
@@ -149,21 +175,31 @@ export const deleteForm = async (formId: string) => {
 export const toggleFormActive = async (formId: string, isActive: boolean) => {
   console.log('Toggling form status:', formId, 'to:', isActive);
   
-  const { data, error } = await supabase
-    .from('forms')
-    .update({ 
-      is_public: isActive,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', formId)
-    .select()
-    .single();
+  if (!formId) {
+    console.error('Error: No form ID provided for toggle');
+    throw new Error('Form ID is required to toggle form status');
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('forms')
+      .update({ 
+        is_public: isActive,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', formId)
+      .select()
+      .single();
 
-  if (error) {
+    if (error) {
+      console.error('Error toggling form status:', error);
+      throw error;
+    }
+
+    console.log('Form status toggled successfully:', data);
+    return data as unknown as FormTemplate;
+  } catch (error) {
     console.error('Error toggling form status:', error);
     throw error;
   }
-
-  console.log('Form status toggled successfully:', data);
-  return data as unknown as FormTemplate;
 };

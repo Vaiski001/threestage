@@ -10,36 +10,42 @@ import {
   toggleFormActive 
 } from "@/lib/supabase/forms";
 import { FormTemplate } from "@/lib/supabase/types";
+import { useAuth } from "@/context/AuthContext";
 
 export function useFormManagement(userId?: string) {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  const { user, profile } = useAuth();
+  
+  // Get the most reliable user ID
+  const effectiveUserId = userId || user?.id || profile?.id || "";
   
   // For debugging purposes
   useEffect(() => {
-    console.log("useFormManagement hook initialized with userId:", userId);
-  }, [userId]);
+    console.log("useFormManagement hook initialized with provided userId:", userId);
+    console.log("Using effective userId:", effectiveUserId);
+  }, [userId, effectiveUserId]);
 
   // Fetch all forms for the current company
   const { data: forms = [], isLoading } = useQuery({
-    queryKey: ['forms', userId],
+    queryKey: ['forms', effectiveUserId],
     queryFn: async () => {
-      if (!userId) {
+      if (!effectiveUserId) {
         console.log("No userId provided, returning empty forms array");
         return [];
       }
-      console.log("Fetching forms for userId:", userId);
-      return await getCompanyForms(userId);
+      console.log("Fetching forms for userId:", effectiveUserId);
+      return await getCompanyForms(effectiveUserId);
     },
-    enabled: !!userId,
+    enabled: !!effectiveUserId,
   });
 
   // Create a new form mutation
   const createFormMutation = useMutation({
     mutationFn: (formData: Partial<FormTemplate>) => {
       // Ensure the company_id is set
-      if (!userId) {
+      if (!effectiveUserId) {
         console.error("Error: No user ID available when creating form");
         throw new Error("User ID is required to create a form");
       }
@@ -47,7 +53,7 @@ export function useFormManagement(userId?: string) {
       // Always ensure company_id is set to the current user's ID
       const formWithCompanyId = { 
         ...formData,
-        company_id: userId
+        company_id: effectiveUserId
       };
       
       console.log("Creating form with company_id:", formWithCompanyId.company_id);
@@ -55,7 +61,7 @@ export function useFormManagement(userId?: string) {
     },
     onSuccess: (data) => {
       console.log("Form created successfully, invalidating queries", data);
-      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
+      queryClient.invalidateQueries({ queryKey: ['forms', effectiveUserId] });
       toast({
         title: "Form Created",
         description: "Your new form has been created successfully.",
@@ -73,11 +79,17 @@ export function useFormManagement(userId?: string) {
 
   // Update an existing form mutation
   const updateFormMutation = useMutation({
-    mutationFn: ({ formId, updates }: { formId: string; updates: Partial<FormTemplate> }) => 
-      updateForm(formId, updates),
+    mutationFn: ({ formId, updates }: { formId: string; updates: Partial<FormTemplate> }) => {
+      // Ensure the company_id is maintained
+      const updatesWithCompanyId = {
+        ...updates,
+        company_id: effectiveUserId
+      };
+      return updateForm(formId, updatesWithCompanyId);
+    },
     onSuccess: (data) => {
       console.log("Form updated successfully:", data);
-      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
+      queryClient.invalidateQueries({ queryKey: ['forms', effectiveUserId] });
       toast({
         title: "Form Updated",
         description: "Your form has been updated successfully.",
@@ -97,7 +109,7 @@ export function useFormManagement(userId?: string) {
   const deleteFormMutation = useMutation({
     mutationFn: deleteForm,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
+      queryClient.invalidateQueries({ queryKey: ['forms', effectiveUserId] });
       toast({
         title: "Form Deleted",
         description: "The form has been deleted successfully.",
@@ -118,7 +130,7 @@ export function useFormManagement(userId?: string) {
     mutationFn: ({ formId, isActive }: { formId: string; isActive: boolean }) => 
       toggleFormActive(formId, isActive),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
+      queryClient.invalidateQueries({ queryKey: ['forms', effectiveUserId] });
       toast({
         title: data.is_public ? "Form Activated" : "Form Deactivated",
         description: `${data.name} is now ${data.is_public ? 'active' : 'inactive'}.`,
