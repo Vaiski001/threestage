@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
+import { determineUserRole } from "@/lib/supabase/roleUtils";
 
 const Dashboard = () => {
   const { profile, loading, isAuthenticated } = useAuth();
@@ -30,27 +31,48 @@ const Dashboard = () => {
             navigate('/customer/dashboard', { replace: true });
           } else {
             console.warn("Unknown role detected:", profile.role);
-            // If unknown role, redirect to demo for now
-            navigate('/demo', { replace: true });
+            // Get stored role from localStorage as fallback
+            const storedRole = localStorage.getItem('supabase.auth.user_role');
+            console.log("Checking stored role in localStorage:", storedRole);
+            
+            if (storedRole === 'company') {
+              navigate('/company/dashboard', { replace: true });
+            } else if (storedRole === 'customer') {
+              navigate('/customer/dashboard', { replace: true });
+            } else {
+              // If unknown role or no stored role, redirect to customer dashboard as default
+              console.log("No valid role found, defaulting to customer dashboard");
+              navigate('/customer/dashboard', { replace: true });
+            }
           }
         } else if (!isAuthenticated) {
-          // If no profile and not authenticated, redirect to demo
-          console.log("Not authenticated, redirecting to demo");
-          navigate('/demo', { replace: true });
+          // If no profile and not authenticated, redirect to login instead of demo
+          console.log("Not authenticated, redirecting to login");
+          navigate('/login', { replace: true });
         } else {
-          // If authenticated but no profile, wait a moment and try again
-          console.log("Authenticated but no profile yet, waiting briefly...");
-          setTimeout(() => {
-            if (!profile) {
-              console.log("Still no profile after waiting, redirecting to demo");
-              navigate('/demo', { replace: true });
-            }
-          }, 1500);
+          // If authenticated but no profile, check localStorage for role
+          console.log("Authenticated but no profile yet, checking localStorage for role...");
+          const storedRole = localStorage.getItem('supabase.auth.user_role');
+          console.log("Stored role in localStorage:", storedRole);
+          
+          if (storedRole === 'company') {
+            navigate('/company/dashboard', { replace: true });
+          } else if (storedRole === 'customer') {
+            navigate('/customer/dashboard', { replace: true });
+          } else {
+            // If still no role information, wait briefly then try customer dashboard
+            setTimeout(() => {
+              if (!profile) {
+                console.log("No profile or role info available, defaulting to customer dashboard");
+                navigate('/customer/dashboard', { replace: true });
+              }
+            }, 1500);
+          }
         }
       } catch (error) {
         console.error("Error during dashboard redirect:", error);
-        // Fallback to demo in case of errors
-        navigate('/demo', { replace: true });
+        // Fallback to login in case of errors
+        navigate('/login', { replace: true });
       }
     };
     

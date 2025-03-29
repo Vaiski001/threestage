@@ -100,6 +100,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === 'SIGNED_IN' && session) {
         console.log("Sign in detected, setting user");
         setUser(session.user);
+        
+        if (session.user.user_metadata?.role) {
+          localStorage.setItem('supabase.auth.user_role', session.user.user_metadata.role);
+          console.log("Stored user role in localStorage from auth change:", session.user.user_metadata.role);
+        }
+        
         toast({
           title: "Signed in",
           description: "You have been signed in successfully"
@@ -109,6 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("Sign out detected, clearing user and profile");
         setUser(null);
         setProfile(null);
+        localStorage.removeItem('supabase.auth.user_role');
       } 
       else if (event === 'TOKEN_REFRESHED' && session) {
         console.log("Token refreshed, updating user");
@@ -148,15 +155,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error fetching profile:", error);
         
         if (error.code === 'PGRST116') {
-          const storedRole = localStorage.getItem("oauth_role");
+          const storedRole = localStorage.getItem('supabase.auth.user_role') || 
+                            localStorage.getItem('oauth_role');
           const validatedRole = validateRole(storedRole) || 'customer';
           
-          console.log("Using role from localStorage:", validatedRole);
+          console.log("Using role from localStorage for profile creation:", validatedRole);
           
           const createdProfile = await handleOAuthSignIn(user!, validatedRole);
           if (createdProfile) {
             console.log("Created new profile during fetch:", createdProfile);
             setProfile(createdProfile);
+            localStorage.setItem('supabase.auth.user_role', validatedRole);
           } else {
             console.error("Failed to create profile during fetch");
           }
@@ -185,6 +194,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       console.log("Processed profile data with role:", profileData.role);
       setProfile(profileData);
+      
+      localStorage.setItem('supabase.auth.user_role', profileData.role);
+      
       return profileData;
     } catch (error) {
       console.error("Error in profile fetch:", error);

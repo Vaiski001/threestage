@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -37,7 +36,6 @@ export default function Login() {
     
     checkServiceStatus();
     
-    // Check more frequently if there are issues
     const statusInterval = setInterval(
       checkServiceStatus, 
       serviceStatus === 'available' ? 30000 : 15000
@@ -100,7 +98,7 @@ export default function Login() {
         }
       }
       
-      console.log("Redirecting to dashboard");
+      console.log("Redirecting to dashboard for role-based redirection");
       navigate("/dashboard");
     } catch (error) {
       console.error("Error during post-login process:", error);
@@ -115,7 +113,6 @@ export default function Login() {
     }
   };
 
-  // Calculate time since last check
   const getTimeSinceLastCheck = () => {
     if (!lastServiceCheck) return "never";
     const seconds = Math.floor((Date.now() - lastServiceCheck) / 1000);
@@ -123,7 +120,6 @@ export default function Login() {
     return `${Math.floor(seconds / 60)}m ${seconds % 60}s ago`;
   };
 
-  // Get appropriate alert for service status
   const getServiceAlert = () => {
     if (serviceStatus === 'unavailable') {
       return (

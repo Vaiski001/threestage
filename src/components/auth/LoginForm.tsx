@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmail, signInWithGoogle } from "@/lib/supabase";
@@ -45,13 +44,12 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     let isMounted = true;
     setIsCheckingConnection(true);
     
-    // Add a timeout to make sure we don't block the UI indefinitely
     const timeoutId = setTimeout(() => {
       if (isMounted) {
         console.log("Availability check timed out, allowing form interaction");
         setIsCheckingConnection(false);
       }
-    }, 3000); // 3 second timeout
+    }, 3000);
     
     try {
       const isAvailable = await isSupabaseAvailable();
@@ -84,7 +82,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   useEffect(() => {
     const checkHandler = checkSupabaseAvailability();
     
-    // If service has issues, set up periodic rechecks
     const interval = serviceStatus !== 'available' 
       ? setInterval(() => checkSupabaseAvailability(), 15000) 
       : null;
@@ -155,7 +152,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         return;
       }
     } catch (error) {
-      // Continue with login attempt even if availability check fails
     }
     
     setIsLoading(true);
@@ -220,6 +216,11 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       if (data?.user) {
         console.log("Login successful for user:", data.user.id);
         
+        if (data.user.user_metadata?.role) {
+          localStorage.setItem('supabase.auth.user_role', data.user.user_metadata.role);
+          console.log("Stored user role in localStorage:", data.user.user_metadata.role);
+        }
+        
         toast({
           title: "Login successful",
           description: "You have been successfully logged in.",
@@ -240,11 +241,6 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         }
       }
     } catch (error: any) {
-      if (loginTimeout) {
-        clearTimeout(loginTimeout);
-        setLoginTimeout(null);
-      }
-      
       console.error("Login error:", error);
       
       let errorMsg = "An error occurred during login. Please try again.";

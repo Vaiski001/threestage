@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { validateRole } from "@/lib/supabase/roleUtils";
 
 interface RoleRouterProps {
   children: React.ReactNode;
@@ -93,7 +94,27 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
         }
       }
     } else if (!loading) {
-      // If not authenticated and not loading, redirect to login
+      // Check localStorage for role as fallback if no profile
+      const storedRole = localStorage.getItem('supabase.auth.user_role');
+      const validRole = validateRole(storedRole);
+      
+      if (validRole) {
+        console.log("Found role in localStorage:", validRole);
+        const isCompanyPath = currentPath.startsWith('/company/');
+        const isCustomerPath = currentPath.startsWith('/customer/');
+        
+        // Redirect based on stored role if on wrong path
+        if ((validRole === 'company' && isCustomerPath) || (validRole === 'customer' && isCompanyPath)) {
+          if (validRole === 'company') {
+            navigate('/company/dashboard', { replace: true });
+          } else {
+            navigate('/customer/dashboard', { replace: true });
+          }
+          return;
+        }
+      }
+      
+      // If no profile and no valid stored role, redirect to login
       console.log("User not authenticated, redirecting to login");
       navigate('/login', { replace: true });
     }
