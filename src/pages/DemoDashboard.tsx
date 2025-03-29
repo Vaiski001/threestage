@@ -21,7 +21,9 @@ import {
   Receipt,
   DollarSign,
   PieChart,
-  UserPlus
+  UserPlus,
+  Filter,
+  Plus
 } from "lucide-react";
 import { 
   Tabs, 
@@ -155,7 +157,11 @@ const DemoDashboard = () => {
                 companyNavItems={companyNavItems}
               />
             ) : (
-              <CustomerDemoView stats={customerStats} />
+              <CustomerDemoView 
+                stats={customerStats} 
+                activeNavItem={activeNavItem}
+                customerNavItems={customerNavItems}
+              />
             )}
           </main>
         </div>
