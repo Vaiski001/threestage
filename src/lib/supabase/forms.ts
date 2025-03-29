@@ -6,6 +6,8 @@ import { FormTemplate } from './types';
  * Fetch all forms for a company
  */
 export const getCompanyForms = async (companyId: string) => {
+  console.log('Fetching forms for company:', companyId);
+  
   const { data, error } = await supabase
     .from('forms')
     .select('*')
@@ -17,6 +19,7 @@ export const getCompanyForms = async (companyId: string) => {
     throw error;
   }
 
+  console.log('Forms fetched successfully:', data);
   return data as unknown as FormTemplate[];
 };
 
@@ -62,6 +65,14 @@ export const createForm = async (form: Partial<FormTemplate>) => {
     updated_at: new Date().toISOString(),
     is_public: form.is_public !== undefined ? form.is_public : false
   };
+
+  // Remove any temporary ID if it exists
+  if (formData.id && formData.id.startsWith('form-')) {
+    const { id, ...formDataWithoutId } = formData;
+    formData = formDataWithoutId;
+  }
+
+  console.log('Sending form data to Supabase:', formData);
 
   const { data, error } = await supabase
     .from('forms')

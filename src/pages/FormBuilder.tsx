@@ -20,6 +20,10 @@ const FormBuilder = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  useEffect(() => {
+    console.log("FormBuilder component mounted, current user:", user);
+  }, [user]);
+
   // Empty form template for creating a new form
   const getEmptyForm = (): FormTemplate => ({
     id: `form-${Date.now()}`,
@@ -38,7 +42,9 @@ const FormBuilder = () => {
 
   // Event handler to create a new form
   const handleCreateForm = () => {
-    setSelectedForm(getEmptyForm());
+    const newForm = getEmptyForm();
+    console.log("Creating new form template:", newForm);
+    setSelectedForm(newForm);
     setActiveTab("create");
   };
 
@@ -46,6 +52,7 @@ const FormBuilder = () => {
   const handleSaveForm = async (form: FormTemplate) => {
     try {
       if (!user?.id) {
+        console.error("No user ID available");
         toast({
           title: "Error",
           description: "You need to be logged in to save forms",
@@ -54,16 +61,26 @@ const FormBuilder = () => {
         return;
       }
       
+      console.log("Saving form. User ID:", user.id);
+      
       // Ensure company_id is set
       form.company_id = user.id;
       
+      console.log("Form to save:", form);
+      
       // If it's a new form (id starts with "form-"), create it
       if (form.id.startsWith('form-')) {
+        console.log("Creating new form (temporary ID detected)");
+        
         // Remove the temporary ID as Supabase will generate a UUID
         const { id, ...formData } = form;
-        await createForm(formData as Partial<FormTemplate>);
+        console.log("Form data without temporary ID:", formData);
+        
+        const savedForm = await createForm(formData as Partial<FormTemplate>);
+        console.log("Form saved successfully:", savedForm);
       } else {
         // Update existing form handled by FormManagement component
+        console.log("This would be an update to an existing form:", form.id);
       }
       
       toast({
@@ -71,6 +88,7 @@ const FormBuilder = () => {
         description: "Your form has been saved successfully.",
       });
       
+      // Reset form state and return to management view
       setSelectedForm(null);
       setActiveTab("manage");
     } catch (error: any) {

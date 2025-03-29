@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -15,12 +15,21 @@ export function useFormManagement(userId?: string) {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  
+  // For debugging purposes
+  useEffect(() => {
+    console.log("useFormManagement hook initialized with userId:", userId);
+  }, [userId]);
 
   // Fetch all forms for the current company
   const { data: forms = [], isLoading } = useQuery({
     queryKey: ['forms', userId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!userId) {
+        console.log("No userId provided, returning empty forms array");
+        return [];
+      }
+      console.log("Fetching forms for userId:", userId);
       return await getCompanyForms(userId);
     },
     enabled: !!userId,
@@ -30,13 +39,20 @@ export function useFormManagement(userId?: string) {
   const createFormMutation = useMutation({
     mutationFn: (formData: Partial<FormTemplate>) => {
       // Ensure the company_id is set
+      if (!userId) {
+        throw new Error("User ID is required to create a form");
+      }
+      
       const formWithCompanyId = { 
         ...formData,
         company_id: userId
       };
+      
+      console.log("Creating form with company_id:", formWithCompanyId.company_id);
       return createForm(formWithCompanyId);
     },
     onSuccess: () => {
+      console.log("Form created successfully, invalidating queries");
       queryClient.invalidateQueries({ queryKey: ['forms', userId] });
       toast({
         title: "Form Created",
