@@ -8,8 +8,13 @@ export function DevNavigation() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Only show in development mode
-  if (import.meta.env.PROD) {
+  // Only show in development mode or preview environments
+  const isDevelopment = import.meta.env.DEV;
+  const isPreview = window.location.hostname.includes('preview') || 
+                   window.location.hostname.includes('lovable.app');
+  
+  // Return null if not in development or preview
+  if (!isDevelopment && !isPreview) {
     return null;
   }
 

@@ -21,7 +21,6 @@ const App = () => (
           <RoleRouter>
             <AppRouter />
           </RoleRouter>
-          {/* Developer Navigation - only visible in development */}
           <DevNavigation />
         </BrowserRouter>
       </TooltipProvider>
