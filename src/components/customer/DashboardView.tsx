@@ -168,7 +168,7 @@ export const DashboardView = ({
             })}
           />
         ) : (
-          <KanbanBoard isDemo={isDemo} readOnly={true} />
+          <KanbanBoard isDemo={isDemo} readOnly={true} isCompanyView={false} height="h-[500px]" />
         )}
       </div>
 

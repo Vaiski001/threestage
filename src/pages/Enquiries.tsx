@@ -1,13 +1,13 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Filter, Plus, Search, Bell } from "lucide-react";
+import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 
 const Enquiries = () => {
   const { profile } = useAuth();
@@ -64,7 +64,11 @@ const Enquiries = () => {
             </div>
             
             <div className="pb-8">
-              <KanbanBoard isDemo={isDemo} />
+              <KanbanBoard 
+                isDemo={isDemo} 
+                isCompanyView={userRole === "company"}
+                height="h-[750px]"
+              />
             </div>
           </Container>
         </div>
