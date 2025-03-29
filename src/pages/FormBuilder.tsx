@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Container } from "@/components/ui/Container";
@@ -27,13 +28,22 @@ const FormBuilder = () => {
   const [setupAttempted, setSetupAttempted] = useState(false);
   const navigate = useNavigate();
 
+  // Check if in preview mode to bypass auth
+  const isPreviewMode = window.location.hostname.includes('preview') || 
+                        window.location.hostname.includes('lovable.app');
+  const isDevelopment = import.meta.env.DEV;
+  const bypassAuth = (isDevelopment && process.env.NODE_ENV !== 'production') || isPreviewMode;
+
   useEffect(() => {
     console.log("FormBuilder component mounted");
     console.log("Current user:", user);
     console.log("User profile:", profile);
+    console.log("Preview mode:", isPreviewMode);
+    console.log("Development mode:", isDevelopment);
+    console.log("Bypassing auth:", bypassAuth);
     
-    // Check if user is authenticated
-    if (!user && !profile) {
+    // Skip authentication check if in preview mode
+    if (!bypassAuth && !user && !profile) {
       console.warn("No authenticated user found");
       toast({
         title: "Authentication Required",
@@ -65,7 +75,7 @@ const FormBuilder = () => {
             setIsDatabaseReady(false);
             
             // Only show toast for database table errors if user is authenticated
-            if (user || profile) {
+            if ((user || profile) && !bypassAuth) {
               toast({
                 title: "Database Setup Issue",
                 description: "We're having trouble setting up the required database tables. Form functionality may be limited.",
@@ -75,11 +85,13 @@ const FormBuilder = () => {
           }
         } else {
           setIsDatabaseReady(false);
-          toast({
-            title: "Connection Issue",
-            description: "We're having trouble connecting to the database. Form saving will not work.",
-            variant: "destructive"
-          });
+          if (!bypassAuth) {
+            toast({
+              title: "Connection Issue",
+              description: "We're having trouble connecting to the database. Form saving will not work.",
+              variant: "destructive"
+            });
+          }
         }
       } catch (error) {
         console.error("Error checking Supabase status:", error);
@@ -89,7 +101,7 @@ const FormBuilder = () => {
     };
     
     checkSupabaseStatus();
-  }, [user, profile, toast, navigate]);
+  }, [user, profile, toast, navigate, bypassAuth, isPreviewMode, isDevelopment]);
 
   // Function to attempt database setup
   const attemptDatabaseSetup = async () => {
@@ -117,12 +129,8 @@ const FormBuilder = () => {
 
   // Empty form template for creating a new form
   const getEmptyForm = (): FormTemplate => {
-    const userId = user?.id || profile?.id || "";
+    const userId = user?.id || profile?.id || "preview-user-id";
     console.log("Creating empty form with user ID:", userId);
-    
-    if (!userId) {
-      console.warn("Creating a form without a user ID");
-    }
     
     return {
       id: `temp-${Date.now()}`,
@@ -142,7 +150,7 @@ const FormBuilder = () => {
 
   // Event handler to create a new form
   const handleCreateForm = () => {
-    const userId = user?.id || profile?.id;
+    const userId = user?.id || profile?.id || (bypassAuth ? "preview-user-id" : undefined);
     if (!userId) {
       console.error("Cannot create form: No user ID available");
       toast({
@@ -153,7 +161,7 @@ const FormBuilder = () => {
       return;
     }
     
-    if (!supabaseStatus) {
+    if (!supabaseStatus && !bypassAuth) {
       toast({
         title: "Database Connection Issue",
         description: "Cannot create a form while offline. Please check your connection and try again.",
@@ -172,12 +180,13 @@ const FormBuilder = () => {
   const handleSaveForm = async (form: FormTemplate) => {
     try {
       setIsLoading(true);
-      const userId = user?.id || profile?.id;
+      const userId = user?.id || profile?.id || (bypassAuth ? "preview-user-id" : undefined);
       
       console.log("Save form initiated with user details:");
       console.log("User ID from state:", userId);
       console.log("User from context:", user);
       console.log("Profile from context:", profile);
+      console.log("Bypassing auth:", bypassAuth);
       
       if (!userId) {
         console.error("No user ID available");
@@ -189,12 +198,27 @@ const FormBuilder = () => {
         return;
       }
       
-      if (!supabaseStatus) {
+      if (!supabaseStatus && !bypassAuth) {
         toast({
           title: "Database Connection Issue",
           description: "Cannot save the form while offline. Please check your connection and try again.",
           variant: "destructive"
         });
+        return;
+      }
+      
+      // In preview mode, just simulate success but don't actually save
+      if (bypassAuth) {
+        console.log("Preview mode: Simulating form save success");
+        setTimeout(() => {
+          toast({
+            title: "Preview Mode",
+            description: "In preview mode, forms are not actually saved to the database.",
+          });
+          setSelectedForm(null);
+          setActiveTab("manage");
+          setIsLoading(false);
+        }, 1000);
         return;
       }
       
@@ -308,7 +332,7 @@ const FormBuilder = () => {
       <main className="flex-1 overflow-y-auto">
         <div className="pt-8 pb-4 px-4 sm:px-6">
           <Container>
-            {!user && !profile && (
+            {!bypassAuth && !user && !profile && (
               <Alert variant="destructive" className="mb-6">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Authentication Required</AlertTitle>
@@ -318,7 +342,16 @@ const FormBuilder = () => {
               </Alert>
             )}
             
-            {!supabaseStatus && (
+            {bypassAuth && (
+              <Alert className="mb-6">
+                <AlertTitle>Preview Mode</AlertTitle>
+                <AlertDescription>
+                  You are viewing the Form Builder in preview mode. Saving forms will be simulated but not actually saved to the database.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {!supabaseStatus && !bypassAuth && (
               <Alert variant="destructive" className="mb-6">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Database Connection Issue</AlertTitle>
@@ -328,7 +361,7 @@ const FormBuilder = () => {
               </Alert>
             )}
             
-            {isDatabaseReady === false && (
+            {isDatabaseReady === false && !bypassAuth && (
               <Alert variant="destructive" className="mb-6">
                 <Database className="h-4 w-4" />
                 <AlertTitle>Database Setup Required</AlertTitle>
@@ -360,6 +393,7 @@ const FormBuilder = () => {
               <TabsContent value="manage">
                 <FormManagement 
                   onCreateNew={handleCreateForm} 
+                  userId={bypassAuth ? "preview-user-id" : undefined}
                 />
               </TabsContent>
               
