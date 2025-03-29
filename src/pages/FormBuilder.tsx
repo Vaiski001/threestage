@@ -74,18 +74,21 @@ const FormBuilder = () => {
       console.log("Saving form. User ID:", user.id);
       
       // Ensure company_id is set
-      form.company_id = user.id;
+      const formToSave = {
+        ...form,
+        company_id: user.id
+      };
       
-      console.log("Form to save:", form);
+      console.log("Form to save:", formToSave);
       
       // If it's a new form (id starts with "form-"), create it
-      if (form.id.startsWith('form-')) {
+      if (formToSave.id.startsWith('form-')) {
         console.log("Creating new form (temporary ID detected)");
-        const savedForm = await createForm(form);
+        const savedForm = await createForm(formToSave);
         console.log("Form saved successfully:", savedForm);
       } else {
         // Update existing form handled by FormManagement component
-        console.log("This would be an update to an existing form:", form.id);
+        console.log("This would be an update to an existing form:", formToSave.id);
       }
       
       toast({

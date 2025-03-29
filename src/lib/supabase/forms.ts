@@ -68,25 +68,31 @@ export const createForm = async (form: Partial<FormTemplate>) => {
 
   // If there's a temporary ID, remove it as Supabase will generate a UUID
   if (formToInsert.id && formToInsert.id.startsWith('form-')) {
+    console.log('Removing temporary ID:', formToInsert.id);
     const { id, ...formDataWithoutId } = formToInsert;
     formToInsert = formDataWithoutId;
   }
 
   console.log('Sending form data to Supabase:', formToInsert);
 
-  const { data, error } = await supabase
-    .from('forms')
-    .insert(formToInsert)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('forms')
+      .insert(formToInsert)
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error creating form:', error);
+    if (error) {
+      console.error('Error creating form:', error);
+      throw error;
+    }
+
+    console.log('Form created successfully:', data);
+    return data as unknown as FormTemplate;
+  } catch (error) {
+    console.error('Exception creating form:', error);
     throw error;
   }
-
-  console.log('Form created successfully:', data);
-  return data as unknown as FormTemplate;
 };
 
 /**

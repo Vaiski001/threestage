@@ -53,8 +53,8 @@ export function useFormManagement(userId?: string) {
       console.log("Creating form with company_id:", formWithCompanyId.company_id);
       return createForm(formWithCompanyId);
     },
-    onSuccess: () => {
-      console.log("Form created successfully, invalidating queries");
+    onSuccess: (data) => {
+      console.log("Form created successfully, invalidating queries", data);
       queryClient.invalidateQueries({ queryKey: ['forms', userId] });
       toast({
         title: "Form Created",
@@ -75,7 +75,8 @@ export function useFormManagement(userId?: string) {
   const updateFormMutation = useMutation({
     mutationFn: ({ formId, updates }: { formId: string; updates: Partial<FormTemplate> }) => 
       updateForm(formId, updates),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Form updated successfully:", data);
       queryClient.invalidateQueries({ queryKey: ['forms', userId] });
       toast({
         title: "Form Updated",
