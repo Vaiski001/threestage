@@ -1,6 +1,12 @@
 
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
+import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatisticsCards } from "@/components/customer/dashboard/StatisticsCards";
+import { WelcomeBanner } from "@/components/customer/dashboard/WelcomeBanner";
+import { Filter, Plus, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface CustomerStatProps {
   label: string;
@@ -14,112 +20,168 @@ interface CustomerDemoViewProps {
 }
 
 export const CustomerDemoView = ({ stats }: CustomerDemoViewProps) => {
+  // Sample statistics for the customer demo dashboard
+  const demoStats = {
+    total: 5,
+    pending: 2,
+    completed: 3
+  };
+
   return (
     <>
       <div className="pt-8 pb-4 px-4 sm:px-6">
         <Container size="full">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl font-semibold mb-1">
-                Demo Customer Dashboard
-              </h1>
-              <p className="text-muted-foreground">
-                View your enquiries, payments, and account information.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="outline">View History</Button>
-              <Button>New Enquiry</Button>
-            </div>
+          {/* Welcome Banner */}
+          <WelcomeBanner userName="Demo Customer" />
+          
+          {/* Statistics Cards */}
+          <div className="mt-6">
+            <StatisticsCards stats={demoStats} />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((card, i) => (
-              <div key={i} className="glass-card rounded-lg p-6">
-                <div className="text-muted-foreground mb-2">{card.label}</div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-3xl font-semibold">{card.value}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    card.changeType === "positive" 
-                      ? "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30" 
-                      : card.changeType === "negative"
-                        ? "text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-950/30"
-                        : "text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-950/30"
-                  }`}>
-                    {card.change}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Container>
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            {/* Left column (2/3 width) */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Enquiry Board */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-xl font-bold">Enquiry Board</CardTitle>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/customer/enquiries" className="flex items-center">
+                      View All
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="mt-2">
+                    <KanbanBoard isDemo={true} readOnly={true} />
+                  </div>
+                </CardContent>
+              </Card>
 
-      <div className="px-4 sm:px-6 pb-8">
-        <Container size="full">
-          <div className="glass-card rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Recent Enquiries</h2>
-            <div className="space-y-4">
-              {[
-                { id: "ENQ-001", title: "Website Redesign", status: "In Progress", date: "Jun 12, 2023", tags: ["Design", "Web"] },
-                { id: "ENQ-002", title: "SEO Consultation", status: "Completed", date: "May 28, 2023", tags: ["Marketing"] },
-                { id: "ENQ-003", title: "Mobile App Development", status: "Pending Payment", date: "Jun 5, 2023", tags: ["Development", "Mobile"] }
-              ].map((enquiry) => (
-                <div key={enquiry.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-md border bg-card">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{enquiry.title}</span>
-                      <span className="text-xs text-muted-foreground">{enquiry.id}</span>
+              {/* Activity & Notifications */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-xl font-bold">Recent Activity</CardTitle>
+                  <Button variant="ghost" size="sm" className="flex items-center">
+                    View All <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      { id: 1, title: "Your enquiry status changed", description: "Website Redesign enquiry is now In Progress", time: "2 hours ago", type: "status" },
+                      { id: 2, title: "New message received", description: "You have a new message from Acme Design Studio", time: "yesterday", type: "message" },
+                      { id: 3, title: "Invoice received", description: "Invoice #INV-2023-005 has been issued", time: "2 days ago", type: "invoice" }
+                    ].map((activity) => (
+                      <div key={activity.id} className="p-4 rounded-md border bg-card/60 hover:bg-card/80 transition-colors">
+                        <div className="flex justify-between">
+                          <h3 className="font-medium">{activity.title}</h3>
+                          <span className="text-xs text-muted-foreground">{activity.time}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button variant="outline" size="sm">View Details</Button>
+                          {activity.type === "message" && <Button size="sm">Reply</Button>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right column (1/3 width) */}
+            <div className="space-y-6">
+              {/* Company Directory */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-xl font-bold">Company Directory</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" className="justify-start">Featured</Button>
+                      <Button variant="outline" className="justify-start">Newest</Button>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground">{enquiry.date}</span>
-                      <div className="flex gap-1">
-                        {enquiry.tags.map(tag => (
-                          <span key={tag} className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400">
-                            {tag}
-                          </span>
-                        ))}
+                    
+                    <div className="space-y-3 mt-2">
+                      {[
+                        { id: 1, name: "Acme Design Studio", industry: "Design & Creative" },
+                        { id: 2, name: "TechSolutions Inc", industry: "IT Services" },
+                        { id: 3, name: "Global Marketing", industry: "Marketing & PR" }
+                      ].map((company) => (
+                        <div key={company.id} className="p-3 border rounded-md hover:bg-accent/20 transition-colors cursor-pointer">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                              {company.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-medium">{company.name}</h4>
+                              <p className="text-xs text-muted-foreground">{company.industry}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <Button variant="outline" className="w-full mt-2">View All Companies</Button>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Payments Section */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-xl font-bold">Payments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 border rounded-md bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+                      <h4 className="font-medium text-amber-800 dark:text-amber-300">Upcoming Payment</h4>
+                      <p className="text-amber-700 dark:text-amber-400 text-sm mt-1">Website Redesign Service - Due in 5 days</p>
+                      <div className="mt-3">
+                        <Button size="sm" className="w-full">Make Payment</Button>
                       </div>
                     </div>
+                    
+                    <div className="p-3 border rounded-md">
+                      <h4 className="font-medium">Payment Methods</h4>
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center text-blue-600 dark:text-blue-300">
+                          CC
+                        </div>
+                        <div>
+                          <p className="text-sm">Visa ending in 4242</p>
+                          <p className="text-xs text-muted-foreground">Expires 12/2025</p>
+                        </div>
+                      </div>
+                      <Button variant="link" className="p-0 h-auto mt-2 text-sm">Manage Payment Methods</Button>
+                    </div>
                   </div>
-                  <div className="mt-2 sm:mt-0 self-start">
-                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      enquiry.status === "Completed" 
-                        ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400" 
-                        : enquiry.status === "In Progress"
-                          ? "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
-                          : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"
-                    }`}>
-                      {enquiry.status}
-                    </span>
+                </CardContent>
+              </Card>
+              
+              {/* Support Quick Access */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-xl font-bold">Support</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button className="w-full justify-start">Create Support Ticket</Button>
+                    <Button variant="outline" className="w-full justify-start">Knowledge Base</Button>
+                    <Button variant="outline" className="w-full justify-start">Check System Status</Button>
+                    
+                    <div className="p-3 border rounded-md mt-4">
+                      <h4 className="font-medium text-sm">Last Reply</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Your ticket #45678 was updated 3 days ago</p>
+                      <Button variant="link" className="p-0 h-auto mt-2 text-xs">View Conversation</Button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4">
-              <Button variant="outline" className="w-full">View All Enquiries</Button>
-            </div>
-          </div>
-          
-          <div className="glass-card rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Recent Notifications</h2>
-            <div className="space-y-4">
-              {[
-                { id: 1, title: "Invoice #INV-002 Due", description: "Your invoice for SEO Consultation is due in 3 days", time: "2 hours ago", read: false },
-                { id: 2, title: "Enquiry Status Updated", description: "Your Website Redesign enquiry has been moved to In Progress", time: "yesterday", read: true },
-                { id: 3, title: "New Message", description: "You have a new message from the support team regarding your Mobile App Development enquiry", time: "2 days ago", read: true }
-              ].map((notification) => (
-                <div key={notification.id} className={`p-4 rounded-md border ${notification.read ? 'bg-card' : 'bg-primary/5 border-primary/20'}`}>
-                  <div className="flex justify-between">
-                    <h3 className="font-medium">{notification.title}</h3>
-                    <span className="text-xs text-muted-foreground">{notification.time}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">{notification.description}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4">
-              <Button variant="outline" className="w-full">View All Notifications</Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </Container>

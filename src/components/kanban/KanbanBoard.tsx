@@ -11,7 +11,7 @@ import { getCompanyEnquiries, getCustomerEnquiries, updateEnquiryStatus } from "
 import { Enquiry } from "@/lib/supabase/types";
 
 // Sample data for demo purposes
-const sampleEnquiries: Record<string, Enquiry[]> = {
+const sampleCompanyEnquiries: Record<string, Enquiry[]> = {
   new: [
     {
       id: "1",
@@ -74,11 +74,35 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       content: "I'm having trouble with the login functionality.",
       status: "pending",
       priority: "medium"
+    },
+    {
+      id: "6",
+      title: "Account Upgrade",
+      customer_name: "Jennifer Taylor",
+      customer_email: "jennifer@example.com",
+      company_id: "demo-company",
+      created_at: "2023-05-13",
+      form_name: "Website",
+      content: "I would like to upgrade my account to the premium plan.",
+      status: "pending",
+      priority: "low"
+    },
+    {
+      id: "7",
+      title: "Shipping Inquiry",
+      customer_name: "Robert Clark",
+      customer_email: "robert@example.com",
+      company_id: "demo-company",
+      created_at: "2023-05-14",
+      form_name: "Facebook",
+      content: "When can I expect my order to be shipped?",
+      status: "pending",
+      priority: "medium"
     }
   ],
   completed: [
     {
-      id: "6",
+      id: "8",
       title: "Order Confirmation",
       customer_name: "Jennifer Taylor",
       customer_email: "jennifer@example.com",
@@ -90,7 +114,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       priority: "medium"
     },
     {
-      id: "7",
+      id: "9",
       title: "Feature Request",
       customer_name: "Robert Martin",
       customer_email: "robert@example.com",
@@ -102,7 +126,7 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       priority: "low"
     },
     {
-      id: "8",
+      id: "10",
       title: "Partnership Inquiry",
       customer_name: "Olivia Williams",
       customer_email: "olivia@example.com",
@@ -112,6 +136,112 @@ const sampleEnquiries: Record<string, Enquiry[]> = {
       content: "Thank you for the information about your partnership program.",
       status: "completed",
       priority: "high"
+    },
+    {
+      id: "11",
+      title: "Consultation Booking",
+      customer_name: "Daniel Johnson",
+      customer_email: "daniel@example.com",
+      company_id: "demo-company",
+      created_at: "2023-05-09",
+      form_name: "Website",
+      content: "I've booked a consultation for next Tuesday. Thank you.",
+      status: "completed",
+      priority: "medium"
+    }
+  ]
+};
+
+// Sample customer enquiries for demo
+const sampleCustomerEnquiries: Record<string, Enquiry[]> = {
+  new: [
+    {
+      id: "1",
+      title: "Website Redesign",
+      customer_name: "Demo Customer",
+      customer_email: "demo@example.com",
+      company_id: "acme-design",
+      created_at: "2023-06-15",
+      form_name: "Website",
+      content: "I need a complete redesign of my company website with modern design principles.",
+      status: "new",
+      priority: "high"
+    },
+    {
+      id: "2",
+      title: "Social Media Management",
+      customer_name: "Demo Customer",
+      customer_email: "demo@example.com",
+      company_id: "global-marketing",
+      created_at: "2023-06-18",
+      form_name: "Instagram",
+      content: "Looking for a social media management package for my small business.",
+      status: "new",
+      priority: "medium"
+    }
+  ],
+  pending: [
+    {
+      id: "3",
+      title: "IT Support Package",
+      customer_name: "Demo Customer",
+      customer_email: "demo@example.com",
+      company_id: "techsolutions-inc",
+      created_at: "2023-06-10",
+      form_name: "Website",
+      content: "I'm exploring your IT support packages for a team of 15 people.",
+      status: "pending",
+      priority: "medium"
+    },
+    {
+      id: "4",
+      title: "Logo Design",
+      customer_name: "Demo Customer",
+      customer_email: "demo@example.com",
+      company_id: "acme-design",
+      created_at: "2023-06-12",
+      form_name: "WhatsApp",
+      content: "Need a new logo designed for my startup.",
+      status: "pending",
+      priority: "high"
+    }
+  ],
+  completed: [
+    {
+      id: "5",
+      title: "Email Marketing Setup",
+      customer_name: "Demo Customer",
+      customer_email: "demo@example.com",
+      company_id: "global-marketing",
+      created_at: "2023-05-25",
+      form_name: "Website",
+      content: "Thanks for setting up my email marketing campaign.",
+      status: "completed",
+      priority: "medium"
+    },
+    {
+      id: "6",
+      title: "Server Maintenance",
+      customer_name: "Demo Customer",
+      customer_email: "demo@example.com",
+      company_id: "techsolutions-inc",
+      created_at: "2023-05-28",
+      form_name: "Facebook",
+      content: "Thank you for the server maintenance and optimization.",
+      status: "completed",
+      priority: "low"
+    },
+    {
+      id: "7",
+      title: "Business Card Design",
+      customer_name: "Demo Customer",
+      customer_email: "demo@example.com",
+      company_id: "acme-design",
+      created_at: "2023-06-02",
+      form_name: "Website",
+      content: "I love the business cards you designed. Thank you!",
+      status: "completed",
+      priority: "low"
     }
   ]
 };
@@ -136,7 +266,10 @@ export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = 
   const { data: fetchedEnquiries, isLoading } = useQuery({
     queryKey: ['enquiries', user?.id, profile?.role],
     queryFn: async () => {
-      if (isDemo) return sampleEnquiries;
+      if (isDemo) {
+        // For demo, return different data based on the view
+        return isCompanyView ? sampleCompanyEnquiries : sampleCustomerEnquiries;
+      }
       
       if (!user) return null;
       
@@ -170,7 +303,8 @@ export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = 
   // Group enquiries by status
   useEffect(() => {
     if (isDemo) {
-      setEnquiries(sampleEnquiries);
+      // For demo, use the predefined sample data
+      setEnquiries(isCompanyView ? sampleCompanyEnquiries : sampleCustomerEnquiries);
       return;
     }
     
@@ -188,7 +322,7 @@ export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = 
         setEnquiries(fetchedEnquiries as Record<string, Enquiry[]>);
       }
     }
-  }, [fetchedEnquiries, isDemo]);
+  }, [fetchedEnquiries, isDemo, isCompanyView]);
 
   // Update enquiry status mutation
   const updateStatusMutation = useMutation({

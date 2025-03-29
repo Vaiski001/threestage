@@ -72,10 +72,10 @@ const DemoDashboard = () => {
 
   // Stats for demo customer dashboard with proper zero values - explicitly type the changeType property
   const customerStats = [
-    { label: "Total Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
-    { label: "Active Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
-    { label: "Pending Inquiries", value: "0", change: "0%", changeType: "neutral" as const },
-    { label: "Resolved Inquiries", value: "0", change: "0%", changeType: "neutral" as const }
+    { label: "Total Inquiries", value: "5", change: "+2", changeType: "positive" as const },
+    { label: "Active Inquiries", value: "2", change: "+1", changeType: "positive" as const },
+    { label: "Pending Inquiries", value: "2", change: "+0", changeType: "neutral" as const },
+    { label: "Resolved Inquiries", value: "3", change: "+2", changeType: "positive" as const }
   ];
 
   return (
