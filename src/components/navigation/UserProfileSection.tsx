@@ -55,6 +55,9 @@ export const UserProfileSection = ({ profile, isCompany }: UserProfileSectionPro
     return name.substring(0, 2).toUpperCase();
   };
   
+  // Get avatar URL as string or empty string as fallback
+  const avatarUrl = (profile?.avatar_url as string) || "";
+  
   return (
     <div className="border-t border-sidebar-border px-3 py-4 mt-auto">
       <DropdownMenu>
@@ -62,7 +65,7 @@ export const UserProfileSection = ({ profile, isCompany }: UserProfileSectionPro
           <Button variant="ghost" className="w-full flex items-center justify-between p-2 hover:bg-sidebar-accent/50 rounded-md">
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
-                <AvatarImage src={profile?.avatar_url || ""} alt={profile?.name || "User"} />
+                <AvatarImage src={avatarUrl} alt={profile?.name || "User"} />
                 <AvatarFallback className="bg-primary/10 text-primary">
                   {getInitials()}
                 </AvatarFallback>
