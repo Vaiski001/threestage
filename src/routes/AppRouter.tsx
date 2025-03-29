@@ -1,5 +1,5 @@
 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
 import Index from "@/pages/Index";
 import DemoDashboard from "@/pages/DemoDashboard";
@@ -18,7 +18,6 @@ import CompanySettings from "@/pages/CompanySettings";
 import FormBuilder from "@/pages/FormBuilder";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { FormEmbedded } from "@/components/forms/FormEmbedded";
-import { Navigate } from "react-router-dom";
 
 export const AppRouter = () => {
   return (
