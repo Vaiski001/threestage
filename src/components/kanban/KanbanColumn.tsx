@@ -38,7 +38,7 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   return (
     <div
-      className="flex flex-col h-[calc(100vh-200px)] glass-card rounded-lg shadow-sm border border-gray-100 dark:border-gray-800"
+      className="flex flex-col h-full glass-card rounded-lg shadow-sm border border-gray-100 dark:border-gray-800"
       onDragOver={!readOnly ? onDragOver : undefined}
       onDrop={!readOnly ? (e) => onDrop(e, columnId) : undefined}
     >

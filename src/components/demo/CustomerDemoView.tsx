@@ -7,6 +7,7 @@ import { StatisticsCards } from "@/components/customer/dashboard/StatisticsCards
 import { WelcomeBanner } from "@/components/customer/dashboard/WelcomeBanner";
 import { Filter, Plus, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
 
 interface CustomerStatProps {
   label: string;
@@ -53,8 +54,8 @@ export const CustomerDemoView = ({ stats }: CustomerDemoViewProps) => {
                     </Link>
                   </Button>
                 </CardHeader>
-                <CardContent>
-                  <div className="mt-2">
+                <CardContent className="h-[400px] overflow-hidden">
+                  <div className="h-full">
                     <KanbanBoard isDemo={true} readOnly={true} />
                   </div>
                 </CardContent>
@@ -186,6 +187,9 @@ export const CustomerDemoView = ({ stats }: CustomerDemoViewProps) => {
           </div>
         </Container>
       </div>
+      
+      {/* Right side navigation menu */}
+      <WorkPartnersSidebar />
     </>
   );
 };

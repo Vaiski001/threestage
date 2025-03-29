@@ -4,6 +4,7 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
 import { Filter, Plus } from "lucide-react";
 import { StatisticsCards } from "@/components/customer/dashboard/StatisticsCards";
+import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
 
 interface CompanyStatProps {
   label: string;
@@ -78,9 +79,11 @@ export const CompanyDemoView = ({
                   </Button>
                 </div>
               </div>
+              <div className="h-[500px] overflow-hidden">
+                <KanbanBoard isDemo={true} readOnly={false} isCompanyView={true} />
+              </div>
             </Container>
           </div>
-          <KanbanBoard isDemo={true} readOnly={false} isCompanyView={true} />
         </>
       )}
       
@@ -103,6 +106,9 @@ export const CompanyDemoView = ({
           </Container>
         </div>
       )}
+
+      {/* Right side navigation menu */}
+      <WorkPartnersSidebar />
     </>
   );
 };
