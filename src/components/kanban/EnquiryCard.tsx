@@ -22,8 +22,17 @@ export function EnquiryCard({ enquiry, onDragStart, readOnly = false }: EnquiryC
   const [isHovered, setIsHovered] = useState(false);
   
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
+    try {
+      // Check if dateString is a valid date string
+      if (!dateString || isNaN(Date.parse(dateString))) {
+        return "Invalid date";
+      }
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 
   const priorityColors = {
@@ -65,7 +74,7 @@ export function EnquiryCard({ enquiry, onDragStart, readOnly = false }: EnquiryC
           {enquiry.priority.charAt(0).toUpperCase() + enquiry.priority.slice(1)}
         </span>
         
-        <span className={`text-xs px-2 py-0.5 rounded-full ${channelColors[enquiry.channel as keyof typeof channelColors]}`}>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${channelColors[enquiry.channel as keyof typeof channelColors] || "text-gray-500 bg-gray-50 dark:bg-gray-800/30"}`}>
           {enquiry.channel}
         </span>
       </div>
