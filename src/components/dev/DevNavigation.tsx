@@ -20,36 +20,47 @@ export function DevNavigation() {
     { path: "/signup", label: "Signup" },
     { path: "/demo", label: "Demo Dashboard" },
     { path: "/companies", label: "Company Search" },
+    { path: "/companies/:id", label: "Company Profile", disabled: true },
+    { path: "/forms/:formId", label: "Form Embedded", disabled: true },
+    { path: "/unauthorized", label: "Unauthorized" },
     
-    // Customer routes
+    // Customer routes (grouped)
+    { type: "header", label: "Customer Portal" },
     { path: "/customer/dashboard", label: "Customer Dashboard" },
     { path: "/customer/settings", label: "Customer Settings" },
     { path: "/customer/enquiries", label: "Customer Enquiries" },
+    
+    // Customer messaging subgroup
+    { type: "subheader", label: "Customer Messaging" },
     { path: "/customer/messaging/email", label: "Customer Email" },
     { path: "/customer/messaging/chat", label: "Customer Chat" },
     { path: "/customer/messaging/inbox", label: "Customer Inbox" },
+    
+    // More customer routes
     { path: "/customer/billing", label: "Customer Billing" },
     { path: "/customer/notifications", label: "Customer Notifications" },
     { path: "/customer/support", label: "Customer Support" },
     
-    // Company routes
+    // Company routes (grouped)
+    { type: "header", label: "Company Portal" },
     { path: "/company/dashboard", label: "Company Dashboard" },
     { path: "/company/settings", label: "Company Settings" },
     { path: "/company/forms", label: "Form Builder" },
     { path: "/company/enquiries", label: "Company Enquiries" },
+    
+    // Company messaging subgroup
+    { type: "subheader", label: "Company Messaging" },
     { path: "/company/messaging/email", label: "Company Email" },
     { path: "/company/messaging/chat", label: "Company Chat" },
     { path: "/company/messaging/sms", label: "Company SMS" },
+    
+    // More company routes
     { path: "/company/invoices", label: "Company Invoices" },
     { path: "/company/payments", label: "Company Payments" },
     { path: "/company/reports", label: "Company Reports" },
     { path: "/company/team", label: "Team Management" },
     { path: "/company/customers", label: "Company Customers" },
     { path: "/company/support", label: "Company Support" },
-    
-    // Legacy/utility routes
-    { path: "/dashboard", label: "Generic Dashboard" },
-    { path: "/unauthorized", label: "Unauthorized" }
   ];
 
   const handleNavigate = (path: string) => {
@@ -87,17 +98,40 @@ export function DevNavigation() {
       </div>
       
       <div className="space-y-1 max-h-[70vh] overflow-y-auto">
-        {routes.map((route) => (
-          <Button
-            key={route.path}
-            size="sm"
-            variant="ghost"
-            className="w-full justify-start text-left text-xs"
-            onClick={() => handleNavigate(route.path)}
-          >
-            {route.label}
-          </Button>
-        ))}
+        {routes.map((route, index) => {
+          // Render header
+          if (route.type === "header") {
+            return (
+              <div key={`header-${index}`} className="pt-2 pb-1 first:pt-0">
+                <p className="text-xs font-bold text-primary px-2">{route.label}</p>
+              </div>
+            );
+          }
+          
+          // Render subheader
+          if (route.type === "subheader") {
+            return (
+              <div key={`subheader-${index}`} className="pt-1 pb-1">
+                <p className="text-xs text-muted-foreground px-3">{route.label}</p>
+              </div>
+            );
+          }
+          
+          // Render regular route button
+          return (
+            <Button
+              key={`${route.path}-${index}`}
+              size="sm"
+              variant="ghost"
+              className="w-full justify-start text-left text-xs"
+              onClick={() => route.path && !route.disabled && handleNavigate(route.path)}
+              disabled={route.disabled}
+            >
+              {route.label}
+              {route.disabled && <span className="ml-auto text-[10px] text-muted-foreground">Param required</span>}
+            </Button>
+          );
+        })}
       </div>
       
       <p className="text-[10px] text-muted-foreground mt-2 border-t pt-1">
