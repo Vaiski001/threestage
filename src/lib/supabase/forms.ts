@@ -3,6 +3,61 @@ import { supabase } from './client';
 import { FormTemplate } from './types';
 
 /**
+ * Ensure the forms table exists in the database
+ */
+export const ensureFormsTableExists = async () => {
+  console.log('Checking if forms table exists...');
+  
+  try {
+    // Check if the table exists by querying it
+    const { error } = await supabase
+      .from('forms')
+      .select('id')
+      .limit(1);
+    
+    if (error && error.code === '42P01') { // PostgreSQL code for "relation does not exist"
+      console.log('Forms table does not exist, creating it...');
+      
+      // Create the forms table
+      const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS public.forms (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          description TEXT,
+          fields JSONB DEFAULT '[]'::jsonb,
+          branding JSONB DEFAULT '{"primaryColor":"#0070f3","fontFamily":"Inter"}'::jsonb,
+          company_id UUID NOT NULL,
+          is_public BOOLEAN DEFAULT false,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+      
+      const { error: createError } = await supabase.rpc('execute_sql', { 
+        query: createTableQuery 
+      });
+      
+      if (createError) {
+        console.error('Error creating forms table:', createError);
+        throw new Error(`Failed to create forms table: ${createError.message}`);
+      }
+      
+      console.log('Forms table created successfully');
+      return true;
+    } else if (error) {
+      console.error('Error checking forms table:', error);
+      throw error;
+    }
+    
+    console.log('Forms table already exists');
+    return true;
+  } catch (error) {
+    console.error('Error ensuring forms table exists:', error);
+    throw error;
+  }
+};
+
+/**
  * Fetch all forms for a company
  */
 export const getCompanyForms = async (companyId: string) => {
@@ -11,6 +66,14 @@ export const getCompanyForms = async (companyId: string) => {
   if (!companyId) {
     console.error('Error: No company ID provided to getCompanyForms');
     throw new Error('Company ID is required to fetch forms');
+  }
+  
+  // First ensure the table exists
+  try {
+    await ensureFormsTableExists();
+  } catch (error) {
+    console.warn('Could not verify forms table:', error);
+    // Continue anyway, in case the error is not related to table existence
   }
   
   const { data, error } = await supabase
@@ -63,16 +126,12 @@ export const createForm = async (form: Partial<FormTemplate>) => {
     throw new Error('Form name is required');
   }
 
-  // Verify Supabase connection before attempting to save
+  // First ensure the table exists
   try {
-    const { error: pingError } = await supabase.from('forms').select('count').limit(1);
-    if (pingError) {
-      console.error('Supabase connection test failed:', pingError);
-      throw new Error(`Supabase connection error: ${pingError.message}`);
-    }
-  } catch (e) {
-    console.error('Error testing Supabase connection:', e);
-    throw new Error(`Could not connect to Supabase: ${e instanceof Error ? e.message : String(e)}`);
+    await ensureFormsTableExists();
+  } catch (error) {
+    console.error('Error ensuring forms table exists:', error);
+    throw new Error(`Could not create form: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // Process form data before sending to Supabase

@@ -17,6 +17,8 @@ import {
   BrandingTabContent,
   DeleteFieldDialog
 } from "./builder";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface FormBuilderProps {
   form: FormTemplate;
@@ -31,10 +33,12 @@ export function FormBuilder({ form, onSave, onCancel, isProcessing = false }: Fo
   const [activeTab, setActiveTab] = useState("fields");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fieldToDelete, setFieldToDelete] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const updateFormInfo = (field: keyof FormTemplate, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (saveError) setSaveError(null);
   };
 
   const addField = (type: FormFieldType) => {
@@ -164,6 +168,8 @@ export function FormBuilder({ form, onSave, onCancel, isProcessing = false }: Fo
   };
 
   const handleSave = () => {
+    setSaveError(null);
+
     if (!formData.name.trim()) {
       toast({
         title: "Validation Error",
@@ -184,7 +190,19 @@ export function FormBuilder({ form, onSave, onCancel, isProcessing = false }: Fo
       }
     }
 
-    onSave(formData);
+    try {
+      onSave(formData);
+    } catch (error) {
+      console.error("Error in handleSave:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setSaveError(errorMessage);
+      
+      toast({
+        title: "Error Saving Form",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
   };
 
   const togglePreview = () => {
@@ -217,6 +235,19 @@ export function FormBuilder({ form, onSave, onCancel, isProcessing = false }: Fo
         showPreview={showPreview}
         isProcessing={isProcessing}
       />
+
+      {saveError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error Saving Form</AlertTitle>
+          <AlertDescription>
+            {saveError.includes("relation") ? 
+              "Database table does not exist. This is likely the first time you're creating a form. Please try again, as the system is attempting to set up the necessary database tables." : 
+              saveError
+            }
+          </AlertDescription>
+        </Alert>
+      )}
 
       <FormInfoSection
         formData={formData}

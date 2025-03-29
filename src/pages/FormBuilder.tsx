@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Container } from "@/components/ui/Container";
@@ -8,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { FormManagement } from "@/components/forms/FormManagement";
 import { FormBuilder as FormBuilderComponent } from "@/components/forms/FormBuilder";
 import { FormIntegration } from "@/components/forms/FormIntegration";
-import { Bell, Search, AlertTriangle } from "lucide-react";
+import { Bell, Search, AlertTriangle, Database } from "lucide-react";
 import { FormTemplate } from "@/lib/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { createForm } from "@/lib/supabase/forms";
+import { createForm, ensureFormsTableExists } from "@/lib/supabase/forms";
 import { isSupabaseAvailable } from "@/lib/supabase/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +23,8 @@ const FormBuilder = () => {
   const { user, profile } = useAuth();
   const [supabaseStatus, setSupabaseStatus] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isDatabaseReady, setIsDatabaseReady] = useState<boolean | null>(null);
+  const [setupAttempted, setSetupAttempted] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,7 +53,28 @@ const FormBuilder = () => {
         const isAvailable = await isSupabaseAvailable();
         console.log("Supabase availability check result:", isAvailable);
         setSupabaseStatus(isAvailable);
-        if (!isAvailable) {
+        
+        if (isAvailable) {
+          // Try to ensure the forms table exists
+          try {
+            await ensureFormsTableExists();
+            setIsDatabaseReady(true);
+            console.log("Database tables are ready");
+          } catch (error) {
+            console.error("Error checking/creating database tables:", error);
+            setIsDatabaseReady(false);
+            
+            // Only show toast for database table errors if user is authenticated
+            if (user || profile) {
+              toast({
+                title: "Database Setup Issue",
+                description: "We're having trouble setting up the required database tables. Form functionality may be limited.",
+                variant: "destructive"
+              });
+            }
+          }
+        } else {
+          setIsDatabaseReady(false);
           toast({
             title: "Connection Issue",
             description: "We're having trouble connecting to the database. Form saving will not work.",
@@ -62,11 +84,36 @@ const FormBuilder = () => {
       } catch (error) {
         console.error("Error checking Supabase status:", error);
         setSupabaseStatus(false);
+        setIsDatabaseReady(false);
       }
     };
     
     checkSupabaseStatus();
   }, [user, profile, toast, navigate]);
+
+  // Function to attempt database setup
+  const attemptDatabaseSetup = async () => {
+    setSetupAttempted(true);
+    setIsLoading(true);
+    
+    try {
+      await ensureFormsTableExists();
+      setIsDatabaseReady(true);
+      toast({
+        title: "Database Setup Complete",
+        description: "The necessary database tables have been created successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to set up database tables:", error);
+      toast({
+        title: "Database Setup Failed",
+        description: error instanceof Error ? error.message : "Could not create the required database tables.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Empty form template for creating a new form
   const getEmptyForm = (): FormTemplate => {
@@ -151,6 +198,22 @@ const FormBuilder = () => {
         return;
       }
       
+      // Try to ensure the database is ready before saving
+      if (!isDatabaseReady) {
+        try {
+          await ensureFormsTableExists();
+          setIsDatabaseReady(true);
+        } catch (error) {
+          console.error("Error creating tables before save:", error);
+          toast({
+            title: "Database Setup Issue",
+            description: "Could not set up the required database tables. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+      
       console.log("Saving form. User ID:", userId);
       console.log("Original form to save:", form);
       
@@ -194,11 +257,22 @@ const FormBuilder = () => {
       setActiveTab("manage");
     } catch (error: any) {
       console.error("Error saving form:", error);
-      toast({
-        title: "Error Saving Form",
-        description: error.message || "An error occurred while saving the form",
-        variant: "destructive"
-      });
+      
+      // Special handling for "relation does not exist" errors
+      if (error.message && error.message.includes("relation") && error.message.includes("does not exist")) {
+        toast({
+          title: "Database Table Missing",
+          description: "The forms table doesn't exist yet. Click 'Setup Database' to create it.",
+          variant: "destructive"
+        });
+        setIsDatabaseReady(false);
+      } else {
+        toast({
+          title: "Error Saving Form",
+          description: error.message || "An error occurred while saving the form",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -250,6 +324,23 @@ const FormBuilder = () => {
                 <AlertTitle>Database Connection Issue</AlertTitle>
                 <AlertDescription>
                   There's a problem connecting to the database. Form saving will not work until this is resolved.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {isDatabaseReady === false && (
+              <Alert variant="destructive" className="mb-6">
+                <Database className="h-4 w-4" />
+                <AlertTitle>Database Setup Required</AlertTitle>
+                <AlertDescription className="flex flex-col gap-2">
+                  <p>The required database tables for forms don't exist yet. This happens when you're using forms for the first time.</p>
+                  <Button 
+                    onClick={attemptDatabaseSetup} 
+                    className="w-fit" 
+                    disabled={isLoading || setupAttempted}
+                  >
+                    {isLoading ? "Setting up..." : setupAttempted ? "Setup Attempted" : "Setup Database Tables"}
+                  </Button>
                 </AlertDescription>
               </Alert>
             )}

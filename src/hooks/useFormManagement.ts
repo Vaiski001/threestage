@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,7 +6,8 @@ import {
   createForm, 
   updateForm, 
   deleteForm, 
-  toggleFormActive 
+  toggleFormActive,
+  ensureFormsTableExists 
 } from "@/lib/supabase/forms";
 import { FormTemplate } from "@/lib/supabase/types";
 import { useAuth } from "@/context/AuthContext";
@@ -19,18 +19,29 @@ export function useFormManagement(userId?: string) {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const [supabaseAvailable, setSupabaseAvailable] = useState<boolean | null>(null);
+  const [tableChecked, setTableChecked] = useState(false);
   
   // Get the most reliable user ID
   const effectiveUserId = userId || user?.id || profile?.id || "";
   
-  // Check Supabase connection on mount
+  // Check Supabase connection and table existence on mount
   useEffect(() => {
     const checkSupabase = async () => {
       try {
         const available = await isSupabaseAvailable();
         console.log("Supabase connection check:", available ? "AVAILABLE" : "NOT AVAILABLE");
         setSupabaseAvailable(available);
-        if (!available) {
+        
+        if (available) {
+          // If Supabase is available, check for the forms table
+          try {
+            await ensureFormsTableExists();
+            setTableChecked(true);
+          } catch (err) {
+            console.error("Error checking/creating forms table:", err);
+            // We still continue as the table might be created later
+          }
+        } else {
           toast({
             title: "Database Connection Issue",
             description: "There seems to be a problem connecting to the database. Form saving may not work properly.",
@@ -54,7 +65,8 @@ export function useFormManagement(userId?: string) {
     console.log("- Profile ID:", profile?.id);
     console.log("- Effective userId being used:", effectiveUserId);
     console.log("- Supabase available:", supabaseAvailable);
-  }, [userId, user?.id, profile?.id, effectiveUserId, supabaseAvailable]);
+    console.log("- Forms table checked:", tableChecked);
+  }, [userId, user?.id, profile?.id, effectiveUserId, supabaseAvailable, tableChecked]);
 
   // Fetch all forms for the current company
   const { data: forms = [], isLoading } = useQuery({
@@ -224,6 +236,7 @@ export function useFormManagement(userId?: string) {
     updateFormMutation,
     deleteFormMutation,
     toggleFormMutation,
-    supabaseAvailable
+    supabaseAvailable,
+    tableChecked
   };
 }
