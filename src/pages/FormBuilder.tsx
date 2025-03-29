@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Container } from "@/components/ui/Container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,14 +11,17 @@ import { FormIntegration } from "@/components/forms/FormIntegration";
 import { Bell, Search } from "lucide-react";
 import { FormTemplate } from "@/lib/supabase/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { createForm } from "@/lib/supabase/forms";
 
 const FormBuilder = () => {
   const [activeTab, setActiveTab] = useState("manage");
   const [selectedForm, setSelectedForm] = useState<FormTemplate | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Empty form template for creating a new form
-  const emptyForm: FormTemplate = {
+  const getEmptyForm = (): FormTemplate => ({
     id: `form-${Date.now()}`,
     name: "New Form",
     description: "",
@@ -28,23 +31,56 @@ const FormBuilder = () => {
     branding: {
       primaryColor: "#0070f3",
       fontFamily: "Inter",
-    }
-  };
+    },
+    company_id: user?.id || "", // Set the company_id
+    is_public: false
+  });
 
   // Event handler to create a new form
   const handleCreateForm = () => {
-    setSelectedForm(emptyForm);
+    setSelectedForm(getEmptyForm());
     setActiveTab("create");
   };
 
   // Event handlers for form operations
-  const handleSaveForm = (form: FormTemplate) => {
-    toast({
-      title: "Form Saved",
-      description: "Your form has been saved successfully.",
-    });
-    setSelectedForm(null);
-    setActiveTab("manage");
+  const handleSaveForm = async (form: FormTemplate) => {
+    try {
+      if (!user?.id) {
+        toast({
+          title: "Error",
+          description: "You need to be logged in to save forms",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Ensure company_id is set
+      form.company_id = user.id;
+      
+      // If it's a new form (id starts with "form-"), create it
+      if (form.id.startsWith('form-')) {
+        // Remove the temporary ID as Supabase will generate a UUID
+        const { id, ...formData } = form;
+        await createForm(formData as Partial<FormTemplate>);
+      } else {
+        // Update existing form handled by FormManagement component
+      }
+      
+      toast({
+        title: "Form Saved",
+        description: "Your form has been saved successfully.",
+      });
+      
+      setSelectedForm(null);
+      setActiveTab("manage");
+    } catch (error: any) {
+      console.error("Error saving form:", error);
+      toast({
+        title: "Error Saving Form",
+        description: error.message || "An error occurred while saving the form",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCancelForm = () => {

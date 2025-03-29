@@ -42,9 +42,30 @@ export const getFormById = async (formId: string) => {
  * Create a new form
  */
 export const createForm = async (form: Partial<FormTemplate>) => {
+  console.log('Creating form with data:', form);
+  
+  // Ensure required fields are present
+  if (!form.company_id) {
+    console.error('Error creating form: company_id is required');
+    throw new Error('Company ID is required to create a form');
+  }
+  
+  if (!form.name) {
+    console.error('Error creating form: name is required');
+    throw new Error('Form name is required');
+  }
+
+  // Add timestamps if not provided
+  const formData = {
+    ...form,
+    created_at: form.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    is_public: form.is_public !== undefined ? form.is_public : false
+  };
+
   const { data, error } = await supabase
     .from('forms')
-    .insert(form)
+    .insert(formData)
     .select()
     .single();
 
@@ -53,6 +74,7 @@ export const createForm = async (form: Partial<FormTemplate>) => {
     throw error;
   }
 
+  console.log('Form created successfully:', data);
   return data as unknown as FormTemplate;
 };
 
@@ -60,9 +82,17 @@ export const createForm = async (form: Partial<FormTemplate>) => {
  * Update an existing form
  */
 export const updateForm = async (formId: string, updates: Partial<FormTemplate>) => {
+  console.log('Updating form:', formId, 'with data:', updates);
+  
+  // Always update the timestamp
+  const formUpdates = {
+    ...updates,
+    updated_at: new Date().toISOString()
+  };
+
   const { data, error } = await supabase
     .from('forms')
-    .update(updates)
+    .update(formUpdates)
     .eq('id', formId)
     .select()
     .single();
@@ -72,6 +102,7 @@ export const updateForm = async (formId: string, updates: Partial<FormTemplate>)
     throw error;
   }
 
+  console.log('Form updated successfully:', data);
   return data as unknown as FormTemplate;
 };
 
@@ -79,6 +110,8 @@ export const updateForm = async (formId: string, updates: Partial<FormTemplate>)
  * Delete a form
  */
 export const deleteForm = async (formId: string) => {
+  console.log('Deleting form:', formId);
+  
   const { error } = await supabase
     .from('forms')
     .delete()
@@ -89,6 +122,7 @@ export const deleteForm = async (formId: string) => {
     throw error;
   }
 
+  console.log('Form deleted successfully');
   return true;
 };
 
@@ -96,9 +130,14 @@ export const deleteForm = async (formId: string) => {
  * Toggle form active status
  */
 export const toggleFormActive = async (formId: string, isActive: boolean) => {
+  console.log('Toggling form status:', formId, 'to:', isActive);
+  
   const { data, error } = await supabase
     .from('forms')
-    .update({ is_public: isActive })
+    .update({ 
+      is_public: isActive,
+      updated_at: new Date().toISOString()
+    })
     .eq('id', formId)
     .select()
     .single();
@@ -108,5 +147,6 @@ export const toggleFormActive = async (formId: string, isActive: boolean) => {
     throw error;
   }
 
+  console.log('Form status toggled successfully:', data);
   return data as unknown as FormTemplate;
 };

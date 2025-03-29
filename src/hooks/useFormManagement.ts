@@ -28,18 +28,26 @@ export function useFormManagement(userId?: string) {
 
   // Create a new form mutation
   const createFormMutation = useMutation({
-    mutationFn: createForm,
+    mutationFn: (formData: Partial<FormTemplate>) => {
+      // Ensure the company_id is set
+      const formWithCompanyId = { 
+        ...formData,
+        company_id: userId
+      };
+      return createForm(formWithCompanyId);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['forms'] });
+      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
       toast({
         title: "Form Created",
         description: "Your new form has been created successfully.",
       });
     },
     onError: (error: any) => {
+      console.error("Error creating form:", error);
       toast({
         title: "Error Creating Form",
-        description: error.message,
+        description: error.message || "Failed to create form. Please try again.",
         variant: "destructive",
       });
     },
@@ -50,16 +58,17 @@ export function useFormManagement(userId?: string) {
     mutationFn: ({ formId, updates }: { formId: string; updates: Partial<FormTemplate> }) => 
       updateForm(formId, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['forms'] });
+      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
       toast({
         title: "Form Updated",
         description: "Your form has been updated successfully.",
       });
     },
     onError: (error: any) => {
+      console.error("Error updating form:", error);
       toast({
         title: "Error Updating Form",
-        description: error.message,
+        description: error.message || "Failed to update form. Please try again.",
         variant: "destructive",
       });
     },
@@ -69,16 +78,17 @@ export function useFormManagement(userId?: string) {
   const deleteFormMutation = useMutation({
     mutationFn: deleteForm,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['forms'] });
+      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
       toast({
         title: "Form Deleted",
         description: "The form has been deleted successfully.",
       });
     },
     onError: (error: any) => {
+      console.error("Error deleting form:", error);
       toast({
         title: "Error Deleting Form",
-        description: error.message,
+        description: error.message || "Failed to delete form. Please try again.",
         variant: "destructive",
       });
     },
@@ -89,16 +99,17 @@ export function useFormManagement(userId?: string) {
     mutationFn: ({ formId, isActive }: { formId: string; isActive: boolean }) => 
       toggleFormActive(formId, isActive),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['forms'] });
+      queryClient.invalidateQueries({ queryKey: ['forms', userId] });
       toast({
         title: data.is_public ? "Form Activated" : "Form Deactivated",
         description: `${data.name} is now ${data.is_public ? 'active' : 'inactive'}.`,
       });
     },
     onError: (error: any) => {
+      console.error("Error toggling form status:", error);
       toast({
         title: "Error Toggling Form Status",
-        description: error.message,
+        description: error.message || "Failed to update form status. Please try again.",
         variant: "destructive",
       });
     },
