@@ -19,8 +19,37 @@ interface ResponseItem {
 export const CustomerWorkPartnersSidebar = () => {
   const { toast } = useToast();
   
-  // Empty array for new responses - no default data
-  const newResponses: ResponseItem[] = [];
+  // Sample new responses for the customer portal
+  const newResponses: ResponseItem[] = [
+    {
+      id: "1",
+      companyName: "Acme Design Studio",
+      message: "Updated your website redesign status to In Progress",
+      timeAgo: "30m ago",
+      isNew: true
+    },
+    {
+      id: "2",
+      companyName: "TechSolutions Inc",
+      message: "Your IT support package has been confirmed",
+      timeAgo: "2h ago",
+      isNew: true
+    },
+    {
+      id: "3",
+      companyName: "Acme Design Studio",
+      message: "Sent you a message about your logo design",
+      timeAgo: "6h ago",
+      isNew: false
+    },
+    {
+      id: "4",
+      companyName: "Global Marketing",
+      message: "Your email marketing has been completed",
+      timeAgo: "1d ago",
+      isNew: false
+    }
+  ];
 
   const handleResponseClick = (response: ResponseItem) => {
     toast({
@@ -88,7 +117,7 @@ export const CustomerWorkPartnersSidebar = () => {
             </Button>
           </div>
           <div className="bg-secondary/30 rounded-lg p-3">
-            <p className="text-sm mb-2">You have 0 active inquiries</p>
+            <p className="text-sm mb-2">You have 4 active inquiries</p>
             <Button variant="outline" size="sm" className="w-full">
               <MessageSquare className="h-4 w-4 mr-2" />
               Create New Inquiry

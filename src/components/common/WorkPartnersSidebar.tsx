@@ -17,12 +17,76 @@ interface WorkPartner {
   isOnline?: boolean;
 }
 
-export const WorkPartnersSidebar = () => {
+export const WorkPartnersSidebar = ({ isCompanyView = false }: { isCompanyView?: boolean } = {}) => {
   const [activeTab, setActiveTab] = useState<"activities" | "online">("activities");
   const { toast } = useToast();
   
-  // Empty array for work partners - no default data
-  const workPartners: WorkPartner[] = [];
+  // Sample work partners for the company view
+  const companyWorkPartners: WorkPartner[] = [
+    {
+      id: "1",
+      name: "Sarah Wilson",
+      activity: "Responded to your message",
+      timeAgo: "10m ago",
+      isOnline: true
+    },
+    {
+      id: "2",
+      name: "David Lee",
+      activity: "Updated support ticket",
+      timeAgo: "1h ago",
+      isOnline: true
+    },
+    {
+      id: "3",
+      name: "Jennifer Taylor",
+      activity: "Paid invoice #INV-2023",
+      timeAgo: "3h ago",
+      isOnline: false
+    },
+    {
+      id: "4",
+      name: "Michael Brown",
+      activity: "Submitted new enquiry",
+      timeAgo: "5h ago",
+      isOnline: false
+    },
+    {
+      id: "5",
+      name: "Emma Johnson",
+      activity: "Updated account details",
+      timeAgo: "1d ago",
+      isOnline: true
+    }
+  ];
+  
+  // Sample work partners for the customer view - companies the customer is working with
+  const customerWorkPartners: WorkPartner[] = [
+    {
+      id: "1",
+      name: "Acme Design Studio",
+      activity: "Replied to your enquiry",
+      timeAgo: "30m ago",
+      isOnline: true
+    },
+    {
+      id: "2",
+      name: "TechSolutions Inc",
+      activity: "Sent you an invoice",
+      timeAgo: "2h ago",
+      isOnline: true
+    },
+    {
+      id: "3",
+      name: "Global Marketing",
+      activity: "Updated project status",
+      timeAgo: "6h ago",
+      isOnline: false
+    }
+  ];
+
+  // Use the appropriate partners list based on the view
+  const workPartners = isCompanyView ? companyWorkPartners : customerWorkPartners;
 
   const filteredPartners = workPartners.filter(partner => 
     activeTab === "activities" || (activeTab === "online" && partner.isOnline)
@@ -47,8 +111,17 @@ export const WorkPartnersSidebar = () => {
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-medium text-base flex items-center gap-2">
-            <span className="i-lucide-users-2 h-5 w-5 text-primary"></span>
-            Work Partners
+            {isCompanyView ? (
+              <>
+                <span className="i-lucide-users-2 h-5 w-5 text-primary"></span>
+                Work Partners
+              </>
+            ) : (
+              <>
+                <span className="i-lucide-building h-5 w-5 text-primary"></span>
+                Companies
+              </>
+            )}
           </h3>
           <Button variant="link" size="sm" className="text-primary" onClick={handleViewAll}>
             View All
@@ -98,17 +171,31 @@ export const WorkPartnersSidebar = () => {
         
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium">Active Inquiries</h4>
+            <h4 className="text-sm font-medium">
+              {isCompanyView ? "Active Inquiries" : "Your Inquiries"}
+            </h4>
             <Button variant="link" size="sm" className="text-primary p-0 h-auto text-xs">
               View <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
           <div className="bg-secondary/30 rounded-lg p-3">
-            <p className="text-sm mb-2">You have 0 active inquiries that need attention</p>
-            <div className="flex gap-2">
-              <Badge variant="outline" className="bg-secondary/50">Support</Badge>
-              <Badge variant="outline" className="bg-secondary/50">Sales</Badge>
-            </div>
+            {isCompanyView ? (
+              <>
+                <p className="text-sm mb-2">You have 7 active inquiries that need attention</p>
+                <div className="flex gap-2">
+                  <Badge variant="outline" className="bg-secondary/50">Support (3)</Badge>
+                  <Badge variant="outline" className="bg-secondary/50">Sales (4)</Badge>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm mb-2">You have 4 active inquiries</p>
+                <Button variant="outline" size="sm" className="w-full">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Create New Inquiry
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

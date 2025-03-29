@@ -250,9 +250,15 @@ export interface KanbanBoardProps {
   isDemo?: boolean;
   readOnly?: boolean;
   isCompanyView?: boolean;
+  height?: string;
 }
 
-export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = false }: KanbanBoardProps) {
+export function KanbanBoard({ 
+  isDemo = false, 
+  readOnly = false, 
+  isCompanyView = false,
+  height
+}: KanbanBoardProps) {
   const [enquiries, setEnquiries] = useState<Record<string, Enquiry[]>>({
     new: [],
     pending: [],
@@ -393,10 +399,25 @@ export function KanbanBoard({ isDemo = false, readOnly = false, isCompanyView = 
     );
   }
 
+  // Calculate the maximum number of items to determine dynamic height
+  const maxItemCount = Math.max(
+    enquiries.new.length,
+    enquiries.pending.length,
+    enquiries.completed.length
+  );
+  
+  // Set a dynamic height based on the number of items
+  // but use the provided height prop if available
+  const boardHeight = height || (maxItemCount <= 3 
+    ? "h-[400px]" 
+    : maxItemCount <= 5 
+      ? "h-[600px]" 
+      : "h-[700px]");
+
   return (
     <div className="pt-6 pb-12">
       <Container size="full">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto">
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto ${boardHeight}`}>
           <KanbanColumn
             title="New"
             count={enquiries.new.length}

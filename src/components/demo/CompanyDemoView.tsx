@@ -80,7 +80,7 @@ export const CompanyDemoView = ({
                 </div>
               </div>
               <div className="h-[500px] overflow-hidden">
-                <KanbanBoard isDemo={true} readOnly={false} isCompanyView={true} />
+                <KanbanBoard isDemo={true} readOnly={false} isCompanyView={true} height="h-[500px]" />
               </div>
             </Container>
           </div>
@@ -108,7 +108,7 @@ export const CompanyDemoView = ({
       )}
 
       {/* Right side navigation menu */}
-      <WorkPartnersSidebar />
+      <WorkPartnersSidebar isCompanyView={true} />
     </>
   );
 };
