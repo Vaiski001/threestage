@@ -17,6 +17,20 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Initialize expanded state based on current path
+  useState(() => {
+    const currentPath = location.pathname;
+    const newExpandedState: Record<string, boolean> = {};
+    
+    navigationItems.forEach(item => {
+      if (item.children && item.children.some(child => child.path === currentPath)) {
+        newExpandedState[item.id] = true;
+      }
+    });
+    
+    setExpandedGroups(prev => ({...prev, ...newExpandedState}));
+  });
+
   const toggleGroup = (id: string) => {
     setExpandedGroups(prev => ({
       ...prev,
@@ -27,6 +41,10 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
   const handleNavigation = (item: NavigationItem) => {
     if (item.children && item.children.length > 0) {
       toggleGroup(item.id);
+      // If the item has a path, also navigate to it
+      if (item.path) {
+        navigate(item.path);
+      }
       return;
     }
     
@@ -64,7 +82,7 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
           {filteredNavItems.map((item) => (
             <SidebarMenuItem key={item.id}>
               <SidebarMenuButton
-                isActive={location.pathname === item.path || location.pathname.includes(`/${item.id}`)}
+                isActive={location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)}
                 onClick={() => handleNavigation(item)}
                 className={cn(
                   "transition-all duration-200",

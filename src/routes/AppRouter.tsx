@@ -16,6 +16,7 @@ import Enquiries from "@/pages/Enquiries";
 import CompanyDashboard from "@/pages/CompanyDashboard";
 import CompanySettings from "@/pages/CompanySettings";
 import FormBuilder from "@/pages/FormBuilder";
+import CustomerProfile from "@/pages/CustomerProfile";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { FormEmbedded } from "@/components/forms/FormEmbedded";
 
@@ -63,6 +64,12 @@ export const AppRouter = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/customer/profile" element={
+        <ProtectedRoute allowPreview={true}>
+          <CustomerProfile />
+        </ProtectedRoute>
+      } />
+      
       <Route path="/customer/enquiries" element={
         <ProtectedRoute allowPreview={true}>
           <Enquiries />
@@ -101,6 +108,30 @@ export const AppRouter = () => {
       } />
       
       <Route path="/customer/support" element={
+        <ProtectedRoute allowPreview={true}>
+          <NotFound />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/customer/support/tickets" element={
+        <ProtectedRoute allowPreview={true}>
+          <NotFound />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/customer/support/knowledge" element={
+        <ProtectedRoute allowPreview={true}>
+          <NotFound />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/customer/enquiries/active" element={
+        <ProtectedRoute allowPreview={true}>
+          <NotFound />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/customer/enquiries/completed" element={
         <ProtectedRoute allowPreview={true}>
           <NotFound />
         </ProtectedRoute>
