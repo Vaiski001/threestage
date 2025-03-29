@@ -1,112 +1,65 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, CreditCard, ExternalLink } from "lucide-react";
+import { DollarSign, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
-interface PaymentInfo {
-  amount: string;
-  dueDate: string;
-  daysRemaining: number;
-  invoiceNumber: string;
-  billingPlan: string;
-  billingCycle: string;
-  paymentMethod: string;
-  cardLastFour?: string;
+interface PaymentsSectionProps {
+  emptyState?: boolean;
 }
 
-export function PaymentsSection() {
-  // Empty state for a new account - no payment info available
-  const paymentInfo: PaymentInfo | null = null;
-
+export function PaymentsSection({ emptyState = false }: PaymentsSectionProps) {
   return (
-    <Card>
+    <Card className="border shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-lg font-bold">Upcoming Payments</CardTitle>
-        {paymentInfo && (
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/customer/billing" className="flex items-center text-xs">
-              Go to Billing
-              <ExternalLink className="ml-1 h-3 w-3" />
-            </Link>
-          </Button>
-        )}
+        <CardTitle className="text-xl font-bold">Payments</CardTitle>
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/customer/billing" className="flex items-center">
+            View All
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Link>
+        </Button>
       </CardHeader>
-      
       <CardContent>
-        {paymentInfo ? (
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Next payment due</h3>
-                <Badge 
-                  variant={paymentInfo.daysRemaining <= 3 ? "destructive" : "outline"}
-                  className="text-xs"
-                >
-                  Due in {paymentInfo.daysRemaining} days
-                </Badge>
-              </div>
-              
-              <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-bold">{paymentInfo.amount}</span>
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {paymentInfo.dueDate}
-                </div>
-              </div>
-              
-              <div className="text-xs text-muted-foreground">
-                Invoice #{paymentInfo.invoiceNumber}
-              </div>
+        {emptyState ? (
+          <div className="py-6 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <DollarSign className="h-6 w-6 text-primary" />
             </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Billing Status</span>
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  Active
-                </Badge>
-              </div>
-              
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Current Plan</span>
-                <span className="font-medium">{paymentInfo.billingPlan}</span>
-              </div>
-              
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Billing Cycle</span>
-                <span>{paymentInfo.billingCycle}</span>
-              </div>
-              
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Payment Method</span>
-                <div className="flex items-center">
-                  <CreditCard className="h-3 w-3 mr-1" />
-                  <span>{paymentInfo.paymentMethod} {paymentInfo.cardLastFour && `ending in ${paymentInfo.cardLastFour}`}</span>
-                </div>
-              </div>
-            </div>
-            
-            <Button className="w-full" asChild>
-              <Link to="/customer/billing">
-                Go to Billing
-              </Link>
-            </Button>
+            <h3 className="text-lg font-medium mb-2">No payments yet</h3>
+            <p className="text-muted-foreground text-sm max-w-[200px] mb-4">
+              Your recent payments and invoices will appear here.
+            </p>
           </div>
         ) : (
-          <div className="py-8 text-center">
-            <CreditCard className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-            <p className="text-muted-foreground mb-1">No billing information available</p>
-            <p className="text-xs text-muted-foreground/70 mb-4">
-              Billing information will appear once you've been invoiced for services
-            </p>
-            
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/customer/billing">
-                Set up billing details
-              </Link>
-            </Button>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 border rounded-md">
+              <div>
+                <h3 className="font-medium">Next Payment</h3>
+                <p className="text-sm text-muted-foreground">Invoice #INV-2023-003</p>
+                <p className="text-xs text-muted-foreground">Due in 3 days</p>
+              </div>
+              <div className="text-right">
+                <p className="font-bold">$750.00</p>
+                <Button size="sm" variant="outline" className="mt-2">Pay Now</Button>
+              </div>
+            </div>
+            <div className="p-3 border rounded-md">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">Payment Summary</h3>
+                <span className="text-xs text-muted-foreground">Last 30 days</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-muted p-2 rounded-md">
+                  <p className="text-xs text-muted-foreground">Paid</p>
+                  <p className="font-bold">$2,000</p>
+                </div>
+                <div className="bg-muted p-2 rounded-md">
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                  <p className="font-bold">$750</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

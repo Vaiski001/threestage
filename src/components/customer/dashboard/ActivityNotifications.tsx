@@ -1,158 +1,57 @@
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  MessageSquare, 
-  Bell, 
-  Calendar, 
-  InfoIcon, 
-  AlertCircle,
-  Check,
-  HelpCircle
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Bell, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 
-interface Notification {
-  id: string;
-  type: 'message' | 'reminder' | 'update' | 'alert';
-  title: string;
-  content: string;
-  time: string;
-  day: string;
-  isImportant?: boolean;
-  actionUrl?: string;
-  actionText?: string;
-  companyName?: string;
-  companyId?: string;
+interface ActivityNotificationsProps {
+  emptyState?: boolean;
 }
 
-export function ActivityNotifications() {
-  // Empty state for a new account
-  const notifications: Notification[] = [];
-  
-  const markAllAsRead = () => {
-    // Implementation would go here
-  };
-
-  const getIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'message':
-        return <MessageSquare className="h-4 w-4 text-blue-500" />;
-      case 'reminder':
-        return <Calendar className="h-4 w-4 text-amber-500" />;
-      case 'update':
-        return <InfoIcon className="h-4 w-4 text-green-500" />;
-      case 'alert':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <Bell className="h-4 w-4" />;
-    }
-  };
-
-  const getTimeBadge = (day: string) => {
-    const dayMap: Record<string, string> = {
-      'TODAY': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-      'YESTERDAY': 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
-    };
-
-    return dayMap[day] || 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300';
-  };
-
+export function ActivityNotifications({ emptyState = false }: ActivityNotificationsProps) {
   return (
-    <Card>
+    <Card className="border shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <div className="flex items-center">
-          <CardTitle className="text-lg font-bold">Activity & Notifications</CardTitle>
-          {notifications.length > 0 && (
-            <Badge className="ml-2 bg-primary text-white">
-              {notifications.length} New
-            </Badge>
-          )}
-        </div>
-        
-        {notifications.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-            Mark all as read
-          </Button>
-        )}
+        <CardTitle className="text-xl font-bold">Recent Activity</CardTitle>
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/customer/notifications" className="flex items-center">
+            View All
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Link>
+        </Button>
       </CardHeader>
-      
       <CardContent>
-        {notifications.length > 0 ? (
-          <>
-            <div className="space-y-1">
-              {notifications.map(notification => (
-                <div 
-                  key={notification.id}
-                  className="p-3 hover:bg-accent rounded-lg flex items-start gap-3"
-                >
-                  <div className="bg-background rounded-full p-2 border">
-                    {getIcon(notification.type)}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center">
-                        <h4 className="text-sm font-medium mr-2">{notification.title}</h4>
-                        {notification.isImportant && (
-                          <Badge variant="outline" className="text-xs text-amber-500 border-amber-200">
-                            Important
-                          </Badge>
-                        )}
-                      </div>
-                      <Badge
-                        variant="secondary"
-                        className={`text-xs ${getTimeBadge(notification.day)}`}
-                      >
-                        {notification.time}
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-2">{notification.content}</p>
-                    
-                    {notification.companyName && (
-                      <div className="flex items-center text-xs text-muted-foreground mb-2">
-                        <Link 
-                          to={`/companies/${notification.companyId}`}
-                          className="hover:text-primary hover:underline"
-                        >
-                          {notification.companyName}
-                        </Link>
-                      </div>
-                    )}
-                    
-                    {notification.actionUrl && (
-                      <Button asChild size="sm" variant="outline" className="mt-1 h-7 text-xs">
-                        <Link to={notification.actionUrl}>
-                          {notification.actionText || "View Details"}
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+        {emptyState ? (
+          <div className="py-8 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Bell className="h-6 w-6 text-primary" />
             </div>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full mt-4"
-              asChild
-            >
-              <Link to="/customer/notifications">
-                View all notifications
-              </Link>
-            </Button>
-          </>
-        ) : (
-          <div className="py-12 text-center">
-            <Bell className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-            <p className="text-muted-foreground">No activity to display</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">
-              Notifications about your enquiries and activity will appear here
+            <h3 className="text-lg font-medium mb-2">No activity yet</h3>
+            <p className="text-muted-foreground max-w-sm">
+              Your recent activities and notifications will appear here.
             </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {[
+              { id: 1, title: "Your enquiry status updated", description: "Website Redesign enquiry status changed to 'In Progress'", time: "2 hours ago" },
+              { id: 2, title: "New message received", description: "TechSolutions Inc replied to your enquiry", time: "Yesterday" },
+              { id: 3, title: "Invoice received", description: "You received an invoice of $500 from Acme Design", time: "2 days ago" }
+            ].map(item => (
+              <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/10 transition-colors">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <Bell className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{item.title}</p>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                </div>
+                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                  {item.time}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
