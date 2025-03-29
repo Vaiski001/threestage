@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown, Search } from "lucide-react";
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
@@ -18,18 +18,34 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
   const [searchQuery, setSearchQuery] = useState("");
 
   // Initialize expanded state based on current path
-  useState(() => {
+  useEffect(() => {
     const currentPath = location.pathname;
     const newExpandedState: Record<string, boolean> = {};
     
     navigationItems.forEach(item => {
-      if (item.children && item.children.some(child => child.path === currentPath)) {
+      // Check if this is the active item
+      if (item.path && currentPath === item.path) {
+        // No need to expand if this is the active item without children
+        if (item.children && item.children.length > 0) {
+          newExpandedState[item.id] = true;
+        }
+      }
+      // Check if any child of this item is active
+      else if (item.children && item.children.some(child => 
+        child.path && (child.path === currentPath || currentPath.startsWith(`${child.path}/`))
+      )) {
         newExpandedState[item.id] = true;
+      }
+      // Check if the current path starts with the item path (for nested routes)
+      else if (item.path && currentPath.startsWith(`${item.path}/`)) {
+        if (item.children && item.children.length > 0) {
+          newExpandedState[item.id] = true;
+        }
       }
     });
     
     setExpandedGroups(prev => ({...prev, ...newExpandedState}));
-  });
+  }, [location.pathname, navigationItems]);
 
   const toggleGroup = (id: string) => {
     setExpandedGroups(prev => ({
@@ -82,7 +98,7 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
           {filteredNavItems.map((item) => (
             <SidebarMenuItem key={item.id}>
               <SidebarMenuButton
-                isActive={location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)}
+                isActive={location.pathname === item.path || (item.path && location.pathname.startsWith(`${item.path}/`))}
                 onClick={() => handleNavigation(item)}
                 className={cn(
                   "transition-all duration-200",
@@ -104,7 +120,7 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
                   {item.children.map((child) => (
                     <SidebarMenuButton
                       key={child.id}
-                      isActive={location.pathname === child.path}
+                      isActive={location.pathname === child.path || (child.path && location.pathname.startsWith(`${child.path}/`))}
                       onClick={() => {
                         if (child.path) {
                           navigate(child.path);
