@@ -64,7 +64,7 @@ export interface FormBranding {
   buttonStyle?: string;
 }
 
-export type FormFieldType = 'text' | 'textarea' | 'checkbox' | 'radio' | 'email' | 'file' | 'phone' | 'dropdown';
+export type FormFieldType = 'text' | 'textarea' | 'checkbox' | 'radio' | 'email' | 'file' | 'phone' | 'tel' | 'dropdown' | 'select';
 
 export interface FormField {
   id: string;

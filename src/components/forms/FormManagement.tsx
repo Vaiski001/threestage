@@ -15,9 +15,10 @@ import { AnalyticsTab } from "./management/AnalyticsTab";
 // Define props for FormManagement component
 export interface FormManagementProps {
   onCreateNew?: () => void;
+  userId?: string;
 }
 
-export function FormManagement({ onCreateNew }: FormManagementProps) {
+export function FormManagement({ onCreateNew, userId }: FormManagementProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("forms");
   const [selectedForm, setSelectedForm] = useState<FormTemplate | null>(null);
@@ -34,7 +35,7 @@ export function FormManagement({ onCreateNew }: FormManagementProps) {
     updateFormMutation,
     deleteFormMutation,
     toggleFormMutation
-  } = useFormManagement(user?.id);
+  } = useFormManagement(userId || user?.id);
 
   // Toggle form active status
   const handleToggleFormActive = (formId: string, currentStatus: boolean) => {
@@ -57,7 +58,7 @@ export function FormManagement({ onCreateNew }: FormManagementProps) {
       fields: formToDuplicate.fields,
       branding: formToDuplicate.branding,
       is_public: false,
-      company_id: user?.id,
+      company_id: userId || user?.id,
     };
     
     createFormMutation.mutate(newForm);
@@ -97,7 +98,7 @@ export function FormManagement({ onCreateNew }: FormManagementProps) {
         fontFamily: "Inter",
       },
       is_public: false,
-      company_id: user?.id,
+      company_id: userId || user?.id,
     };
     
     setSelectedForm(newForm as FormTemplate);
