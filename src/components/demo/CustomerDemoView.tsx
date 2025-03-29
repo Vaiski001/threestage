@@ -1,10 +1,24 @@
+
 import { Container } from "@/components/ui/Container";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatisticsCards } from "@/components/customer/dashboard/StatisticsCards";
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
-import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  ChevronRight, 
+  Building, 
+  FileText, 
+  Heart, 
+  Search, 
+  Filter, 
+  Plus,
+  Bell,
+  Clock,
+  Calendar,
+  CheckCircle
+} from "lucide-react";
+import { EnquiryBoard } from "@/components/customer/dashboard/EnquiryBoard";
 
 interface CustomerStatProps {
   label: string;
@@ -29,6 +43,7 @@ export const CustomerDemoView = ({
   activeNavItem,
   customerNavItems 
 }: CustomerDemoViewProps) => {
+  const { toast } = useToast();
   // Sample statistics for the customer demo dashboard
   const demoStats = {
     total: 5,
@@ -43,112 +58,171 @@ export const CustomerDemoView = ({
         return (
           <>
             <div className="mb-8">
+              <Card className="bg-slate-50 dark:bg-slate-900 border-none mb-8">
+                <CardContent className="p-6">
+                  <h1 className="text-2xl font-bold mb-1">Welcome back, Demo Customer!</h1>
+                  <p className="text-muted-foreground">Manage your enquiries, payments, and support easily.</p>
+                </CardContent>
+              </Card>
+              
               <StatisticsCards stats={demoStats} />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Recent Enquiries */}
-              <div className="md:col-span-2">
+              {/* Left column (2/3 width) - Recent Enquiries */}
+              <div className="md:col-span-2 space-y-6">
+                <EnquiryBoard />
+                
                 <Card className="border shadow-sm">
-                  <div className="p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-medium">Recent Enquiries</h2>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to="#" className="flex items-center">
-                          View All
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="bg-background rounded-lg border p-4">
-                        <h3 className="font-medium mb-3 flex justify-between items-center">
-                          <span>New</span>
-                          <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs px-2 py-1 rounded-full">2</span>
-                        </h3>
-                        <div className="space-y-3">
-                          {[
-                            { id: 1, title: "Website Redesign", company: "TechSolutions Inc", date: "2 days ago" },
-                            { id: 2, title: "Logo Design", company: "Acme Design", date: "5 days ago" }
-                          ].map(item => (
-                            <Card key={item.id} className="p-3 cursor-pointer hover:bg-accent/10">
-                              <h4 className="font-medium text-sm">{item.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{item.company}</p>
-                              <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs text-muted-foreground">{item.date}</span>
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="bg-background rounded-lg border p-4">
-                        <h3 className="font-medium mb-3 flex justify-between items-center">
-                          <span>Pending</span>
-                          <span className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 text-xs px-2 py-1 rounded-full">2</span>
-                        </h3>
-                        <div className="space-y-3">
-                          {[
-                            { id: 3, title: "Marketing Campaign", company: "Global Marketing", date: "1 week ago" },
-                            { id: 4, title: "Mobile App Dev", company: "TechSolutions Inc", date: "2 weeks ago" }
-                          ].map(item => (
-                            <Card key={item.id} className="p-3 cursor-pointer hover:bg-accent/10">
-                              <h4 className="font-medium text-sm">{item.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{item.company}</p>
-                              <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs text-muted-foreground">{item.date}</span>
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="bg-background rounded-lg border p-4">
-                        <h3 className="font-medium mb-3 flex justify-between items-center">
-                          <span>Completed</span>
-                          <span className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-2 py-1 rounded-full">1</span>
-                        </h3>
-                        <div className="space-y-3">
-                          {[
-                            { id: 5, title: "SEO Optimization", company: "Global Marketing", date: "3 weeks ago" }
-                          ].map(item => (
-                            <Card key={item.id} className="p-3 cursor-pointer hover:bg-accent/10">
-                              <h4 className="font-medium text-sm">{item.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{item.company}</p>
-                              <div className="flex justify-between items-center mt-2">
-                                <span className="text-xs text-muted-foreground">{item.date}</span>
-                              </div>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button variant="outline" className="w-full">View All Enquiries</Button>
-                  </div>
-                </Card>
-              </div>
-              
-              {/* Directory */}
-              <div>
-                <Card className="border shadow-sm">
-                  <div className="p-6">
-                    <h2 className="text-xl font-medium mb-4">Companies Directory</h2>
-                    <div className="space-y-3">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-xl font-bold">Recent Activity</CardTitle>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="#" className="flex items-center">
+                        View All
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
                       {[
-                        { id: 1, name: "TechSolutions Inc", category: "Web Development" },
-                        { id: 2, name: "Acme Design Studio", category: "Graphic Design" },
-                        { id: 3, name: "Global Marketing", category: "Marketing" }
-                      ].map(company => (
-                        <div key={company.id} className="p-3 border rounded-md hover:border-primary/50 cursor-pointer transition-colors">
-                          <h3 className="font-medium">{company.name}</h3>
-                          <p className="text-xs text-muted-foreground">{company.category}</p>
+                        { id: 1, title: "Your enquiry status updated", description: "Website Redesign enquiry status changed to 'In Progress'", icon: <CheckCircle className="h-4 w-4 text-blue-500" />, time: "2 hours ago" },
+                        { id: 2, title: "New message received", description: "TechSolutions Inc replied to your enquiry", icon: <Bell className="h-4 w-4 text-indigo-500" />, time: "Yesterday" },
+                        { id: 3, title: "Invoice received", description: "You received an invoice of $500 from Acme Design", icon: <FileText className="h-4 w-4 text-green-500" />, time: "2 days ago" }
+                      ].map(item => (
+                        <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/10 transition-colors">
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            {item.icon}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.title}</p>
+                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                          </div>
+                          <div className="text-xs text-muted-foreground whitespace-nowrap">
+                            {item.time}
+                          </div>
                         </div>
                       ))}
                     </div>
-                    <Button variant="outline" className="w-full mt-4">View All Companies</Button>
-                  </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Right column (1/3 width) */}
+              <div className="space-y-6">
+                {/* Companies Directory */}
+                <Card className="border shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-xl font-bold">Companies Directory</CardTitle>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="#" className="flex items-center">
+                        Browse All
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search companies..."
+                        className="w-full pl-10 pr-4 py-2 text-sm rounded-md bg-secondary/50 border-0 focus:ring-1 focus:ring-primary/30 focus:outline-none"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      {[
+                        { id: 1, name: "TechSolutions Inc", category: "Web Development", saved: true },
+                        { id: 2, name: "Acme Design Studio", category: "Graphic Design", saved: false },
+                        { id: 3, name: "Global Marketing", category: "Marketing", saved: false }
+                      ].map(company => (
+                        <div key={company.id} className="p-3 border rounded-md hover:border-primary/50 cursor-pointer transition-colors flex justify-between items-center">
+                          <div>
+                            <h3 className="font-medium">{company.name}</h3>
+                            <p className="text-xs text-muted-foreground">{company.category}</p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className={company.saved ? "text-red-500" : "text-muted-foreground"}
+                            onClick={() => toast({
+                              title: "Company saved",
+                              description: company.saved ? `${company.name} removed from saved` : `${company.name} added to saved companies`
+                            })}
+                          >
+                            <Heart className="h-4 w-4" fill={company.saved ? "currentColor" : "none"} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Payment Overview */}
+                <Card className="border shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-xl font-bold">Payment Overview</CardTitle>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="#" className="flex items-center">
+                        View All
+                        <ChevronRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-3 border rounded-md">
+                        <div>
+                          <h3 className="font-medium">Next Payment</h3>
+                          <p className="text-sm text-muted-foreground">Invoice #INV-2023-003</p>
+                          <p className="text-xs text-muted-foreground">Due in 3 days</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">$750.00</p>
+                          <Button size="sm" variant="outline" className="mt-2">Pay Now</Button>
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-md">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-medium">Payment Summary</h3>
+                          <span className="text-xs text-muted-foreground">Last 30 days</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-muted p-2 rounded-md">
+                            <p className="text-xs text-muted-foreground">Paid</p>
+                            <p className="font-bold">$2,000</p>
+                          </div>
+                          <div className="bg-muted p-2 rounded-md">
+                            <p className="text-xs text-muted-foreground">Pending</p>
+                            <p className="font-bold">$750</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Support Quick Access */}
+                <Card className="border shadow-sm">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                    <CardTitle className="text-xl font-bold">Quick Support</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <Button variant="outline" className="w-full justify-start text-left">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Knowledge Base
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start text-left">
+                        <Bell className="h-4 w-4 mr-2" />
+                        Contact Support
+                      </Button>
+                      <Button variant="outline" className="w-full justify-start text-left">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Schedule a Call
+                      </Button>
+                    </div>
+                  </CardContent>
                 </Card>
               </div>
             </div>
