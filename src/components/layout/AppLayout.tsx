@@ -1,7 +1,6 @@
 
 import { ReactNode } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { CustomerSidebar } from "@/components/customer/CustomerSidebar";
 import { CustomerWorkPartnersSidebar } from "@/components/customer/CustomerWorkPartnersSidebar";
 import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
 import { useAuth } from "@/context/AuthContext";
@@ -11,6 +10,7 @@ import { ChevronDown, User, Settings, LayoutDashboard, MessageSquare, CreditCard
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CustomerHeader } from "@/components/customer/CustomerHeader";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -52,6 +52,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       icon: <LayoutDashboard className="h-5 w-5" />, 
       description: "Overview of your enquiries and activities",
       path: "/customer/dashboard"
+    },
+    { 
+      id: "companies", 
+      label: "Find Companies", 
+      icon: <Building className="h-5 w-5" />, 
+      description: "Search and discover companies to work with",
+      path: "/companies"
     },
     { 
       id: "enquiries", 
@@ -237,6 +244,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }
   };
 
+  // Dummy handler for the new enquiry button in the header
+  const handleNewEnquiry = () => {
+    navigate('/customer/enquiries');
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -325,6 +337,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         </Sidebar>
 
         <div className="flex-1 flex flex-col">
+          {!isCompany && <CustomerHeader onNewEnquiry={handleNewEnquiry} />}
           {children}
         </div>
         

@@ -12,7 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { CompanyCard } from '@/components/company/CompanyCard';
 import { UserProfile } from '@/lib/supabase/types';
-import { Header } from '@/components/layout/Header';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Search, Filter } from 'lucide-react';
 
 // Mock data for companies
@@ -78,79 +78,80 @@ export function CompanySearch() {
   });
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <Container className="py-8">
-        <h1 className="text-3xl font-bold mb-6">Find Companies</h1>
-        
-        {/* Search and Filter Section */}
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[240px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <Input
-                  className="pl-10"
-                  placeholder="Search by company name or services..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+    <AppLayout>
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
+          <h1 className="text-3xl font-bold mb-6">Find Companies</h1>
+          
+          {/* Search and Filter Section */}
+          <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+            <div className="flex flex-wrap gap-4">
+              <div className="flex-1 min-w-[240px]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <Input
+                    className="pl-10"
+                    placeholder="Search by company name or services..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="w-full sm:w-auto">
+                <Select value={industryFilter} onValueChange={setIndustryFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filter by industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Industries</SelectItem>
+                    {industries.map((industry) => (
+                      <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="w-full sm:w-auto">
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="name">Name (A-Z)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            
-            <div className="w-full sm:w-auto">
-              <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Filter by industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Industries</SelectItem>
-                  {industries.map((industry) => (
-                    <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          </div>
+          
+          {/* Results Count */}
+          <div className="flex items-center mb-4">
+            <Filter className="mr-2 text-gray-500" size={18} />
+            <span className="text-gray-600">
+              {filteredCompanies.length} companies found
+            </span>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          {/* Results Grid */}
+          {filteredCompanies.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {filteredCompanies.map((company) => (
+                <CompanyCard key={company.id} company={company} />
+              ))}
             </div>
-            
-            <div className="w-full sm:w-auto">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="name">Name (A-Z)</SelectItem>
-                </SelectContent>
-              </Select>
+          ) : (
+            <div className="text-center py-12">
+              <h3 className="text-lg font-medium">No companies found</h3>
+              <p className="text-gray-500 mt-2">Try adjusting your search or filter criteria</p>
             </div>
-          </div>
+          )}
         </div>
-        
-        {/* Results Count */}
-        <div className="flex items-center mb-4">
-          <Filter className="mr-2 text-gray-500" size={18} />
-          <span className="text-gray-600">
-            {filteredCompanies.length} companies found
-          </span>
-        </div>
-        
-        <Separator className="my-4" />
-        
-        {/* Results Grid */}
-        {filteredCompanies.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-            {filteredCompanies.map((company) => (
-              <CompanyCard key={company.id} company={company} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium">No companies found</h3>
-            <p className="text-gray-500 mt-2">Try adjusting your search or filter criteria</p>
-          </div>
-        )}
-      </Container>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
 

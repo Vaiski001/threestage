@@ -54,8 +54,12 @@ const App = () => (
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/demo" element={<DemoDashboard />} />
             
-            {/* Company search and discovery - publicly accessible */}
-            <Route path="/companies" element={<CompanySearch />} />
+            {/* Company search and discovery - accessible with customer navigation */}
+            <Route path="/companies" element={
+              <ProtectedRoute allowPreview={true}>
+                <CompanySearch />
+              </ProtectedRoute>
+            } />
             <Route path="/companies/:id" element={<CompanyProfile />} />
             <Route path="/forms/:formId" element={<FormEmbedded />} />
             
