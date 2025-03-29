@@ -21,7 +21,9 @@ import {
   Receipt,
   DollarSign,
   PieChart,
-  UserPlus
+  UserPlus,
+  Filter,
+  Plus
 } from "lucide-react";
 import { 
   Tabs, 
