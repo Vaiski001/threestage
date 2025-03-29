@@ -71,33 +71,13 @@ export function SupportQuickAccess() {
         <div className="border-t pt-3">
           <h3 className="text-sm font-medium mb-2">Last Reply</h3>
           
-          {lastReply ? (
-            <div className="bg-accent/30 rounded-lg p-3">
-              <p className="text-sm mb-2">"{lastReply.message}"</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                    <MessageCircle className="h-3 w-3 text-primary" />
-                  </div>
-                  <div className="text-xs">
-                    <span className="font-medium">{lastReply.agentName}</span>,{" "}
-                    <span className="text-muted-foreground">{lastReply.agentRole}</span>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {lastReply.timestamp}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-accent/30 rounded-lg p-3 text-center">
-              <HelpCircle className="h-5 w-5 mx-auto text-muted-foreground/50 mb-1" />
-              <p className="text-sm text-muted-foreground">No support history yet</p>
-              <p className="text-xs text-muted-foreground/70">
-                Support replies will appear here
-              </p>
-            </div>
-          )}
+          <div className="bg-accent/30 rounded-lg p-3 text-center">
+            <HelpCircle className="h-5 w-5 mx-auto text-muted-foreground/50 mb-1" />
+            <p className="text-sm text-muted-foreground">No support history yet</p>
+            <p className="text-xs text-muted-foreground/70">
+              Support replies will appear here
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

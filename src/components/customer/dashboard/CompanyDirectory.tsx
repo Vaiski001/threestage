@@ -83,85 +83,14 @@ export function CompanyDirectory() {
           </Button>
         </div>
 
-        {companies.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {companies.slice(0, 4).map(company => (
-              <CompanyCard key={company.id} company={company} />
-            ))}
-          </div>
-        ) : (
-          <div className="py-4 text-center">
-            <Building className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-            <p className="text-sm text-muted-foreground">No companies found</p>
-            <Button asChild className="mt-3" size="sm">
-              <Link to="/companies">Discover Companies</Link>
-            </Button>
-          </div>
-        )}
-
-        {recentCompanies.length > 0 && (
-          <>
-            <h3 className="text-sm font-medium pt-2">Recent companies you interacted with</h3>
-            <div className="space-y-2">
-              {recentCompanies.map(company => (
-                <RecentCompanyRow key={company.id} company={company} />
-              ))}
-            </div>
-          </>
-        )}
+        <div className="py-4 text-center">
+          <Building className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+          <p className="text-sm text-muted-foreground">No companies found</p>
+          <Button asChild className="mt-3" size="sm">
+            <Link to="/companies">Discover Companies</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
-  );
-}
-
-function CompanyCard({ company }: { company: Company }) {
-  return (
-    <Link to={`/companies/${company.id}`} className="block">
-      <div className="border rounded-lg p-3 hover:border-primary/50 hover:shadow-sm transition-all">
-        <div className="flex items-center gap-3">
-          {company.logo ? (
-            <img 
-              src={company.logo} 
-              alt={company.name} 
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building className="h-4 w-4 text-primary" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm truncate">{company.name}</h3>
-            <p className="text-xs text-muted-foreground truncate">{company.industry}</p>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function RecentCompanyRow({ company }: { company: Company }) {
-  return (
-    <Link to={`/companies/${company.id}`} className="block">
-      <div className="flex items-center justify-between p-2 hover:bg-accent rounded-md">
-        <div className="flex items-center gap-2">
-          {company.logo ? (
-            <img 
-              src={company.logo} 
-              alt={company.name} 
-              className="w-6 h-6 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building className="h-3 w-3 text-primary" />
-            </div>
-          )}
-          <span className="text-sm">{company.name}</span>
-        </div>
-        <Badge variant="outline" className="text-xs">
-          {company.lastInteracted}
-        </Badge>
-      </div>
-    </Link>
   );
 }

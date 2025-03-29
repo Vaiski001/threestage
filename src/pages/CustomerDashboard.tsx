@@ -1,9 +1,7 @@
 
-import { useState } from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
-import { WelcomeBanner } from "@/components/customer/dashboard/WelcomeBanner";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { CustomerDashboardHeader } from "@/components/customer/dashboard/CustomerDashboardHeader";
 import { StatisticsCards } from "@/components/customer/dashboard/StatisticsCards";
 import { EnquiryBoard } from "@/components/customer/dashboard/EnquiryBoard";
 import { CompanyDirectory } from "@/components/customer/dashboard/CompanyDirectory";
@@ -14,7 +12,6 @@ import { Container } from "@/components/ui/Container";
 
 const CustomerDashboard = () => {
   const { profile } = useAuth();
-  const { toast } = useToast();
   
   // Empty data states for a new account
   const stats = {
@@ -28,7 +25,7 @@ const CustomerDashboard = () => {
       <div className="flex-1 overflow-y-auto pb-12">
         <Container size="full" className="py-6 space-y-6">
           {/* Welcome Banner */}
-          <WelcomeBanner 
+          <CustomerDashboardHeader 
             userName={profile?.name || "Customer"}
           />
 
