@@ -9,17 +9,18 @@ import AuthCallback from "@/pages/AuthCallback";
 import CompanySearch from "@/pages/CompanySearch";
 import CompanyProfile from "@/pages/CompanyProfile";
 import Dashboard from "@/pages/Dashboard";
-import CustomerDashboard from "@/pages/CustomerDashboard";
-import CustomerSettings from "@/pages/CustomerSettings";
+import CustomerDashboard from "@/pages/customer/CustomerDashboard";
+import CustomerSettings from "@/pages/customer/CustomerSettings";
 import Enquiries from "@/pages/Enquiries";
-import CustomerProfile from "@/pages/CustomerProfile";
+import CustomerProfile from "@/pages/customer/CustomerProfile";
 import TestPage from "@/pages/TestPage";
-import CustomerEmailMessaging from "@/pages/CustomerEmailMessaging";
-import CustomerChatMessaging from "@/pages/CustomerChatMessaging";
-import CustomerInboxMessaging from "@/pages/CustomerInboxMessaging";
-import CustomerBilling from "@/pages/CustomerBilling";
-import CustomerNotifications from "@/pages/CustomerNotifications";
-import CustomerSupport from "@/pages/CustomerSupport";
+import DatabaseTest from "@/pages/DatabaseTest";
+import CustomerEmailMessaging from "@/pages/customer/CustomerEmailMessaging";
+import CustomerChatMessaging from "@/pages/customer/CustomerChatMessaging";
+import CustomerInboxMessaging from "@/pages/customer/CustomerInboxMessaging";
+import CustomerBilling from "@/pages/customer/CustomerBilling";
+import CustomerNotifications from "@/pages/customer/CustomerNotifications";
+import CustomerSupport from "@/pages/customer/CustomerSupport";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { FormEmbedded } from "@/components/forms/FormEmbedded";
 import { CompanyRoutes } from "./CompanyRoutes";
@@ -32,6 +33,7 @@ export const AppRouter = () => {
       <Route path="/" element={<Index />} />
       <Route path="/demo" element={<DemoDashboard />} />
       <Route path="/test" element={<TestPage />} />
+      <Route path="/databasetest" element={<DatabaseTest />} />
       
       {/* ===== AUTHENTICATION ROUTES ===== */}
       <Route path="/signup" element={<Signup />} />
