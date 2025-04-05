@@ -1,21 +1,21 @@
 import { Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import CompanyDashboard from "@/pages/CompanyDashboard";
-import CompanySettings from "@/pages/CompanySettings";
+import CompanyDashboard from "@/pages/company/CompanyDashboard";
+import CompanySettings from "@/pages/company/CompanySettings";
 import FormBuilder from "@/pages/FormBuilder";
 import Enquiries from "@/pages/Enquiries";
-import CompanyEmailMessaging from "@/pages/CompanyEmailMessaging";
-import CompanyChatMessaging from "@/pages/CompanyChatMessaging";
-import CompanyInboxMessaging from "@/pages/CompanyInboxMessaging";
-import CompanyBilling from "@/pages/CompanyBilling";
-import CompanyNotifications from "@/pages/CompanyNotifications";
-import CompanySupport from "@/pages/CompanySupport";
-import CompanyTeam, { TeamManagementFallback } from "@/pages/CompanyTeam";
-import CompanyCustomers from "@/pages/CompanyCustomers";
-import CompanyInvoices from "@/pages/CompanyInvoices";
-import CompanyPayments from "@/pages/CompanyPayments";
-import CompanyReports from "@/pages/CompanyReports";
-import CompanyDetails from "@/pages/CompanyDetails";
+import CompanyEmailMessaging from "@/pages/company/CompanyEmailMessaging";
+import CompanyChatMessaging from "@/pages/company/CompanyChatMessaging";
+import CompanyInboxMessaging from "@/pages/company/CompanyInboxMessaging";
+import CompanyBilling from "@/pages/company/CompanyBilling";
+import CompanyNotifications from "@/pages/company/CompanyNotifications";
+import CompanySupport from "@/pages/company/CompanySupport";
+import CompanyTeam, { TeamManagementFallback } from "@/pages/company/CompanyTeam";
+import CompanyCustomers from "@/pages/company/CompanyCustomers";
+import CompanyInvoices from "@/pages/company/CompanyInvoices";
+import CompanyPayments from "@/pages/company/CompanyPayments";
+import CompanyReports from "@/pages/company/CompanyReports";
+import CompanyDetails from "@/pages/company/CompanyDetails";
 import NotFound from "@/pages/NotFound";
 
 // Helper to determine if we should use fallback components in preview mode

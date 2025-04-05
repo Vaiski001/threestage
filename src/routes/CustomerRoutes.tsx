@@ -1,16 +1,16 @@
 import { Route } from "react-router-dom";
 import { Fragment } from "react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import CustomerDashboard from "@/pages/CustomerDashboard";
-import CustomerSettings from "@/pages/CustomerSettings";
-import CustomerProfile from "@/pages/CustomerProfile";
+import CustomerDashboard from "@/pages/customer/CustomerDashboard";
+import CustomerSettings from "@/pages/customer/CustomerSettings";
+import CustomerProfile from "@/pages/customer/CustomerProfile";
 import Enquiries from "@/pages/Enquiries";
-import CustomerEmailMessaging from "@/pages/CustomerEmailMessaging";
-import CustomerChatMessaging from "@/pages/CustomerChatMessaging";
-import CustomerInboxMessaging from "@/pages/CustomerInboxMessaging";
-import CustomerBilling from "@/pages/CustomerBilling";
-import CustomerNotifications from "@/pages/CustomerNotifications";
-import CustomerSupport from "@/pages/CustomerSupport";
+import CustomerEmailMessaging from "@/pages/customer/CustomerEmailMessaging";
+import CustomerChatMessaging from "@/pages/customer/CustomerChatMessaging";
+import CustomerInboxMessaging from "@/pages/customer/CustomerInboxMessaging";
+import CustomerBilling from "@/pages/customer/CustomerBilling";
+import CustomerNotifications from "@/pages/customer/CustomerNotifications";
+import CustomerSupport from "@/pages/customer/CustomerSupport";
 import NotFound from "@/pages/NotFound";
 
 export const CustomerRoutes = () => {
