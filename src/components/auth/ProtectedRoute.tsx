@@ -1,4 +1,3 @@
-
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +21,9 @@ export const ProtectedRoute = ({ children, allowPreview = false }: ProtectedRout
                    window.location.hostname.includes('lovable.app');
   const bypassAuth = (isDevelopment && process.env.NODE_ENV !== 'production') || 
                     (allowPreview && isPreview);
+
+  // Check for debug/preview mode via URL parameters
+  const hasStaticFlag = window.location.search.includes('static=true');
 
   useEffect(() => {
     const checkSessionDirectly = async () => {
@@ -110,5 +112,5 @@ export const ProtectedRoute = ({ children, allowPreview = false }: ProtectedRout
     return <>{children}</>;
   }
 
-  return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
+  return <Navigate to="/login" state={{ from: location.pathname }} replace />;
 };

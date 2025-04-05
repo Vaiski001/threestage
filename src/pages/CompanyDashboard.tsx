@@ -1,13 +1,22 @@
-
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Component imports
+import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { AnalyticsChart } from "@/components/analytics/AnalyticsChart";
+import { EnquiryCard } from "@/components/kanban/EnquiryCard";
+import { FormManagement } from "@/components/forms/FormManagement";
+
+// Hook imports
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { AnalyticsChart } from "@/components/analytics/AnalyticsChart";
+
+// Icon imports
 import { 
   Filter, 
   Plus, 
@@ -18,25 +27,25 @@ import {
   ArrowUpRight, 
   FormInput 
 } from "lucide-react";
-import { FormManagement } from "@/components/forms/FormManagement";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 
-const CompanyDashboard = () => {
+/**
+ * CompanyDashboard - Main dashboard page for company users
+ * Displays key statistics, enquiry board, forms, and analytics
+ */
+export default function CompanyDashboard() {
+  // State management
   const { profile, loading, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [localProfile, setLocalProfile] = useState(profile);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchQuery, setSearchQuery] = useState("");
 
+  // Sync local profile with auth context
   useEffect(() => {
     setLocalProfile(profile);
   }, [profile]);
 
+  // Regularly refresh profile data
   useEffect(() => {
     refreshProfile();
     
@@ -47,6 +56,7 @@ const CompanyDashboard = () => {
     return () => clearInterval(intervalId);
   }, [refreshProfile]);
 
+  // Sample stats data
   const stats = [
     { label: "Total Enquiries", value: "0", change: "0%", changeType: "neutral" },
     { label: "Pending", value: "0", change: "0%", changeType: "neutral" },
@@ -54,7 +64,7 @@ const CompanyDashboard = () => {
     { label: "Conversion Rate", value: "0%", change: "0%", changeType: "neutral" }
   ];
 
-  // Sample analytics data (empty for now)
+  // Sample analytics data
   const analyticsData = {
     enquiries: [],
     conversion: [],
@@ -62,6 +72,7 @@ const CompanyDashboard = () => {
     revenue: []
   };
 
+  // Event handlers
   const handleCreateForm = () => {
     setActiveTab("forms");
     toast({
@@ -77,6 +88,14 @@ const CompanyDashboard = () => {
     });
   };
 
+  const handleCreateEnquiry = () => {
+    toast({
+      title: "Create Enquiry",
+      description: "This feature is coming soon."
+    });
+  };
+
+  // Loading state
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -88,39 +107,14 @@ const CompanyDashboard = () => {
   }
 
   return (
-    <AppLayout>
-      <header className="h-16 border-b border-border flex items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-4">
-          <SidebarTrigger />
-          <div className="relative hidden sm:block">
-            <Search className="h-4 w-4 absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search enquiries..."
-              className="w-64 pl-10 pr-4 py-2 text-sm rounded-md bg-secondary/50 focus:bg-secondary border-0 focus:ring-1 focus:ring-primary/30 focus:outline-none"
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleNewEnquiry}
-            className="hidden sm:flex"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Enquiry
-          </Button>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive"></span>
-          </Button>
-        </div>
-      </header>
-
+    <AppLayout
+      pageTitle="Company Dashboard"
+      searchPlaceholder="Search enquiries, forms..."
+      onSearch={(query) => setSearchQuery(query)}
+    >
       <main className="flex-1 overflow-y-auto">
         <div className="pt-8 pb-4 px-4 sm:px-6">
-          <Container size="full">
+          <Container className="w-full max-w-none">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="w-full max-w-md grid grid-cols-3">
                 <TabsTrigger value="dashboard">
@@ -137,20 +131,22 @@ const CompanyDashboard = () => {
                 </TabsTrigger>
               </TabsList>
 
+              {/* Dashboard Tab */}
               <TabsContent value="dashboard">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                   <div>
                     <h1 className="text-2xl font-semibold mb-1">Company Dashboard</h1>
                     <p className="text-muted-foreground">Overview of key stats and activities</p>
                   </div>
-                  <div className="flex gap-3">
-                    <Button onClick={handleNewEnquiry}>
-                      <Plus className="h-4 w-4 mr-2" />
+                  <div className="flex items-center gap-3">
+                    <Button size="sm" onClick={handleCreateEnquiry}>
+                      <Plus className="w-4 h-4 mr-2" />
                       New Enquiry
                     </Button>
                   </div>
                 </div>
                 
+                {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   {stats.map((card, i) => (
                     <Card key={i} className="shadow-sm">
@@ -173,6 +169,7 @@ const CompanyDashboard = () => {
                   ))}
                 </div>
 
+                {/* Empty State */}
                 <div className="bg-card rounded-lg border shadow-sm p-8 text-center mb-8">
                   <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <PlusCircle className="h-8 w-8 text-primary" />
@@ -191,8 +188,9 @@ const CompanyDashboard = () => {
                   </div>
                 </div>
 
+                {/* Enquiry Board */}
                 <div className="pb-8">
-                  <Container size="full">
+                  <Container className="w-full max-w-none">
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="text-2xl font-medium">Enquiry Board</h2>
                       <div className="flex gap-3">
@@ -211,10 +209,12 @@ const CompanyDashboard = () => {
                 </div>
               </TabsContent>
 
+              {/* Forms Tab */}
               <TabsContent value="forms">
                 <FormManagement onCreateNew={handleCreateForm} />
               </TabsContent>
 
+              {/* Analytics Tab */}
               <TabsContent value="analytics">
                 <div className="mb-8">
                   <h2 className="text-2xl font-semibold mb-4">Analytics & Reports</h2>
@@ -269,6 +269,4 @@ const CompanyDashboard = () => {
       </main>
     </AppLayout>
   );
-};
-
-export default CompanyDashboard;
+}

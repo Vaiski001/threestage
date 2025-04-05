@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase, processAccessToken, handleOAuthSignIn, createUserProfile, UserRole } from "@/lib/supabase";
+import { ensureUserProfile } from "@/lib/supabase/auth";
 import { Container } from "@/components/ui/Container";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 import { 
   DebugInfo, 
   AuthLoading, 
@@ -23,6 +25,7 @@ export default function AuthCallback() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setUserRole } = useAuth();
   
   // Get role from query params, account_type param, or localStorage (fallback)
   const userRole = searchParams.get('role') as UserRole || 
@@ -37,6 +40,42 @@ export default function AuthCallback() {
   
   // Store the URL for debugging
   const redirectUrl = window.location.href;
+  
+  // Function to parse hash and redirect - defined before it's used in useEffect
+  const parseHashAndRedirect = () => {
+    try {
+      setAuthStage("manual_redirect");
+      setManualRedirect(true);
+      
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      
+      if (!accessToken) {
+        console.error("No access token found in URL hash");
+        setAuthError("No access token found. Please try again.");
+        return;
+      }
+      
+      // Store tokens in localStorage for manual handling
+      localStorage.setItem('supabase.auth.token', JSON.stringify({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_at: Date.now() + 3600 * 1000,
+        expires_in: 3600,
+        token_type: 'bearer'
+      }));
+      
+      // Redirect to dashboard (client-side processing will handle the tokens)
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
+    } catch (error) {
+      console.error("Error parsing hash:", error);
+      setAuthError("Failed to process authentication data. Please try logging in again.");
+    }
+  };
   
   useEffect(() => {
     // Update processing time elapsed
@@ -80,6 +119,25 @@ export default function AuthCallback() {
         setAuthStage("session_received");
         setCurrentUser(data.session.user);
         
+        // IMPORTANT: Ensure user has a profile after successful auth
+        setAuthStage("creating_profile");
+        try {
+          const profile = await ensureUserProfile();
+          
+          if (profile) {
+            console.log("User profile created/verified:", profile.id);
+            setAuthStage("profile_ready");
+          } else {
+            console.error("Failed to create or verify user profile");
+            setAuthStage("profile_error");
+            // Continue with login flow anyway
+          }
+        } catch (profileError) {
+          console.error("Error ensuring user profile:", profileError);
+          setAuthStage("profile_error");
+          // Continue with login flow anyway
+        }
+        
         // IMPORTANT: Check user metadata for role if coming from email confirmation
         let roleFromMetadata = null;
         if (data.session.user.user_metadata && data.session.user.user_metadata.role) {
@@ -90,89 +148,33 @@ export default function AuthCallback() {
         // Check account_type parameter for explicit redirection handling
         const accountTypeParam = searchParams.get('account_type');
         if (accountTypeParam) {
-          console.log("Found account_type in URL params:", accountTypeParam);
+          console.log("Found account_type parameter:", accountTypeParam);
         }
         
-        // Create a profile if it doesn't exist already
-        try {
-          setAuthStage("creating_profile");
-          
-          // Check if a profile exists first
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.session.user.id)
-            .single();
-            
-          if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = not found
-            console.error("Error checking profile:", profileError);
-            throw profileError;
-          }
-          
-          let userRoleToUse = roleFromMetadata || userRole;
-          console.log("Using role for profile creation:", userRoleToUse);
-          
-          if (!profileData) {
-            // Create a new profile record
-            const newProfileData: Record<string, any> = {
-              id: data.session.user.id,
-              email: data.session.user.email || '',
-              name: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || '',
-              role: userRoleToUse, // Use role from metadata if available
-              created_at: new Date().toISOString()
-            };
-            
-            // Add company-specific fields if applicable
-            if (userRoleToUse === 'company') {
-              newProfileData.company_name = data.session.user.user_metadata?.company_name || '';
-              if (data.session.user.user_metadata?.industry) {
-                newProfileData.industry = data.session.user.user_metadata.industry;
-              }
-              if (data.session.user.user_metadata?.website) {
-                newProfileData.website = data.session.user.user_metadata.website;
-              }
-              if (data.session.user.user_metadata?.phone) {
-                newProfileData.phone = data.session.user.user_metadata.phone;
-              }
-            }
-            
-            console.log("Creating new profile with data:", newProfileData);
-            
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert(newProfileData);
-              
-            if (insertError) {
-              console.error("Error creating profile:", insertError);
-              throw insertError;
-            }
-            
-            console.log("Profile created successfully with role:", userRoleToUse);
-          } else {
-            console.log("Existing profile found with role:", profileData.role);
-            userRoleToUse = profileData.role; // Use existing profile role
-          }
-        } catch (profileCreateError) {
-          console.error("Error handling profile creation:", profileCreateError);
-          setAuthError("Failed to set up your user profile. Please try again.");
-          return;
+        // Store session details in localStorage for client-side handling
+        localStorage.setItem('supabase.auth.user_role', userRole);
+        
+        // Track whether this is an email confirmation
+        const isEmailConfirmation = searchParams.get('type') === 'signup';
+        
+        // Check for admin status
+        const isAdmin = data.session.user.app_metadata?.isAdmin || false;
+        
+        // Setup user role in context for app-wide access
+        if (isAdmin) {
+          setUserRole('admin');
+        } else {
+          setUserRole(userRole);
         }
         
-        setAuthStage("authentication_complete");
+        // Show success feedback
+        setAuthStage("auth_success");
         setAuthSuccess(true);
-        
-        // Clean up the OAuth data
-        localStorage.removeItem('oauth_role');
-        localStorage.removeItem('oauth_provider');
-        localStorage.removeItem('oauth_timestamp');
-        
-        // Determine if this was an email confirmation or OAuth callback
-        const isEmailConfirmation = !searchParams.get('provider') && searchParams.get('role');
         
         if (isEmailConfirmation) {
           toast({
-            title: "Email verified",
-            description: `Your account has been successfully verified!`,
+            title: "Email confirmed",
+            description: "Your email has been confirmed. Please complete your profile.",
           });
         } else {
           toast({
@@ -183,9 +185,18 @@ export default function AuthCallback() {
         
         // IMPORTANT: Improved redirect logic that prioritizes different sources of role information
         setTimeout(() => {
+          // Special case: If this is email confirmation for a company account, always go to settings first
+          if (isEmailConfirmation && 
+             (accountType === 'company' || roleFromMetadata === 'company' || userRole === 'company')) {
+            console.log("Company account email confirmed, redirecting to company settings for profile completion");
+            navigate("/company/settings");
+            return;
+          }
+
+          // Regular login flow (not email confirmation)
           // 1. First priority: accountType from URL (most explicit)
           if (accountType === 'company') {
-            console.log("Company account confirmed, redirecting to company dashboard");
+            console.log("Company account, redirecting to company dashboard");
             if (needsAdditionalInfo) {
               navigate("/company/settings");
             } else {
@@ -223,43 +234,7 @@ export default function AuthCallback() {
     };
     
     processOAuthCallback();
-  }, [navigate, searchParams, toast, userRole, needsAdditionalInfo, accountType]);
-  
-  // Function to parse hash and redirect
-  const parseHashAndRedirect = () => {
-    try {
-      setAuthStage("manual_redirect");
-      setManualRedirect(true);
-      
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      
-      if (!accessToken) {
-        console.error("No access token found in URL hash");
-        setAuthError("No access token found. Please try again.");
-        return;
-      }
-      
-      // Store tokens in localStorage for manual handling
-      localStorage.setItem('supabase.auth.token', JSON.stringify({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-        expires_at: Date.now() + 3600 * 1000,
-        expires_in: 3600,
-        token_type: 'bearer'
-      }));
-      
-      // Redirect to dashboard (client-side processing will handle the tokens)
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
-    } catch (error) {
-      console.error("Error parsing hash:", error);
-      setAuthError("Failed to process authentication data. Please try logging in again.");
-    }
-  };
+  }, [navigate, searchParams, toast, userRole, needsAdditionalInfo, accountType, setUserRole, parseHashAndRedirect]);
   
   // Function to handle reset
   const handleReset = () => {

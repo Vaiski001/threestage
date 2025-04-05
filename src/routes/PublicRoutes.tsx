@@ -1,4 +1,3 @@
-
 import { Route, Navigate } from "react-router-dom";
 import { Fragment } from "react";
 import Index from "@/pages/Index";
@@ -17,35 +16,48 @@ import Dashboard from "@/pages/Dashboard";
 export const PublicRoutes = () => {
   return (
     <Fragment>
-      {/* Public routes */}
+      {/* ===== PUBLIC MARKETING ROUTES ===== */}
+      {/* Main landing page */}
       <Route path="/" element={<Index />} />
+      
+      {/* Demo dashboard for showcasing */}
+      <Route path="/demo" element={<DemoDashboard />} />
+      
+      {/* ===== AUTHENTICATION ROUTES ===== */}
+      {/* Sign up and login */}
       <Route path="/signup" element={<Signup />} />
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/demo" element={<DemoDashboard />} />
       
-      {/* Company search and discovery - accessible with customer navigation */}
+      {/* ===== COMPANY DISCOVERY ROUTES ===== */}
+      {/* Browse and find companies */}
       <Route path="/companies" element={
         <ProtectedRoute allowPreview={true}>
           <CompanySearch />
         </ProtectedRoute>
       } />
+      
+      {/* View company profile */}
       <Route path="/companies/:id" element={<CompanyProfile />} />
+      
+      {/* View embedded forms */}
       <Route path="/forms/:formId" element={<FormEmbedded />} />
       
-      {/* Role router - redirects based on user role */}
+      {/* ===== ROLE-BASED ROUTING ===== */}
+      {/* Dashboard redirect based on role */}
       <Route path="/dashboard" element={
         <ProtectedRoute allowPreview={true}>
           <Dashboard />
         </ProtectedRoute>
       } />
       
-      {/* Redirect routes */}
+      {/* ===== REDIRECTS ===== */}
+      {/* Legacy URL support */}
       <Route path="/forms" element={<Navigate to="/company/forms" replace />} />
       <Route path="/enquiries" element={<Navigate to="/dashboard" replace />} />
       
-      {/* Set Index as the fallback for empty path */}
+      {/* Fallback redirect */}
       <Route path="" element={<Navigate to="/" />} />
     </Fragment>
   );

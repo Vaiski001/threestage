@@ -1,6 +1,4 @@
-
 import { useState } from "react";
-import { Sidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,7 +45,7 @@ export const WorkPartnersSidebar = ({ isCompanyView = false }: { isCompanyView?:
   };
 
   return (
-    <Sidebar variant="floating" side="right" className="w-[280px] border-l">
+    <div className="w-[280px] border-l bg-white dark:bg-gray-950 h-full">
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-medium text-base flex items-center gap-2">
@@ -139,6 +137,6 @@ export const WorkPartnersSidebar = ({ isCompanyView = false }: { isCompanyView?:
           </div>
         </div>
       </div>
-    </Sidebar>
+    </div>
   );
 };

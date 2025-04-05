@@ -1,4 +1,3 @@
-
 // Define types for auth
 export type UserRole = 'customer' | 'company';
 
@@ -15,6 +14,7 @@ export interface UserProfile {
   created_at: string;
   
   // Company profile customization
+  profile_branding?: string; // JSON string for storing logo and banner URLs
   profile_banner?: string;
   profile_logo?: string;
   profile_description?: string;

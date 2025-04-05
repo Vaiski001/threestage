@@ -1,6 +1,4 @@
-
 import { useState } from "react";
-import { Sidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,7 +36,7 @@ export const CustomerWorkPartnersSidebar = () => {
   };
 
   return (
-    <Sidebar variant="floating" side="right" className="w-[280px] border-l">
+    <div className="w-[280px] border-l bg-white dark:bg-gray-950 h-full">
       <div className="p-4 space-y-5">
         <div className="flex flex-col space-y-3">
           <div className="flex items-center justify-between">
@@ -114,6 +112,6 @@ export const CustomerWorkPartnersSidebar = () => {
           </div>
         </div>
       </div>
-    </Sidebar>
+    </div>
   );
 };

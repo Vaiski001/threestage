@@ -16,10 +16,33 @@ export interface Enquiry {
 
 interface EnquiryBoardProps {
   emptyState?: boolean;
+  searchQuery?: string;
 }
 
-export function EnquiryBoard({ emptyState = false }: EnquiryBoardProps) {
+export function EnquiryBoard({ emptyState = false, searchQuery = "" }: EnquiryBoardProps) {
   const { toast } = useToast();
+  
+  // Sample enquiries for demonstration
+  const allEnquiries = [
+    { id: "1", title: "Website Redesign", company: "TechSolutions Inc", date: "2 days ago" },
+    { id: "2", title: "Logo Design", company: "Acme Design", date: "5 days ago" },
+    { id: "3", title: "Marketing Campaign", company: "Global Marketing", date: "1 week ago" },
+    { id: "4", title: "Mobile App Dev", company: "TechSolutions Inc", date: "2 weeks ago" },
+    { id: "5", title: "SEO Optimization", company: "Global Marketing", date: "3 weeks ago" }
+  ];
+  
+  // Filter enquiries based on search query
+  const filteredEnquiries = searchQuery 
+    ? allEnquiries.filter(
+        enquiry => 
+          enquiry.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          enquiry.company.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allEnquiries;
+    
+  const newEnquiries = filteredEnquiries.filter((_, index) => index < 2);
+  const pendingEnquiries = filteredEnquiries.filter((_, index) => index >= 2 && index < 4);
+  const completedEnquiries = filteredEnquiries.filter((_, index) => index >= 4);
   
   const handleCreateEnquiry = () => {
     toast({
@@ -62,10 +85,7 @@ export function EnquiryBoard({ emptyState = false }: EnquiryBoardProps) {
                 <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs px-2 py-1 rounded-full">2</span>
               </h3>
               <div className="space-y-3">
-                {[
-                  { id: 1, title: "Website Redesign", company: "TechSolutions Inc", date: "2 days ago" },
-                  { id: 2, title: "Logo Design", company: "Acme Design", date: "5 days ago" }
-                ].map(item => (
+                {newEnquiries.map(item => (
                   <Card key={item.id} className="p-3 cursor-pointer hover:bg-accent/10">
                     <h4 className="font-medium text-sm">{item.title}</h4>
                     <p className="text-xs text-muted-foreground mt-1">{item.company}</p>
@@ -83,10 +103,7 @@ export function EnquiryBoard({ emptyState = false }: EnquiryBoardProps) {
                 <span className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 text-xs px-2 py-1 rounded-full">2</span>
               </h3>
               <div className="space-y-3">
-                {[
-                  { id: 3, title: "Marketing Campaign", company: "Global Marketing", date: "1 week ago" },
-                  { id: 4, title: "Mobile App Dev", company: "TechSolutions Inc", date: "2 weeks ago" }
-                ].map(item => (
+                {pendingEnquiries.map(item => (
                   <Card key={item.id} className="p-3 cursor-pointer hover:bg-accent/10">
                     <h4 className="font-medium text-sm">{item.title}</h4>
                     <p className="text-xs text-muted-foreground mt-1">{item.company}</p>
@@ -104,9 +121,7 @@ export function EnquiryBoard({ emptyState = false }: EnquiryBoardProps) {
                 <span className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-2 py-1 rounded-full">1</span>
               </h3>
               <div className="space-y-3">
-                {[
-                  { id: 5, title: "SEO Optimization", company: "Global Marketing", date: "3 weeks ago" }
-                ].map(item => (
+                {completedEnquiries.map(item => (
                   <Card key={item.id} className="p-3 cursor-pointer hover:bg-accent/10">
                     <h4 className="font-medium text-sm">{item.title}</h4>
                     <p className="text-xs text-muted-foreground mt-1">{item.company}</p>

@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronDown, Search } from "lucide-react";
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { NavigationItem } from "../customer/CustomerNavigationItems";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -81,31 +79,31 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-3 py-2">
+      <div className="px-3 py-2 border-b border-gray-700">
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/50" />
           <Input
             placeholder="Search menu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 text-sm bg-sidebar-accent/50 border-none focus-visible:ring-1 focus-visible:ring-primary/30"
+            className="pl-9 h-9 text-sm bg-white/10 border-none text-white placeholder:text-white/50 focus-visible:ring-1 focus-visible:ring-white/30"
           />
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto">
-        <SidebarMenu>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <ul className="py-2">
           {filteredNavItems.map((item) => (
-            <SidebarMenuItem key={item.id}>
-              <SidebarMenuButton
-                isActive={location.pathname === item.path || (item.path && location.pathname.startsWith(`${item.path}/`))}
+            <li key={item.id} className="mb-1">
+              <button
                 onClick={() => handleNavigation(item)}
                 className={cn(
-                  "transition-all duration-200",
-                  location.pathname === item.path ? "bg-sidebar-accent/80 text-primary font-medium" : ""
+                  "flex items-center w-full px-3 py-2 text-sm transition-colors rounded-none",
+                  "text-white/80 hover:text-white hover:bg-white/10",
+                  location.pathname === item.path ? "bg-indigo-600 text-white font-medium" : ""
                 )}
               >
-                {item.icon}
+                <span className="mr-3 text-[#6366F1]">{item.icon}</span>
                 <span>{item.label}</span>
                 {item.children && item.children.length > 0 && (
                   <ChevronDown 
@@ -114,33 +112,33 @@ export const SidebarNavigation = ({ navigationItems }: SidebarNavigationProps) =
                     }`}
                   />
                 )}
-              </SidebarMenuButton>
+              </button>
               {item.children && item.children.length > 0 && expandedGroups[item.id] && (
-                <div className="pl-8 mt-1 space-y-1">
+                <ul className="pl-10 mt-1 space-y-1">
                   {item.children.map((child) => (
-                    <SidebarMenuButton
-                      key={child.id}
-                      isActive={location.pathname === child.path || (child.path && location.pathname.startsWith(`${child.path}/`))}
-                      onClick={() => {
-                        if (child.path) {
-                          navigate(child.path);
-                        }
-                      }}
-                      size="sm"
-                      className={cn(
-                        "transition-all duration-200",
-                        location.pathname === child.path ? "bg-sidebar-accent/80 text-primary font-medium" : ""
-                      )}
-                    >
-                      {child.icon}
-                      <span>{child.label}</span>
-                    </SidebarMenuButton>
+                    <li key={child.id}>
+                      <button
+                        onClick={() => {
+                          if (child.path) {
+                            navigate(child.path);
+                          }
+                        }}
+                        className={cn(
+                          "flex items-center w-full px-3 py-1.5 text-sm transition-colors rounded-none",
+                          "text-white/70 hover:text-white hover:bg-white/10",
+                          location.pathname === child.path ? "bg-indigo-600/80 text-white font-medium" : ""
+                        )}
+                      >
+                        <span className="mr-3 text-[#6366F1]">{child.icon}</span>
+                        <span>{child.label}</span>
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
-            </SidebarMenuItem>
+            </li>
           ))}
-        </SidebarMenu>
+        </ul>
       </div>
     </div>
   );

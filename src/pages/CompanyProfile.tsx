@@ -154,9 +154,19 @@ const CompanyProfile = () => {
     <div className="flex flex-col bg-gray-50" style={companyStyle}>
       {/* Company banner */}
       <div className="w-full h-60 bg-gray-200 relative">
-        {company?.profile_banner ? (
+        {company?.profile_branding ? (
           <img 
-            src={company.profile_banner} 
+            src={(() => {
+              try {
+                const branding = typeof company.profile_branding === 'string' 
+                  ? JSON.parse(company.profile_branding) 
+                  : company.profile_branding;
+                return branding?.banner;
+              } catch (e) {
+                console.error("Error parsing profile_branding:", e);
+                return "";
+              }
+            })()} 
             alt={`${company.company_name} banner`} 
             className="w-full h-full object-cover"
           />
@@ -171,9 +181,19 @@ const CompanyProfile = () => {
         {/* Company logo and name section */}
         <div className="flex flex-col md:flex-row items-start md:items-end gap-4 mb-8">
           <div className="w-32 h-32 bg-white rounded-lg shadow-md flex items-center justify-center border-4 border-white">
-            {company?.profile_banner ? (
+            {company?.profile_branding ? (
               <img 
-                src={company.profile_banner} 
+                src={(() => {
+                  try {
+                    const branding = typeof company.profile_branding === 'string' 
+                      ? JSON.parse(company.profile_branding) 
+                      : company.profile_branding;
+                    return branding?.logo;
+                  } catch (e) {
+                    console.error("Error parsing profile_branding:", e);
+                    return "";
+                  }
+                })()} 
                 alt={`${company.company_name} logo`} 
                 className="w-full h-full object-contain p-2"
               />

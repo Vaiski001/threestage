@@ -1,5 +1,4 @@
-
-import { LayoutDashboard, MessageSquare, Mail, FormInput, Receipt, DollarSign, PieChart, UserPlus, Users, Settings, HelpCircle, AtSign, MessageCircle, Phone } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Mail, FormInput, Receipt, DollarSign, PieChart, UserPlus, Users, Settings, HelpCircle, AtSign, MessageCircle, Inbox, Bell, CreditCard } from "lucide-react";
 import { NavigationItem } from "../customer/CustomerNavigationItems";
 
 export const companyNavigationItems: NavigationItem[] = [
@@ -38,11 +37,11 @@ export const companyNavigationItems: NavigationItem[] = [
         path: "/company/messaging/chat"
       },
       {
-        id: "messaging-sms",
-        label: "SMS",
-        icon: <Phone className="h-5 w-5" />,
-        description: "SMS messages",
-        path: "/company/messaging/sms"
+        id: "messaging-inbox",
+        label: "Inbox",
+        icon: <Inbox className="h-5 w-5" />,
+        description: "Unified inbox for all messages",
+        path: "/company/messaging/inbox"
       }
     ]
   },
@@ -52,6 +51,13 @@ export const companyNavigationItems: NavigationItem[] = [
     icon: <FormInput className="h-5 w-5" />, 
     description: "Create and manage forms",
     path: "/company/forms"
+  },
+  { 
+    id: "billing", 
+    label: "Billing", 
+    icon: <CreditCard className="h-5 w-5" />, 
+    description: "Manage subscriptions and billing",
+    path: "/company/billing"
   },
   { 
     id: "invoices", 
@@ -87,6 +93,13 @@ export const companyNavigationItems: NavigationItem[] = [
     icon: <Users className="h-5 w-5" />, 
     description: "List of customers with their details",
     path: "/company/customers"
+  },
+  { 
+    id: "notifications", 
+    label: "Notifications", 
+    icon: <Bell className="h-5 w-5" />, 
+    description: "View and manage notifications",
+    path: "/company/notifications"
   },
   { 
     id: "settings", 

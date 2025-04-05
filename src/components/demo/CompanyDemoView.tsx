@@ -1,11 +1,11 @@
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Filter, Plus, ArrowUpRight, Users, Inbox, Calendar, Clock, CheckCircle, CheckCheck, BarChart3, Phone, Mail, MessageSquare } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Filter, Plus, ArrowUpRight, Users, Inbox, Calendar, Clock, CheckCircle, CheckCheck, BarChart3, Phone, Mail, MessageSquare, UserPlus, Download } from "lucide-react";
 import { StatisticsCards } from "@/components/customer/dashboard/StatisticsCards";
 import { WorkPartnersSidebar } from "@/components/common/WorkPartnersSidebar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 interface CompanyStatProps {
@@ -32,12 +32,18 @@ export const CompanyDemoView = ({
   companyNavItems 
 }: CompanyDemoViewProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Sample statistics for the company demo dashboard
   const demoStats = {
     total: 15,
     pending: 7,
     completed: 8
+  };
+  
+  // Replace toast+button with navigating button for all "View Full Page" buttons
+  const navigateToPage = (page: string) => {
+    navigate(`/company/${page}`);
   };
   
   // Render different content based on active navigation item
@@ -247,19 +253,390 @@ export const CompanyDemoView = ({
         );
       
       default:
+        // For new pages, provide a richer preview
+        const isNewPage = ['invoices', 'payments', 'reports', 'team', 'customers'].includes(activeNavItem);
+        
+        if (isNewPage) {
+          switch(activeNavItem) {
+            case 'invoices':
+              return (
+                <div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                      <h1 className="text-2xl font-semibold mb-1">Invoices</h1>
+                      <p className="text-muted-foreground">Manage and track your company invoices</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Invoice
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardDescription>All time revenue</CardDescription>
+                        <CardTitle className="text-2xl">$7,500.00</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +5.2%
+                        </span>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardDescription>Awaiting payment</CardDescription>
+                        <CardTitle className="text-2xl">$3,200.00</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <span className="text-xs px-2 py-1 rounded-full text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-950/30">
+                          -2.1%
+                        </span>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardDescription>Current month</CardDescription>
+                        <CardTitle className="text-2xl">$4,300.00</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +12.5%
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="bg-card rounded-lg border shadow-sm mb-8">
+                    <div className="p-4 border-b border-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <h2 className="text-lg font-medium">Invoice List</h2>
+                      <Button variant="outline" size="sm">
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filter
+                      </Button>
+                    </div>
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">Demo invoice list preview</p>
+                      <p className="text-muted-foreground mb-4">Filter, sort and manage all your invoices</p>
+                      <Button onClick={() => navigateToPage('invoices')}>
+                        View Full Page
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+              
+            case 'payments':
+              return (
+                <div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                      <h1 className="text-2xl font-semibold mb-1">Payments</h1>
+                      <p className="text-muted-foreground">Manage payment methods and transaction history</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Payment Method
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardDescription>Current available funds</CardDescription>
+                        <CardTitle className="text-2xl">$7,401.00</CardTitle>
+                      </CardHeader>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardDescription>Pending transactions</CardDescription>
+                        <CardTitle className="text-2xl">$3,200.00</CardTitle>
+                      </CardHeader>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardDescription>Last 30 days</CardDescription>
+                        <CardTitle className="text-2xl">$7,500.00</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +12.5%
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="bg-card rounded-lg border shadow-sm">
+                    <div className="p-4 border-b border-border">
+                      <h2 className="text-lg font-medium">Transaction History</h2>
+                    </div>
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">Demo transactions preview</p>
+                      <p className="text-muted-foreground mb-4">Manage and track all your payment transactions</p>
+                      <Button onClick={() => navigateToPage('payments')}>
+                        View Full Page
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+              
+            case 'reports':
+              return (
+                <div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                      <h1 className="text-2xl font-semibold mb-1">Analytics & Reports</h1>
+                      <p className="text-muted-foreground">Track performance and generate insights</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Total Enquiries</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-semibold mb-2">124</div>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +12%
+                        </span>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Conversion Rate</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-semibold mb-2">18.2%</div>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +2.4%
+                        </span>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Avg. Response Time</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-semibold mb-2">3.2h</div>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          -8%
+                        </span>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Customer Satisfaction</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-semibold mb-2">4.7/5</div>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +0.2
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="bg-card rounded-lg border shadow-sm">
+                    <div className="p-4 border-b border-border">
+                      <h2 className="text-lg font-medium">Reports Overview</h2>
+                    </div>
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">Demo analytics preview</p>
+                      <p className="text-muted-foreground mb-4">Generate custom reports and track business performance</p>
+                      <Button onClick={() => navigateToPage('reports')}>
+                        View Full Page
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+              
+            case 'team':
+              return (
+                <div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                      <h1 className="text-2xl font-semibold mb-1">Team Management</h1>
+                      <p className="text-muted-foreground">Manage your company team members and roles</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Invite Team Member
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div>
+                          <CardDescription>Active team members</CardDescription>
+                          <CardTitle className="text-2xl">4</CardTitle>
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                      </CardHeader>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div>
+                          <CardDescription>Currently online</CardDescription>
+                          <CardTitle className="text-2xl">2</CardTitle>
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        </div>
+                      </CardHeader>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div>
+                          <CardDescription>Awaiting acceptance</CardDescription>
+                          <CardTitle className="text-2xl">2</CardTitle>
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Mail className="h-5 w-5 text-amber-500" />
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  </div>
+                  
+                  <div className="bg-card rounded-lg border shadow-sm">
+                    <div className="p-4 border-b border-border">
+                      <h2 className="text-lg font-medium">Team Members</h2>
+                    </div>
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">Demo team management preview</p>
+                      <p className="text-muted-foreground mb-4">Manage team members, roles and permissions</p>
+                      <Button onClick={() => navigateToPage('team')}>
+                        View Full Page
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+              
+            case 'customers':
+              return (
+                <div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                    <div>
+                      <h1 className="text-2xl font-semibold mb-1">Customers</h1>
+                      <p className="text-muted-foreground">Manage your customer relationships</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add Customer
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div>
+                          <CardTitle className="text-2xl">57</CardTitle>
+                          <CardDescription>Total Customers</CardDescription>
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                      </CardHeader>
+                      <CardFooter>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +12% from last month
+                        </span>
+                      </CardFooter>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div>
+                          <CardTitle className="text-2xl">42</CardTitle>
+                          <CardDescription>Active Subscriptions</CardDescription>
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <CheckCircle className="h-5 w-5 text-rose-500" />
+                        </div>
+                      </CardHeader>
+                      <CardFooter>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +8% from last month
+                        </span>
+                      </CardFooter>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <div>
+                          <CardTitle className="text-2xl">$38.2K</CardTitle>
+                          <CardDescription>Total Revenue</CardDescription>
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <BarChart3 className="h-5 w-5 text-emerald-500" />
+                        </div>
+                      </CardHeader>
+                      <CardFooter>
+                        <span className="text-xs px-2 py-1 rounded-full text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-950/30">
+                          +16% from last month
+                        </span>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                  
+                  <div className="bg-card rounded-lg border shadow-sm">
+                    <div className="p-4 border-b border-border">
+                      <h2 className="text-lg font-medium">Customer List</h2>
+                    </div>
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">Demo customer management preview</p>
+                      <p className="text-muted-foreground mb-4">View, filter and manage your customer database</p>
+                      <Button onClick={() => navigateToPage('customers')}>
+                        View Full Page
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+          }
+        }
+        
+        // For other pages use the simpler view
         return (
           <div className="bg-card rounded-lg border shadow-sm p-8 text-center">
             <h2 className="text-2xl font-semibold mb-4">{companyNavItems.find(item => item.id === activeNavItem)?.label}</h2>
             <p className="text-muted-foreground mb-6">{companyNavItems.find(item => item.id === activeNavItem)?.description}</p>
-            <Button>
-              {activeNavItem === 'enquiries' ? 'Add Enquiry' : 
-              activeNavItem === 'customers' ? 'Add Customer' :
-              activeNavItem === 'invoices' ? 'New Invoice' :
-              activeNavItem === 'payments' ? 'Record Payment' :
-              activeNavItem === 'reports' ? 'Generate Report' :
-              activeNavItem === 'team' ? 'Add Team Member' :
-              'Save Changes'}
-            </Button>
+            <div className="space-y-4">
+              <Button onClick={() => navigateToPage(activeNavItem)}>
+                {activeNavItem === 'enquiries' ? 'Add Enquiry' : 
+                activeNavItem === 'customers' ? 'Add Customer' :
+                activeNavItem === 'invoices' ? 'New Invoice' :
+                activeNavItem === 'payments' ? 'Record Payment' :
+                activeNavItem === 'reports' ? 'Generate Report' :
+                activeNavItem === 'team' ? 'Add Team Member' :
+                'Save Changes'}
+              </Button>
+              
+              <div>
+                <Button variant="outline" onClick={() => navigateToPage(activeNavItem)}>
+                  View Full Page
+                </Button>
+              </div>
+            </div>
           </div>
         );
     }
@@ -268,7 +645,7 @@ export const CompanyDemoView = ({
   return (
     <>
       <div className="pt-8 pb-4 px-4 sm:px-6">
-        <Container size="full">
+        <Container>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-semibold mb-1">

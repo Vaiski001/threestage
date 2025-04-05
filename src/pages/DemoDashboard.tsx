@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   SidebarProvider, 
@@ -43,12 +42,17 @@ const DemoDashboard = () => {
   const companyNavItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, description: "Overview of key stats and activities" },
     { id: "enquiries", label: "Enquiries", icon: <MessageSquare className="h-5 w-5" />, description: "View and manage customer enquiries" },
+    { id: "forms", label: "Form Builder", icon: <FileText className="h-5 w-5" />, description: "Create and manage forms" },
+    { id: "messaging", label: "Messaging", icon: <MessageSquare className="h-5 w-5" />, description: "Message channels and communication" },
     { id: "customers", label: "Customers", icon: <Users className="h-5 w-5" />, description: "List of customers with their details" },
     { id: "invoices", label: "Invoices", icon: <Receipt className="h-5 w-5" />, description: "Manage invoices and billing" },
     { id: "payments", label: "Payments", icon: <DollarSign className="h-5 w-5" />, description: "Track payments and transactions" },
     { id: "reports", label: "Reports & Analytics", icon: <PieChart className="h-5 w-5" />, description: "Insights and trends" },
     { id: "team", label: "Team Management", icon: <UserPlus className="h-5 w-5" />, description: "Manage company users and roles" },
-    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, description: "Configure company details and preferences" }
+    { id: "billing", label: "Billing", icon: <CreditCard className="h-5 w-5" />, description: "Manage subscriptions and billing" },
+    { id: "notifications", label: "Notifications", icon: <Bell className="h-5 w-5" />, description: "View and manage notifications" },
+    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, description: "Configure company details and preferences" },
+    { id: "support", label: "Support", icon: <HelpCircle className="h-5 w-5" />, description: "Get help and support" }
   ];
 
   // Customer portal navigation items

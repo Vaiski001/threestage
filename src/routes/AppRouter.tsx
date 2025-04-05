@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
 import Index from "@/pages/Index";
@@ -13,45 +12,61 @@ import Dashboard from "@/pages/Dashboard";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import CustomerSettings from "@/pages/CustomerSettings";
 import Enquiries from "@/pages/Enquiries";
-import CompanyDashboard from "@/pages/CompanyDashboard";
-import CompanySettings from "@/pages/CompanySettings";
-import FormBuilder from "@/pages/FormBuilder";
 import CustomerProfile from "@/pages/CustomerProfile";
+import TestPage from "@/pages/TestPage";
+import CustomerEmailMessaging from "@/pages/CustomerEmailMessaging";
+import CustomerChatMessaging from "@/pages/CustomerChatMessaging";
+import CustomerInboxMessaging from "@/pages/CustomerInboxMessaging";
+import CustomerBilling from "@/pages/CustomerBilling";
+import CustomerNotifications from "@/pages/CustomerNotifications";
+import CustomerSupport from "@/pages/CustomerSupport";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { FormEmbedded } from "@/components/forms/FormEmbedded";
+import { CompanyRoutes } from "./CompanyRoutes";
+import { CustomerRoutes } from "./CustomerRoutes";
 
 export const AppRouter = () => {
   return (
     <Routes>
-      {/* Public routes */}
+      {/* ===== PUBLIC ROUTES ===== */}
       <Route path="/" element={<Index />} />
+      <Route path="/demo" element={<DemoDashboard />} />
+      <Route path="/test" element={<TestPage />} />
+      
+      {/* ===== AUTHENTICATION ROUTES ===== */}
       <Route path="/signup" element={<Signup />} />
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/demo" element={<DemoDashboard />} />
       
-      {/* Company search and discovery - accessible with customer navigation */}
-      <Route path="/companies" element={
-        <ProtectedRoute allowPreview={true}>
-          <CompanySearch />
-        </ProtectedRoute>
-      } />
-      <Route path="/companies/:id" element={<CompanyProfile />} />
-      <Route path="/forms/:formId" element={<FormEmbedded />} />
-      
-      {/* Role router - redirects based on user role */}
+      {/* ===== SHARED FUNCTIONALITY ===== */}
+      {/* Role-based router - redirects based on user role */}
       <Route path="/dashboard" element={
         <ProtectedRoute allowPreview={true}>
           <Dashboard />
         </ProtectedRoute>
       } />
       
-      {/* Redirect routes */}
-      <Route path="/forms" element={<Navigate to="/company/forms" replace />} />
-      <Route path="/enquiries" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/role-redirect" element={
+        <ProtectedRoute allowPreview={true}>
+          <Dashboard />
+        </ProtectedRoute>
+      } />
       
-      {/* Customer routes */}
+      {/* Form viewing (for embedding) */}
+      <Route path="/forms/:formId" element={<FormEmbedded />} />
+      
+      {/* ===== CUSTOMER PORTAL ROUTES ===== */}
+      {/* Company discovery (Customer Portal feature) */}
+      <Route path="/companies" element={
+        <ProtectedRoute allowPreview={true}>
+          <CompanySearch />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/companies/:id" element={<CompanyProfile />} />
+      
+      {/* Primary Customer Routes */}
       <Route path="/customer/dashboard" element={
         <ProtectedRoute allowPreview={true}>
           <CustomerDashboard />
@@ -79,148 +94,57 @@ export const AppRouter = () => {
       {/* Customer messaging routes */}
       <Route path="/customer/messaging/email" element={
         <ProtectedRoute allowPreview={true}>
-          <NotFound />
+          <CustomerEmailMessaging />
         </ProtectedRoute>
       } />
       
       <Route path="/customer/messaging/chat" element={
         <ProtectedRoute allowPreview={true}>
-          <NotFound />
+          <CustomerChatMessaging />
         </ProtectedRoute>
       } />
       
       <Route path="/customer/messaging/inbox" element={
         <ProtectedRoute allowPreview={true}>
-          <NotFound />
+          <CustomerInboxMessaging />
         </ProtectedRoute>
       } />
       
+      {/* Customer account management routes */}
       <Route path="/customer/billing" element={
         <ProtectedRoute allowPreview={true}>
-          <NotFound />
+          <CustomerBilling />
         </ProtectedRoute>
       } />
       
       <Route path="/customer/notifications" element={
         <ProtectedRoute allowPreview={true}>
-          <NotFound />
+          <CustomerNotifications />
         </ProtectedRoute>
       } />
       
       <Route path="/customer/support" element={
         <ProtectedRoute allowPreview={true}>
-          <NotFound />
+          <CustomerSupport />
         </ProtectedRoute>
       } />
       
-      <Route path="/customer/support/tickets" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
+      {/* Test routes directly in AppRouter */}
+      <Route path="/customer/email-test" element={<CustomerEmailMessaging />} />
       
-      <Route path="/customer/support/knowledge" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
+      {/* Include remaining customer routes */}
+      <Route path="/customer/*" element={<CustomerRoutes />} />
       
-      <Route path="/customer/enquiries/active" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
+      {/* ===== COMPANY PORTAL ROUTES ===== */}
+      {/* All company routes are handled by CompanyRoutes */}
+      <Route path="/company/*" element={<CompanyRoutes />} />
       
-      <Route path="/customer/enquiries/completed" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      {/* Company routes */}
-      <Route path="/company/dashboard" element={
-        <ProtectedRoute allowPreview={true}>
-          <CompanyDashboard />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/settings" element={
-        <ProtectedRoute allowPreview={true}>
-          <CompanySettings />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/forms" element={
-        <ProtectedRoute allowPreview={true}>
-          <FormBuilder />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/enquiries" element={
-        <ProtectedRoute allowPreview={true}>
-          <Enquiries />
-        </ProtectedRoute>
-      } />
-      
-      {/* Company messaging routes */}
-      <Route path="/company/messaging/email" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/messaging/chat" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/messaging/sms" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/invoices" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/payments" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/reports" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/team" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/customers" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/company/support" element={
-        <ProtectedRoute allowPreview={true}>
-          <NotFound />
-        </ProtectedRoute>
-      } />
-      
-      {/* Set Index as the fallback for empty path */}
+      {/* ===== REDIRECTS ===== */}
+      <Route path="/forms" element={<Navigate to="/company/forms" replace />} />
+      <Route path="/enquiries" element={<Navigate to="/dashboard" replace />} />
       <Route path="" element={<Navigate to="/" />} />
       
-      {/* Catch-all route */}
+      {/* ===== CATCH-ALL ROUTE ===== */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

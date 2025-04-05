@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +7,7 @@ import { UserProfile } from "@/lib/supabase/types";
 
 // Import your new components
 import { ProfileEditorTabs } from "@/components/company/ProfileEditorTabs";
-import { BrandingInfoTab } from "@/components/company/BrandingInfoTab";
+import { DirectBrandingTab } from "@/components/company/DirectBrandingTab";
 import { ContactTab } from "@/components/company/ContactTab";
 import { ServicesTab } from "@/components/company/ServicesTab";
 
@@ -41,10 +40,20 @@ const CompanySettings = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (values: Partial<UserProfile>) => {
-      console.log("Updating profile with values:", values);
+      console.log("Updating profile with values:", JSON.stringify(values, null, 2));
+      
+      // Remove any non-existent columns to prevent errors
+      const safeValues = { ...values };
+      if ('profile_banner' in safeValues) {
+        console.log("Removing profile_banner as it doesn't exist in the database");
+        delete safeValues.profile_banner;
+      }
+      
+      console.log("Sending to database:", JSON.stringify(safeValues, null, 2));
+      
       const { data, error } = await supabase
         .from("profiles")
-        .update(values)
+        .update(safeValues)
         .eq("id", user?.id);
 
       if (error) {
@@ -82,12 +91,19 @@ const CompanySettings = () => {
     return <div className="container py-10">Loading profile data...</div>;
   }
 
+  const refreshData = () => {
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+  };
+
   return (
     <div className="container py-8">
       <ProfileEditorTabs activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === "branding" && (
-        <BrandingInfoTab profile={profile} onUpdate={handleProfileUpdate} />
+        <DirectBrandingTab 
+          profile={profile} 
+          onComplete={refreshData} 
+        />
       )}
 
       {activeTab === "contact" && (

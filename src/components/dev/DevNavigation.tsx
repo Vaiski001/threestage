@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, Code, X } from "lucide-react";
+import { ChevronUp, Code, X, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function DevNavigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,10 +24,19 @@ export function DevNavigation() {
     { path: "/login", label: "Login" },
     { path: "/signup", label: "Signup" },
     { path: "/demo", label: "Demo Dashboard" },
+    { path: "/test", label: "Test Page" },
     { path: "/companies", label: "Company Search" },
     { path: "/companies/:id", label: "Company Profile", disabled: true },
     { path: "/forms/:formId", label: "Form Embedded", disabled: true },
     { path: "/unauthorized", label: "Unauthorized" },
+    
+    // Demo routes for the sandbox preview experience
+    { 
+      type: "header", 
+      label: "Demo Portal", 
+      description: "Sandbox preview for potential customers" 
+    },
+    { path: "/demo", label: "Full Demo Dashboard" },
     
     // Customer routes (grouped)
     { type: "header", label: "Customer Portal" },
@@ -50,6 +59,7 @@ export function DevNavigation() {
     { type: "header", label: "Company Portal" },
     { path: "/company/dashboard", label: "Company Dashboard" },
     { path: "/company/settings", label: "Company Settings" },
+    { path: "/company/details", label: "Company Details" },
     { path: "/company/forms", label: "Form Builder" },
     { path: "/company/enquiries", label: "Company Enquiries" },
     
@@ -57,15 +67,21 @@ export function DevNavigation() {
     { type: "subheader", label: "Company Messaging" },
     { path: "/company/messaging/email", label: "Company Email" },
     { path: "/company/messaging/chat", label: "Company Chat" },
-    { path: "/company/messaging/sms", label: "Company SMS" },
+    { path: "/company/messaging/inbox", label: "Company Inbox" },
     
     // More company routes
+    { path: "/company/billing", label: "Company Billing" },
+    { path: "/company/notifications", label: "Company Notifications" },
+    { path: "/company/support", label: "Company Support" },
     { path: "/company/invoices", label: "Company Invoices" },
     { path: "/company/payments", label: "Company Payments" },
     { path: "/company/reports", label: "Company Reports" },
     { path: "/company/team", label: "Team Management" },
     { path: "/company/customers", label: "Company Customers" },
-    { path: "/company/support", label: "Company Support" },
+    
+    // Additional company menus that might be missing
+    { path: "/company/messaging", label: "Company Messaging" },
+    { path: "/company/analytics", label: "Company Analytics" },
   ];
 
   const handleNavigate = (path: string) => {
@@ -107,8 +123,20 @@ export function DevNavigation() {
           // Render header
           if (route.type === "header") {
             return (
-              <div key={`header-${index}`} className="pt-2 pb-1 first:pt-0">
+              <div key={`header-${index}`} className="pt-2 pb-1 first:pt-0 flex items-center">
                 <p className="text-xs font-bold text-primary px-2">{route.label}</p>
+                {route.description && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info size={12} className="text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">{route.description}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             );
           }

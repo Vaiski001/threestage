@@ -1,20 +1,26 @@
-
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Container } from "@/components/ui/Container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { FormManagement } from "@/components/forms/FormManagement";
 import { FormBuilder as FormBuilderComponent } from "@/components/forms/FormBuilder";
 import { FormIntegration } from "@/components/forms/FormIntegration";
-import { Bell, Search, AlertTriangle, Database } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { 
+  AlertTriangle, 
+  Database, 
+  Bell, 
+  Search,
+  Eye,
+  Save
+} from "lucide-react";
 import { FormTemplate } from "@/lib/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { createForm, ensureFormsTableExists } from "@/lib/supabase/forms";
 import { isSupabaseAvailable } from "@/lib/supabase/client";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 
 const FormBuilder = () => {
@@ -27,6 +33,7 @@ const FormBuilder = () => {
   const [isDatabaseReady, setIsDatabaseReady] = useState<boolean | null>(null);
   const [setupAttempted, setSetupAttempted] = useState(false);
   const navigate = useNavigate();
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Check if in preview mode to bypass auth
   const isPreviewMode = window.location.hostname.includes('preview') || 
@@ -129,8 +136,8 @@ const FormBuilder = () => {
 
   // Empty form template for creating a new form
   const getEmptyForm = (): FormTemplate => {
-    const userId = user?.id || profile?.id || "preview-user-id";
-    console.log("Creating empty form with user ID:", userId);
+    const formUserId = user?.id || profile?.id || "preview-user-id";
+    console.log("Creating empty form with user ID:", formUserId);
     
     return {
       id: `temp-${Date.now()}`,
@@ -143,15 +150,15 @@ const FormBuilder = () => {
         primaryColor: "#0070f3",
         fontFamily: "Inter",
       },
-      company_id: userId,
+      company_id: formUserId,
       is_public: false
     };
   };
 
   // Event handler to create a new form
   const handleCreateForm = () => {
-    const userId = user?.id || profile?.id || (bypassAuth ? "preview-user-id" : undefined);
-    if (!userId) {
+    const creatorId = user?.id || profile?.id || (bypassAuth ? "preview-user-id" : undefined);
+    if (!creatorId) {
       console.error("Cannot create form: No user ID available");
       toast({
         title: "Error",
@@ -171,7 +178,7 @@ const FormBuilder = () => {
     }
     
     const newForm = getEmptyForm();
-    console.log("Creating new form template with user ID:", userId);
+    console.log("Creating new form template with user ID:", creatorId);
     setSelectedForm(newForm);
     setActiveTab("create");
   };
@@ -180,15 +187,15 @@ const FormBuilder = () => {
   const handleSaveForm = async (form: FormTemplate) => {
     try {
       setIsLoading(true);
-      const userId = user?.id || profile?.id || (bypassAuth ? "preview-user-id" : undefined);
+      const saveUserId = user?.id || profile?.id || (bypassAuth ? "preview-user-id" : undefined);
       
       console.log("Save form initiated with user details:");
-      console.log("User ID from state:", userId);
+      console.log("User ID from state:", saveUserId);
       console.log("User from context:", user);
       console.log("Profile from context:", profile);
       console.log("Bypassing auth:", bypassAuth);
       
-      if (!userId) {
+      if (!saveUserId) {
         console.error("No user ID available");
         toast({
           title: "Error",
@@ -238,13 +245,13 @@ const FormBuilder = () => {
         }
       }
       
-      console.log("Saving form. User ID:", userId);
+      console.log("Saving form. User ID:", saveUserId);
       console.log("Original form to save:", form);
       
       // Create a new object with the correct company_id
       const formToSave: FormTemplate = {
         ...form,
-        company_id: userId,
+        company_id: saveUserId,
         // Ensure other required fields are present
         branding: form.branding || {
           primaryColor: "#0070f3",
@@ -309,140 +316,138 @@ const FormBuilder = () => {
 
   return (
     <AppLayout>
-      <header className="h-16 border-b border-border flex items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-4">
-          <SidebarTrigger />
-          <div className="relative hidden sm:block">
-            <Search className="h-4 w-4 absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search forms..."
-              className="w-64 pl-10 pr-4 py-2 text-sm rounded-md bg-secondary/50 focus:bg-secondary border-0 focus:ring-1 focus:ring-primary/30 focus:outline-none"
-            />
+      <div className="flex-1 overflow-y-auto">
+        <header className="h-16 border-b border-border flex items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold">Form Builder</h1>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive"></span>
-          </Button>
-        </div>
-      </header>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
+            <Button size="sm">
+              <Save className="h-4 w-4 mr-2" />
+              Save Form
+            </Button>
+          </div>
+        </header>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="pt-8 pb-4 px-4 sm:px-6">
-          <Container>
-            {!bypassAuth && !user && !profile && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Authentication Required</AlertTitle>
-                <AlertDescription>
-                  You need to be logged in to create and manage forms.
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {bypassAuth && (
-              <Alert className="mb-6">
-                <AlertTitle>Preview Mode</AlertTitle>
-                <AlertDescription>
-                  You are viewing the Form Builder in preview mode. Saving forms will be simulated but not actually saved to the database.
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {!supabaseStatus && !bypassAuth && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Database Connection Issue</AlertTitle>
-                <AlertDescription>
-                  There's a problem connecting to the database. Form saving will not work until this is resolved.
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {isDatabaseReady === false && !bypassAuth && (
-              <Alert variant="destructive" className="mb-6">
-                <Database className="h-4 w-4" />
-                <AlertTitle>Database Setup Required</AlertTitle>
-                <AlertDescription className="flex flex-col gap-2">
-                  <p>The required database tables for forms don't exist yet. This happens when you're using forms for the first time.</p>
-                  <Button 
-                    onClick={attemptDatabaseSetup} 
-                    className="w-fit" 
-                    disabled={isLoading || setupAttempted}
-                  >
-                    {isLoading ? "Setting up..." : setupAttempted ? "Setup Attempted" : "Setup Database Tables"}
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
-          
-            <div className="mb-6">
-              <h1 className="text-2xl font-semibold mb-1">Form Builder</h1>
-              <p className="text-muted-foreground">Create and manage custom forms for your business</p>
-            </div>
-            
-            <Tabs defaultValue="manage" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-6">
-                <TabsTrigger value="manage">Manage Forms</TabsTrigger>
-                <TabsTrigger value="create">Create Form</TabsTrigger>
-                <TabsTrigger value="integrate">Integration</TabsTrigger>
-              </TabsList>
+        <main className="flex-1 overflow-y-auto">
+          <div className="pt-8 pb-4 px-4 sm:px-6">
+            <Container>
+              {!bypassAuth && !user && !profile && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Authentication Required</AlertTitle>
+                  <AlertDescription>
+                    You need to be logged in to create and manage forms.
+                  </AlertDescription>
+                </Alert>
+              )}
               
-              <TabsContent value="manage">
-                <FormManagement 
-                  onCreateNew={handleCreateForm} 
-                  userId={bypassAuth ? "preview-user-id" : undefined}
-                />
-              </TabsContent>
+              {bypassAuth && (
+                <Alert className="mb-6">
+                  <AlertTitle>Preview Mode</AlertTitle>
+                  <AlertDescription>
+                    You are viewing the Form Builder in preview mode. Saving forms will be simulated but not actually saved to the database.
+                  </AlertDescription>
+                </Alert>
+              )}
               
-              <TabsContent value="create">
-                {selectedForm ? (
-                  <FormBuilderComponent 
-                    form={selectedForm} 
-                    onSave={handleSaveForm} 
-                    onCancel={handleCancelForm}
-                    isProcessing={isLoading}
-                  />
-                ) : (
-                  <div className="text-center py-12">
-                    <p>Please create a new form from the Manage Forms tab</p>
+              {!supabaseStatus && !bypassAuth && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Database Connection Issue</AlertTitle>
+                  <AlertDescription>
+                    There's a problem connecting to the database. Form saving will not work until this is resolved.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {isDatabaseReady === false && !bypassAuth && (
+                <Alert variant="destructive" className="mb-6">
+                  <Database className="h-4 w-4" />
+                  <AlertTitle>Database Setup Required</AlertTitle>
+                  <AlertDescription className="flex flex-col gap-2">
+                    <p>The required database tables for forms don't exist yet. This happens when you're using forms for the first time.</p>
                     <Button 
-                      className="mt-4" 
-                      onClick={() => setActiveTab("manage")}
+                      onClick={attemptDatabaseSetup} 
+                      className="w-fit" 
+                      disabled={isLoading || setupAttempted}
                     >
-                      Go to Manage Forms
+                      {isLoading ? "Setting up..." : setupAttempted ? "Setup Attempted" : "Setup Database Tables"}
                     </Button>
-                  </div>
-                )}
-              </TabsContent>
+                  </AlertDescription>
+                </Alert>
+              )}
+            
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold mb-1">Form Builder</h2>
+                <p className="text-muted-foreground">Create and manage custom forms for your business</p>
+              </div>
               
-              <TabsContent value="integrate">
-                {selectedForm ? (
-                  <FormIntegration 
-                    form={selectedForm} 
-                    onClose={() => {
-                      setSelectedForm(null);
-                      setActiveTab("manage");
-                    }} 
+              <Tabs defaultValue="manage" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-6">
+                  <TabsTrigger value="manage">Manage Forms</TabsTrigger>
+                  <TabsTrigger value="create">Create Form</TabsTrigger>
+                  <TabsTrigger value="integrate">Integration</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="manage">
+                  <FormManagement 
+                    onCreateNew={handleCreateForm} 
+                    userId={user?.id || profile?.id || (bypassAuth ? "preview-user-id" : undefined)}
                   />
-                ) : (
-                  <div className="text-center py-12">
-                    <p>Please select a form from the Manage Forms tab to see integration options</p>
-                    <Button 
-                      className="mt-4" 
-                      onClick={() => setActiveTab("manage")}
-                    >
-                      Go to Manage Forms
-                    </Button>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </Container>
-        </div>
-      </main>
+                </TabsContent>
+                
+                <TabsContent value="create">
+                  {selectedForm ? (
+                    <FormBuilderComponent 
+                      form={selectedForm} 
+                      onSave={handleSaveForm} 
+                      onCancel={handleCancelForm}
+                      isProcessing={isLoading}
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <p>Please create a new form from the Manage Forms tab</p>
+                      <Button 
+                        className="mt-4" 
+                        onClick={() => setActiveTab("manage")}
+                      >
+                        Go to Manage Forms
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="integrate">
+                  {selectedForm ? (
+                    <FormIntegration 
+                      form={selectedForm} 
+                      onClose={() => {
+                        setSelectedForm(null);
+                        setActiveTab("manage");
+                      }} 
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <p>Please select a form from the Manage Forms tab to see integration options</p>
+                      <Button 
+                        className="mt-4" 
+                        onClick={() => setActiveTab("manage")}
+                      >
+                        Go to Manage Forms
+                      </Button>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </Container>
+          </div>
+        </main>
+      </div>
     </AppLayout>
   );
 };

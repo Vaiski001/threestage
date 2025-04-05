@@ -1,35 +1,38 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
+import { User } from '@supabase/supabase-js';
+import { supabase, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { validateRole } from "@/lib/supabase/roleUtils";
+import { UserProfile, UserRole } from "@/lib/supabase/types";
+import { ProfileWithRole } from "@/types/profile";
 
 interface AuthContextType {
   user: User | null;
-  profile: UserProfile | null;
+  profile: ProfileWithRole | null;
   loading: boolean;
   isAuthenticated: boolean;
   resetAuth: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  setUserRole: (role: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  profile: null,
-  loading: false,
-  isAuthenticated: false,
-  resetAuth: async () => {},
-  refreshProfile: async () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<ProfileWithRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -68,17 +71,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (mounted) {
             setLoading(false);
             setSessionChecked(true);
+            setHasActiveSession(false);
           }
           return;
         }
         
         if (data.session?.user) {
           console.log("Found existing session for user:", data.session.user.id);
+          setHasActiveSession(true);
           if (mounted) {
             setUser(data.session.user);
           }
         } else {
           console.log("No active session found");
+          setHasActiveSession(false);
         }
         
         if (mounted) {
@@ -90,6 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (mounted) {
           setLoading(false);
           setSessionChecked(true);
+          setHasActiveSession(false);
         }
       }
     };
@@ -100,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === 'SIGNED_IN' && session) {
         console.log("Sign in detected, setting user");
         setUser(session.user);
+        setHasActiveSession(true);
         
         if (session.user.user_metadata?.role) {
           localStorage.setItem('supabase.auth.user_role', session.user.user_metadata.role);
@@ -115,15 +123,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("Sign out detected, clearing user and profile");
         setUser(null);
         setProfile(null);
+        setHasActiveSession(false);
         localStorage.removeItem('supabase.auth.user_role');
       } 
       else if (event === 'TOKEN_REFRESHED' && session) {
         console.log("Token refreshed, updating user");
         setUser(session.user);
+        setHasActiveSession(true);
       }
       else if (event === 'USER_UPDATED' && session) {
         console.log("User updated, refreshing data");
         setUser(session.user);
+        setHasActiveSession(true);
         if (profile) {
           fetchProfileData(session.user.id);
         }
@@ -137,6 +148,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       authListener.subscription.unsubscribe();
     };
   }, [toast]);
+
+  const setUserRole = (role: string) => {
+    if (!role) return;
+    
+    const validatedRole = role === 'company' ? 'company' : 'customer';
+    
+    localStorage.setItem('supabase.auth.user_role', validatedRole);
+    
+    if (profile) {
+      setProfile({
+        ...profile,
+        role: validatedRole
+      });
+    }
+    
+    console.log(`User role set to: ${validatedRole}`);
+  };
 
   const fetchProfileData = async (userId: string) => {
     try {
@@ -178,10 +206,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return null;
       }
       
-      const profileData: UserProfile = {
+      const profileData: ProfileWithRole = {
         id: data.id as string,
         email: data.email as string,
-        role: data.role as UserProfile["role"],
+        role: data.role as ProfileWithRole["role"],
         name: data.name as string,
         created_at: data.created_at as string,
       };
@@ -244,9 +272,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user, 
       profile, 
       loading: (loading || profileLoading) && !sessionChecked,
-      isAuthenticated: !!user,
+      isAuthenticated: !!user || hasActiveSession,
       resetAuth,
-      refreshProfile
+      refreshProfile,
+      setUserRole
     }}>
       {children}
     </AuthContext.Provider>

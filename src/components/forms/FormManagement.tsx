@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { List, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -89,6 +88,8 @@ export function FormManagement({ onCreateNew, userId }: FormManagementProps) {
       return;
     }
     
+    const companyId = userId || user?.id;
+    
     const newForm: Partial<FormTemplate> = {
       name: "New Form",
       description: "Form description",
@@ -98,7 +99,7 @@ export function FormManagement({ onCreateNew, userId }: FormManagementProps) {
         fontFamily: "Inter",
       },
       is_public: false,
-      company_id: userId || user?.id,
+      company_id: companyId,
     };
     
     setSelectedForm(newForm as FormTemplate);

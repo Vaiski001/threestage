@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { FormLabel } from "@/components/ui/form-label";
 import { Input } from "@/components/ui/input";
@@ -128,50 +127,51 @@ export function ContactTab({ profile, onUpdate }: ContactTabProps) {
             )}
           </div>
 
-          <div>
-            <h3 className="text-lg font-medium mb-3">Social Media Links</h3>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Social Media</h3>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-100 p-2 rounded">
-                  <Facebook className="h-5 w-5 text-blue-600" />
-                </div>
+              <div>
+                <FormLabel htmlFor="facebook" className="flex items-center">
+                  <Facebook className="h-4 w-4 mr-2" /> Facebook
+                </FormLabel>
                 <Input
-                  placeholder="Facebook URL"
+                  id="facebook"
+                  placeholder="https://facebook.com/yourcompany"
                   {...form.register("facebook")}
-                  className="flex-1"
                 />
               </div>
               
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-100 p-2 rounded">
-                  <Twitter className="h-5 w-5 text-blue-400" />
-                </div>
+              <div>
+                <FormLabel htmlFor="twitter" className="flex items-center">
+                  <Twitter className="h-4 w-4 mr-2" /> Twitter
+                </FormLabel>
                 <Input
-                  placeholder="Twitter URL"
+                  id="twitter"
+                  placeholder="https://twitter.com/yourcompany"
                   {...form.register("twitter")}
-                  className="flex-1"
                 />
               </div>
               
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-100 p-2 rounded">
-                  <Linkedin className="h-5 w-5 text-blue-700" />
-                </div>
+              <div>
+                <FormLabel htmlFor="linkedin" className="flex items-center">
+                  <Linkedin className="h-4 w-4 mr-2" /> LinkedIn
+                </FormLabel>
                 <Input
-                  placeholder="LinkedIn URL"
+                  id="linkedin"
+                  placeholder="https://linkedin.com/company/yourcompany"
                   {...form.register("linkedin")}
-                  className="flex-1"
                 />
               </div>
               
-              <div className="flex items-center space-x-2">
-                <div className="bg-pink-100 p-2 rounded">
-                  <Instagram className="h-5 w-5 text-pink-600" />
-                </div>
+              <div>
+                <FormLabel htmlFor="instagram" className="flex items-center">
+                  <Instagram className="h-4 w-4 mr-2" /> Instagram
+                </FormLabel>
                 <Input
-                  placeholder="Instagram URL"
+                  id="instagram"
+                  placeholder="https://instagram.com/yourcompany"
                   {...form.register("instagram")}
-                  className="flex-1"
                 />
               </div>
             </div>

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { FormLabel } from "@/components/ui/form-label";
 import { Input } from "@/components/ui/input";
@@ -24,8 +23,8 @@ const formSchema = z.object({
 });
 
 export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
-  const [logoUrl, setLogoUrl] = useState<string | undefined>(profile?.profile_logo);
-  const [bannerUrl, setBannerUrl] = useState<string | undefined>(profile?.profile_banner);
+  const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
+  const [bannerUrl, setBannerUrl] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -44,8 +43,25 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
         industry: profile.industry || "",
         profile_description: profile.profile_description || "",
       });
-      setLogoUrl(profile.profile_logo);
-      setBannerUrl(profile.profile_banner);
+      
+      // Try to get logo and banner from profile_branding JSON
+      try {
+        if (profile.profile_branding) {
+          const branding = typeof profile.profile_branding === 'string' 
+            ? JSON.parse(profile.profile_branding) 
+            : profile.profile_branding;
+            
+          if (branding.logo) {
+            setLogoUrl(branding.logo);
+          }
+          
+          if (branding.banner) {
+            setBannerUrl(branding.banner);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing profile branding:", error);
+      }
     }
   }, [profile, form]);
 
@@ -53,13 +69,16 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
-    // Combine form values with logo and banner URLs
+    // Store both logo and banner in the profile_branding JSON field
     const updatedValues = {
       ...values,
-      profile_logo: logoUrl,
-      profile_banner: bannerUrl,
+      profile_branding: JSON.stringify({
+        logo: logoUrl,
+        banner: bannerUrl
+      }),
     };
     
+    console.log("Saving profile with values:", updatedValues);
     onUpdate(updatedValues);
     setIsSubmitting(false);
   };
@@ -178,7 +197,7 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
           </div>
 
           <div>
-            <FormLabel htmlFor="industry">Industry</FormLabel>
+            <FormLabel htmlFor="field-industry">Industry</FormLabel>
             <SelectField
               form={form}
               name="industry"

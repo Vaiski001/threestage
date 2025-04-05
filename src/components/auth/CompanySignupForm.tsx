@@ -109,7 +109,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
       }
       
       // FIXED: Explicitly set redirectTo with company role parameter
-      const redirectUrl = `${window.location.origin}/auth/callback?role=company&account_type=company`;
+      const redirectUrl = `${window.location.origin}/auth/callback?role=company&account_type=company&needs_profile_setup=true`;
       console.log("Setting redirect URL for company email verification:", redirectUrl);
       
       // IMPORTANT: Explicitly setting role to 'company' in user metadata
@@ -124,6 +124,7 @@ export function CompanySignupForm({ onSuccess, onError }: CompanySignupFormProps
             industry: values.industry,
             website: values.website || null,
             phone: values.phone || null,
+            needs_profile_setup: true, // Flag to indicate settings completion needed
           },
           // Use specific company redirect path
           emailRedirectTo: redirectUrl

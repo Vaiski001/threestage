@@ -104,49 +104,29 @@ export const signUpWithEmail = async (
   }
 };
 
+/**
+ * Signs in a user with email and password
+ */
 export const signInWithEmail = async (email: string, password: string) => {
   try {
-    console.log("Signing in with email:", email);
-    
-    // Add additional logging for debugging
-    console.log("Auth state before sign in:", 
-      await supabase.auth.getSession().then(res => 
-        `Has session: ${!!res.data.session}, Error: ${res.error ? res.error.message : 'none'}`
-      )
-    );
-    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
     if (error) {
-      console.error('Error signing in with email:', error);
-      return { error };
+      throw error;
     }
     
-    // Additional verification that we got valid data
-    if (!data?.user) {
-      console.error('No user returned from auth.signInWithPassword');
-      return { 
-        error: { message: "Authentication failed - no user returned" } 
-      };
+    // After successful login, ensure user has a profile
+    if (data.user) {
+      await ensureUserProfile();
     }
     
-    console.log("Sign in successful:", data.user.id);
-    
-    // Verify the session was created properly
-    const sessionCheck = await supabase.auth.getSession();
-    console.log("Session after login:", 
-      `Has session: ${!!sessionCheck.data.session}, ` +
-      `User ID: ${sessionCheck.data.session?.user?.id || 'none'}, ` +
-      `Error: ${sessionCheck.error ? sessionCheck.error.message : 'none'}`
-    );
-    
-    return { data };
-  } catch (error: any) {
-    console.error('Exception during sign in:', error);
-    throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error("Error signing in with email:", error);
+    return { data: null, error };
   }
 };
 
@@ -190,8 +170,29 @@ export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedi
   }
 };
 
-export const signInWithGoogle = async (role: UserRole = 'customer') => {
-  return signInWithOAuth('google', role);
+/**
+ * Signs in a user with Google OAuth
+ */
+export const signInWithGoogle = async () => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      }
+    });
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Google auth will redirect to callback URL
+    // The callback handler should call ensureUserProfile
+    return { data, error: null };
+  } catch (error) {
+    console.error("Error signing in with Google:", error);
+    return { data: null, error };
+  }
 };
 
 export const processAccessToken = async (accessToken: string, refreshToken: string | null) => {
@@ -479,5 +480,124 @@ export const hasCompleteProfile = async (user: User, role: UserRole): Promise<bo
   } catch (error) {
     console.error('Error checking profile completeness:', error);
     return false;
+  }
+};
+
+/**
+ * Ensures the user has a profile in the database
+ * This should be called after successful authentication
+ */
+export const ensureUserProfile = async (): Promise<UserProfile | null> => {
+  try {
+    // Get current session
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    const userEmail = sessionData.session?.user?.email;
+    
+    if (!userId || !userEmail) {
+      console.error("No authenticated user found");
+      return null;
+    }
+    
+    console.log("Checking profile for user:", userId);
+    
+    // Check if profile exists
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error("Error fetching profile:", fetchError);
+      throw fetchError;
+    }
+    
+    // If profile exists, return it
+    if (existingProfile) {
+      console.log("Existing profile found:", existingProfile);
+      return existingProfile as UserProfile;
+    }
+    
+    console.log("No profile found, creating new profile for:", userEmail);
+    
+    // Create profile if it doesn't exist
+    const defaultRole = userEmail?.includes('company') ? 'company' : 'customer';
+    
+    const { data: newProfile, error: createError } = await supabase
+      .from('profiles')
+      .insert([{
+        id: userId,
+        email: userEmail,
+        role: defaultRole,
+        created_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+    
+    if (createError) {
+      console.error("Error creating profile:", createError);
+      throw createError;
+    }
+    
+    console.log("New profile created:", newProfile);
+    return newProfile as UserProfile;
+    
+  } catch (error) {
+    console.error("Profile creation error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Handles the authentication redirect and ensures a profile exists
+ * Call this function after a user signs in
+ */
+export const handleAuthRedirect = async (redirectTo?: string): Promise<UserProfile | null> => {
+  try {
+    // Ensure profile exists
+    const profile = await ensureUserProfile();
+    
+    // Redirect to appropriate page based on user role
+    if (profile) {
+      const destination = redirectTo || (profile.role === 'company' ? '/company/dashboard' : '/dashboard');
+      console.log("Redirecting authenticated user to:", destination);
+      window.location.href = destination;
+    }
+    
+    return profile;
+  } catch (error) {
+    console.error("Auth redirect error:", error);
+    return null;
+  }
+};
+
+/**
+ * Get the current user's profile
+ */
+export const getCurrentProfile = async (): Promise<UserProfile | null> => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user?.id;
+    
+    if (!userId) {
+      return null;
+    }
+    
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error("Error fetching current profile:", error);
+      return null;
+    }
+    
+    return profile as UserProfile;
+  } catch (error) {
+    console.error("Get current profile error:", error);
+    return null;
   }
 };

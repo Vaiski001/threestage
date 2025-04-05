@@ -1,4 +1,4 @@
-
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CustomerDashboardHeader } from "@/components/customer/dashboard/CustomerDashboardHeader";
@@ -12,6 +12,7 @@ import { Container } from "@/components/ui/Container";
 
 const CustomerDashboard = () => {
   const { profile } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Empty data states for a new account
   const stats = {
@@ -20,8 +21,18 @@ const CustomerDashboard = () => {
     completed: 0
   };
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // In a real application, this would trigger API calls to search across enquiries
+    console.log("Searching for:", query);
+  };
+
   return (
-    <AppLayout>
+    <AppLayout 
+      pageTitle="Dashboard" 
+      searchPlaceholder="Search enquiries, forms..." 
+      onSearch={handleSearch}
+    >
       <div className="flex-1 overflow-y-auto pb-12">
         <Container size="full" className="py-6 space-y-6">
           {/* Welcome Banner */}
@@ -37,7 +48,7 @@ const CustomerDashboard = () => {
             {/* Left column (2/3 width) */}
             <div className="lg:col-span-2 space-y-6">
               {/* Enquiry Board - Empty for new accounts */}
-              <EnquiryBoard emptyState={true} />
+              <EnquiryBoard emptyState={true} searchQuery={searchQuery} />
 
               {/* Activity & Notifications */}
               <ActivityNotifications emptyState={true} />

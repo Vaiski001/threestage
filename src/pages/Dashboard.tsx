@@ -1,22 +1,41 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
 import { determineUserRole } from "@/lib/supabase/roleUtils";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  const { profile, loading, isAuthenticated } = useAuth();
+  const { profile, loading, isAuthenticated, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [redirecting, setRedirecting] = useState(false);
+  const [redirectAttempts, setRedirectAttempts] = useState(0);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Only process redirect after loading is complete
-    if (loading) return;
+    if (loading) {
+      console.log("Auth is still loading, waiting...");
+      return;
+    }
     
     const handleRedirect = async () => {
       try {
         setRedirecting(true);
+        setRedirectAttempts(prev => prev + 1);
+        
+        console.log("Dashboard redirect attempt:", redirectAttempts + 1);
+        console.log("Profile state:", profile ? "Available" : "Not available");
+        console.log("Authentication state:", isAuthenticated ? "Authenticated" : "Not authenticated");
+        
+        // If authenticated but no profile, attempt to fetch profile
+        if (isAuthenticated && !profile && redirectAttempts < 2) {
+          console.log("Authenticated but profile not loaded yet. Attempting to refresh profile...");
+          await refreshProfile();
+          // Don't continue - let the next effect cycle handle the redirect
+          return;
+        }
         
         // Redirect based on user role
         if (profile) {
@@ -60,24 +79,94 @@ const Dashboard = () => {
           } else if (storedRole === 'customer') {
             navigate('/customer/dashboard', { replace: true });
           } else {
-            // If still no role information, wait briefly then try customer dashboard
-            setTimeout(() => {
-              if (!profile) {
-                console.log("No profile or role info available, defaulting to customer dashboard");
-                navigate('/customer/dashboard', { replace: true });
+            // Try to get role from user metadata as a last resort
+            try {
+              const { data } = await supabase.auth.getUser();
+              if (data.user?.user_metadata?.role) {
+                console.log("Found role in user metadata:", data.user.user_metadata.role);
+                
+                // Ensure role is saved to localStorage for future use
+                localStorage.setItem('supabase.auth.user_role', data.user.user_metadata.role);
+                
+                if (data.user.user_metadata.role === 'company') {
+                  navigate('/company/dashboard', { replace: true });
+                  return;
+                } else if (data.user.user_metadata.role === 'customer') {
+                  navigate('/customer/dashboard', { replace: true });
+                  return;
+                }
+              } else {
+                console.log("No role in user metadata, checking session directly");
+                const { data: sessionData } = await supabase.auth.getSession();
+                
+                if (sessionData.session?.user.id) {
+                  // If we have a session but no profile, try to create one
+                  console.log("Found session but no profile, creating default profile");
+                  const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', sessionData.session.user.id)
+                    .single();
+                  
+                  if (profileError && profileError.code === 'PGRST116') {
+                    // Profile doesn't exist, create one with default role
+                    const defaultRole = 'customer';
+                    console.log("Creating new profile with default role:", defaultRole);
+                    
+                    const { error: insertError } = await supabase
+                      .from('profiles')
+                      .insert({
+                        id: sessionData.session.user.id,
+                        email: sessionData.session.user.email,
+                        role: defaultRole,
+                        created_at: new Date().toISOString()
+                      });
+                    
+                    if (insertError) {
+                      console.error("Error creating profile:", insertError);
+                      toast({
+                        title: "Profile Creation Failed",
+                        description: "Could not set up your user profile. Please try logging in again.",
+                        variant: "destructive"
+                      });
+                    } else {
+                      console.log("Profile created successfully with role:", defaultRole);
+                      localStorage.setItem('supabase.auth.user_role', defaultRole);
+                      
+                      // Redirect to the appropriate dashboard
+                      navigate(`/${defaultRole}/dashboard`, { replace: true });
+                      return;
+                    }
+                  }
+                }
               }
-            }, 1500);
+            } catch (error) {
+              console.error("Error getting user metadata:", error);
+            }
+            
+            // If still no role information, default to customer dashboard
+            console.log("No profile or role info available, defaulting to customer dashboard");
+            toast({
+              title: "Default Account Type",
+              description: "Redirecting you to the customer dashboard as default."
+            });
+            navigate('/customer/dashboard', { replace: true });
           }
         }
       } catch (error) {
         console.error("Error during dashboard redirect:", error);
+        toast({
+          title: "Navigation Error",
+          description: "Something went wrong while preparing your dashboard. Redirecting to login.",
+          variant: "destructive"
+        });
         // Fallback to login in case of errors
         navigate('/login', { replace: true });
       }
     };
     
     handleRedirect();
-  }, [profile, loading, isAuthenticated, navigate]);
+  }, [profile, loading, isAuthenticated, navigate, redirectAttempts, refreshProfile, toast]);
 
   // Show enhanced loading state while redirecting
   return (
@@ -92,6 +181,19 @@ const Dashboard = () => {
             ? "Redirecting you to the right place." 
             : "Checking your account information..."}
         </p>
+        {redirectAttempts > 2 && (
+          <div className="mt-4">
+            <p className="text-muted-foreground text-sm">
+              Taking longer than expected. Please be patient...
+            </p>
+            <button 
+              className="text-primary text-sm mt-2 underline"
+              onClick={() => navigate('/login', { replace: true })}
+            >
+              Return to login
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

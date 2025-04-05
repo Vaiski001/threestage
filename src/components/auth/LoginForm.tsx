@@ -10,6 +10,7 @@ import { z } from "zod";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { isSupabaseAvailable, getServiceStatus } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -39,6 +40,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const [loginTimeout, setLoginTimeout] = useState<NodeJS.Timeout | null>(null);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [captchaDetected, setCaptchaDetected] = useState(false);
+  const { setUserRole } = useAuth();
 
   const checkSupabaseAvailability = useCallback(async () => {
     let isMounted = true;
@@ -217,8 +219,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         console.log("Login successful for user:", data.user.id);
         
         if (data.user.user_metadata?.role) {
-          localStorage.setItem('supabase.auth.user_role', data.user.user_metadata.role);
-          console.log("Stored user role in localStorage:", data.user.user_metadata.role);
+          setUserRole(data.user.user_metadata.role);
+          console.log("Set user role:", data.user.user_metadata.role);
         }
         
         toast({
