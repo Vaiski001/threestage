@@ -43,11 +43,19 @@ export const UserProfileSection = ({ profile, isCompany }: UserProfileSectionPro
     return name.substring(0, 2).toUpperCase();
   };
   
+  // Get avatar URL as string or empty string as fallback
+  const avatarUrl = (profile?.avatar_url as string) || "";
+  
   return (
-    <div className="flex justify-center items-center p-4 mt-auto border-t border-gray-700">
-      <Avatar className="h-10 w-10 border border-indigo-300 cursor-pointer" onClick={() => navigate(`/${isCompany ? 'company' : 'customer'}/profile`)}>
-        <AvatarFallback className="bg-indigo-100 text-indigo-700">{getInitials()}</AvatarFallback>
-      </Avatar>
+    <div className="border-t border-sidebar-border px-3 py-4 mt-auto">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-9 w-9">
+          <AvatarImage src={avatarUrl} alt={profile?.name || "User"} />
+          <AvatarFallback className="bg-primary/10 text-primary">
+            {getInitials()}
+          </AvatarFallback>
+        </Avatar>
+      </div>
     </div>
   );
 };
