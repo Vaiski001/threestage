@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
 import { useAuth } from "@/context/AuthContext";
@@ -18,7 +17,7 @@ export function Header() {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="text-xl font-semibold mr-8">
-              LeadOrganizer
+              Threestage
             </Link>
             <MainNavigation />
           </div>
