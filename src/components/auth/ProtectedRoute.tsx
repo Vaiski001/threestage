@@ -19,7 +19,12 @@ export const ProtectedRoute = ({ children, allowPreview = false }: ProtectedRout
   const isDevelopment = import.meta.env.DEV;
   const isPreview = window.location.hostname.includes('preview') || 
                    window.location.hostname.includes('lovable.app');
-  const bypassAuth = (isDevelopment && process.env.NODE_ENV !== 'production') || 
+  
+  // Set to false for production, only allow bypassing in development
+  const FORCE_BYPASS_AUTH = false;
+  
+  const bypassAuth = FORCE_BYPASS_AUTH || 
+                    (isDevelopment && process.env.NODE_ENV !== 'production') || 
                     (allowPreview && isPreview);
 
   // Check for debug/preview mode via URL parameters

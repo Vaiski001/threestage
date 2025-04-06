@@ -67,6 +67,9 @@ const Dashboard = () => {
         } else if (!isAuthenticated) {
           // If no profile and not authenticated, redirect to login instead of demo
           console.log("Not authenticated, redirecting to login");
+          
+          // PRODUCTION MODE: Always redirect to login when not authenticated
+          // Remove any direct bypasses to ensure proper authentication flow
           navigate('/login', { replace: true });
         } else {
           // If authenticated but no profile, check localStorage for role

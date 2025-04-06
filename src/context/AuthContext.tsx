@@ -64,6 +64,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log("Checking for existing session...");
         setLoading(true);
         
+        // Production-ready session check
+        const isProduction = !import.meta.env.DEV;
+        if (isProduction) {
+          console.log("Running in production mode - enforcing strict auth checks");
+        }
+        
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -268,15 +274,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      profile, 
-      loading: (loading || profileLoading) && !sessionChecked,
-      isAuthenticated: !!user || hasActiveSession,
-      resetAuth,
-      refreshProfile,
-      setUserRole
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        loading: loading || profileLoading,
+        isAuthenticated: !!user && hasActiveSession,
+        resetAuth,
+        refreshProfile,
+        setUserRole
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

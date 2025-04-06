@@ -180,11 +180,17 @@ This project is built with .
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/6e0441b1-8713-43fc-a521-667fa8123e69) and click on Share -> Publish.
+This project is hosted on Vercel. You can access it through the custom domain set up in Vercel.
+
+You can also deploy manually by:
+1. Opening [Lovable](https://lovable.dev/projects/6e0441b1-8713-43fc-a521-667fa8123e69) and clicking on Share -> Publish.
+2. Or deploying directly to Vercel through GitHub integration.
 
 ## I want to use a custom domain - is that possible?
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+The application is currently hosted on a custom domain via Vercel. 
+
+If you want to deploy your project under a different domain, we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
 
 ## Development Preview Mode
 
