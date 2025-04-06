@@ -14,7 +14,7 @@ export function Footer() {
               <span className="text-xl font-semibold tracking-tight">Threestage</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              <span className="block text-xs">by Aviacore Technologies</span>
+              <span className="block text-xs">By Aviacore Technologies</span>
               Streamline your customer enquiries and boost your business efficiency.
             </p>
           </div>
@@ -85,7 +85,7 @@ export function Footer() {
 
         <div className="border-t border-gray-100 dark:border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground order-2 md:order-1">
-            &copy; {currentYear} Threestage by Aviacore Technologies. All rights reserved.
+            &copy; {currentYear} Threestage By Aviacore Technologies. All rights reserved.
           </p>
           
           <div className="flex gap-6 order-1 md:order-2">
