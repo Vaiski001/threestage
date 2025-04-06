@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threestage | Aviacore Technologies</title>
+    <meta name="description" content="Threestage - Enquiry Management Solution by Aviacore Technologies" />
+    <meta name="author" content="Aviacore Technologies" />
+    <meta property="og:title" content="Threestage | Aviacore Technologies" />
+    <meta property="og:description" content="Threestage - Enquiry Management Solution by Aviacore Technologies" />
+    <meta property="og:type" content="website" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            padding: 2rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 2rem;
+            padding: 2rem;
+        }
+        @media (min-width: 768px) {
+            .main-content {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+        }
+        .column h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .column ul {
+            list-style: none;
+        }
+        .column ul li {
+            margin-bottom: 0.75rem;
+        }
+        .column ul li a {
+            font-size: 0.875rem;
+            color: #6b7280;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .column ul li a:hover {
+            color: #111827;
+        }
+        .column-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .small-text {
+            font-size: 0.75rem;
+            display: block;
+        }
+        .brand-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .footer {
+            border-top: 1px solid #f3f4f6;
+            padding: 3rem 2rem;
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media (min-width: 768px) {
+            .footer-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        .footer-bottom {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #f3f4f6;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .footer-bottom {
+                flex-direction: row;
+            }
+        }
+        .copyright {
+            font-size: 0.875rem;
+            color: #6b7280;
+            order: 2;
+        }
+        @media (min-width: 768px) {
+            .copyright {
+                order: 1;
+            }
+        }
+        .links {
+            display: flex;
+            gap: 1.5rem;
+            order: 1;
+        }
+        @media (min-width: 768px) {
+            .links {
+                order: 2;
+            }
+        }
+        .links a {
+            font-size: 0.875rem;
+            color: #6b7280;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .links a:hover {
+            color: #111827;
+        }
+        .container {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="static-landing-page">
+        <div class="container">
+            <footer class="footer">
+                <div class="footer-grid">
+                    <div class="column">
+                        <div class="brand-name">Threestage</div>
+                        <p class="column-text">
+                            <span class="small-text">By Aviacore Technologies</span>
+                            Streamline your customer enquiries and boost your business efficiency.
+                        </p>
+                    </div>
+                    
+                    <div class="column">
+                        <h3>Product</h3>
+                        <ul>
+                            <li><a href="/features">Features</a></li>
+                            <li><a href="/pricing">Pricing</a></li>
+                            <li><a href="/integrations">Integrations</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="column">
+                        <h3>Resources</h3>
+                        <ul>
+                            <li><a href="/documentation">Documentation</a></li>
+                            <li><a href="/guides">Guides</a></li>
+                            <li><a href="/help">Help Center</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="column">
+                        <h3>Company</h3>
+                        <ul>
+                            <li><a href="/about">About</a></li>
+                            <li><a href="/blog">Blog</a></li>
+                            <li><a href="/contact">Contact</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <p class="copyright">
+                        &copy; 2025 Threestage By Aviacore Technologies. All rights reserved.
+                    </p>
+                    
+                    <div class="links">
+                        <a href="/terms">Terms</a>
+                        <a href="/privacy">Privacy</a>
+                        <a href="/cookies">Cookies</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // This script will redirect to the React application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Optionally add a redirect to the main app after a delay
+            // setTimeout(() => {
+            //     window.location.href = '/index.html';
+            // }, 3000);
+        });
+    </script>
+</body>
+</html> 
