@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
 
+// Updated Footer component with Threestage branding
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
