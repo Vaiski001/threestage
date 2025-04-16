@@ -1,19 +1,20 @@
-
 import { useEffect, useState } from "react";
 import { FormLabel } from "@/components/ui/form-label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { UploadIcon } from "lucide-react";
-import { UserProfile } from "@/lib/supabase/types";
+import { Profile } from "@/lib/supabase/types";
 import { SelectField } from "@/components/auth/SelectField";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { FileUpload } from "@/components/ui/file-upload";
+import { toast } from "@/components/ui/use-toast";
 
 interface BrandingInfoTabProps {
-  profile: UserProfile | null;
+  profile: Profile | null;
   onUpdate: (values: any) => void;
 }
 
@@ -64,23 +65,28 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
     setIsSubmitting(false);
   };
 
-  // Handle file uploads
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // In a real implementation, you'd upload to storage and get URL
-      const tempUrl = URL.createObjectURL(file);
-      setLogoUrl(tempUrl);
-    }
+  const handleLogoUploadSuccess = (url: string, file: File) => {
+    setLogoUrl(url);
+    toast({
+      title: "Logo uploaded",
+      description: "Your company logo has been uploaded successfully.",
+    });
   };
 
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // In a real implementation, you'd upload to storage and get URL
-      const tempUrl = URL.createObjectURL(file);
-      setBannerUrl(tempUrl);
-    }
+  const handleBannerUploadSuccess = (url: string, file: File) => {
+    setBannerUrl(url);
+    toast({
+      title: "Banner uploaded",
+      description: "Your banner image has been uploaded successfully.",
+    });
+  };
+
+  const handleUploadError = (error: any) => {
+    toast({
+      title: "Upload failed",
+      description: "There was an error uploading your file. Please try again.",
+      variant: "destructive",
+    });
   };
 
   const industries = [
@@ -105,61 +111,35 @@ export function BrandingInfoTab({ profile, onUpdate }: BrandingInfoTabProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <FormLabel htmlFor="logo-upload">Company Logo</FormLabel>
-              <div 
-                className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center h-48 bg-gray-50 cursor-pointer"
-                onClick={() => document.getElementById("logo-upload")?.click()}
-              >
-                {logoUrl ? (
-                  <img 
-                    src={logoUrl} 
-                    alt="Company logo" 
-                    className="max-h-32 max-w-full object-contain"
-                  />
-                ) : (
-                  <>
-                    <UploadIcon className="h-10 w-10 text-gray-400 mb-2" />
-                    <p className="font-medium">Upload company logo</p>
-                    <p className="text-sm text-muted-foreground">Drag and drop or click to browse</p>
-                  </>
-                )}
-                <input 
-                  type="file" 
-                  id="logo-upload" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                />
-              </div>
+              <FileUpload
+                bucket="profiles"
+                path={`logos/${profile?.id || "temp"}`}
+                onSuccess={handleLogoUploadSuccess}
+                onError={handleUploadError}
+                acceptedFileTypes="image/*"
+                maxSizeMB={2}
+                buttonText="Upload company logo"
+                dropzoneText="Drag and drop or click to browse"
+                defaultValue={logoUrl}
+                id="logo-upload"
+              />
               <p className="text-xs text-muted-foreground mt-2">Recommended size: 400x400px. Max file size: 2MB.</p>
             </div>
 
             <div>
               <FormLabel htmlFor="banner-upload">Banner Image</FormLabel>
-              <div 
-                className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center h-48 bg-gray-50 cursor-pointer"
-                onClick={() => document.getElementById("banner-upload")?.click()}
-              >
-                {bannerUrl ? (
-                  <img 
-                    src={bannerUrl} 
-                    alt="Banner image" 
-                    className="max-h-32 max-w-full object-contain"
-                  />
-                ) : (
-                  <>
-                    <UploadIcon className="h-10 w-10 text-gray-400 mb-2" />
-                    <p className="font-medium">Upload banner image</p>
-                    <p className="text-sm text-muted-foreground">Drag and drop or click to browse</p>
-                  </>
-                )}
-                <input 
-                  type="file" 
-                  id="banner-upload" 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={handleBannerUpload}
-                />
-              </div>
+              <FileUpload
+                bucket="profiles"
+                path={`banners/${profile?.id || "temp"}`}
+                onSuccess={handleBannerUploadSuccess}
+                onError={handleUploadError}
+                acceptedFileTypes="image/*"
+                maxSizeMB={5}
+                buttonText="Upload banner image"
+                dropzoneText="Drag and drop or click to browse"
+                defaultValue={bannerUrl}
+                id="banner-upload"
+              />
               <p className="text-xs text-muted-foreground mt-2">Recommended size: 1200x300px. Max file size: 5MB.</p>
             </div>
           </div>

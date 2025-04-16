@@ -1,229 +1,159 @@
-
 import { createClient } from '@supabase/supabase-js';
+import { SupabaseDatabase } from './types';
 
-// For local development, use environment variables
-// In a production environment, these values should be properly configured as environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
+// Initialize Supabase client with typed interface
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Validate if we're using placeholder credentials
-if (supabaseUrl === 'https://placeholder-project.supabase.co' || supabaseAnonKey === 'placeholder-key') {
-  console.warn(
-    'Using placeholder Supabase credentials. The app will function, but authentication features will not work.\n' +
-    'To enable authentication:\n' +
-    '1. Create a Supabase project at https://supabase.com\n' +
-    '2. Add your project URL and anon key to a .env file:\n' +
-    '   VITE_SUPABASE_URL=your-project-url\n' +
-    '   VITE_SUPABASE_ANON_KEY=your-anon-key\n' +
-    '3. Restart your development server'
-  );
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL or Anonymous Key is missing in environment variables');
 }
 
-console.log("Supabase configuration:", {
-  url: supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-});
+// Create client with types
+export const supabase = createClient<SupabaseDatabase>(supabaseUrl, supabaseAnonKey);
 
-// Use a singleton pattern to ensure only one instance is created
-let supabaseInstance: ReturnType<typeof createClient> | null = null;
-let connectionError: Error | null = null;
-let lastServiceCheck = 0;
-const serviceStatusTypes = ['available', 'degraded', 'unavailable'] as const;
-type ServiceStatusType = typeof serviceStatusTypes[number];
-let serviceStatus: ServiceStatusType = 'available';
-let consecutiveErrors = 0;
-
-// Function to get the Supabase client instance
-const getSupabaseClient = () => {
-  if (connectionError) {
-    console.warn('Using Supabase client despite previous connection error:', connectionError.message);
+// Helper function to get authenticated user
+export const getCurrentUser = async () => {
+  const { data, error } = await supabase.auth.getSession();
+  
+  if (error) {
+    console.error('Error fetching current user:', error);
+    return null;
   }
   
-  if (!supabaseInstance) {
-    console.log('Creating new Supabase client instance');
-    try {
-      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: true,
-          storageKey: 'supabase_auth_token',
-          storage: {
-            getItem: (key) => {
-              try {
-                const itemStr = localStorage.getItem(key);
-                return itemStr;
-              } catch (e) {
-                console.error('Error accessing localStorage:', e);
-                return null;
-              }
-            },
-            setItem: (key, value) => {
-              try {
-                localStorage.setItem(key, value);
-              } catch (e) {
-                console.error('Error writing to localStorage:', e);
-              }
-            },
-            removeItem: (key) => {
-              try {
-                localStorage.removeItem(key);
-              } catch (e) {
-                console.error('Error removing from localStorage:', e);
-              }
-            }
-          }
-        },
-        global: {
-          fetch: (url: RequestInfo | URL, init?: RequestInit) => {
-            return fetch(url, init)
-              .then(response => {
-                if (response.ok) {
-                  // Reset consecutive errors counter on successful requests
-                  consecutiveErrors = 0;
-                  if (serviceStatus !== 'available') {
-                    console.log('Supabase service recovered');
-                    serviceStatus = 'available';
-                  }
-                }
-                return response;
-              })
-              .catch(err => {
-                console.error('Fetch error in Supabase client:', err);
-                connectionError = err;
-                consecutiveErrors++;
-                
-                // After multiple consecutive errors, mark service as degraded or unavailable
-                if (consecutiveErrors > 2) {
-                  serviceStatus = 'degraded';
-                }
-                if (consecutiveErrors > 5) {
-                  serviceStatus = 'unavailable';
-                }
-                
-                throw err;
-              });
-          }
-        }
+  return data?.session?.user ?? null;
+};
+
+// Helper function to get user profile with role
+export const getCurrentProfile = async () => {
+  const currentUser = await getCurrentUser();
+  
+  if (!currentUser) {
+    return null;
+  }
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+    
+  if (error) {
+    console.error('Error fetching user profile:', error);
+    return null;
+  }
+  
+  return data;
+};
+
+// Helper for checking if user is authenticated
+export const isAuthenticated = async () => {
+  const user = await getCurrentUser();
+  return !!user;
+};
+
+// Helper for checking user role
+export const getUserRole = async () => {
+  const profile = await getCurrentProfile();
+  return profile?.role;
+};
+
+// Helper to sign out
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  return { error };
+};
+
+// Storage helper for file uploads
+export const getStorageUrl = (bucket: string, path: string) => {
+  return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+};
+
+// Helper to upload file to storage
+export const uploadFile = async (
+  bucket: string, 
+  path: string, 
+  file: File,
+  onProgress?: (progress: number) => void
+) => {
+  // If no progress callback is provided, use the simple Supabase upload
+  if (!onProgress) {
+    return supabase.storage
+      .from(bucket)
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: true
       });
-      
-      // Test connection by making a simple request
-      supabaseInstance.auth.getSession()
-        .then(({ data, error }) => {
-          if (error) {
-            console.error('Error getting session:', error);
-            connectionError = error;
-            serviceStatus = 'degraded';
-          } else if (data.session) {
-            console.log('Valid session found in storage:', data.session.user.id);
-            serviceStatus = 'available';
-          } else {
-            console.log('No active session found in storage');
-          }
-        })
-        .catch(err => {
-          console.error('Error connecting to Supabase:', err);
-          connectionError = err;
-          consecutiveErrors++;
-          serviceStatus = 'degraded';
-        });
-        
-    } catch (err) {
-      console.error('Error creating Supabase client:', err);
-      connectionError = err instanceof Error ? err : new Error(String(err));
-      serviceStatus = 'unavailable';
-      // Create a dummy client that will handle errors gracefully
-      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
-    }
   }
-  return supabaseInstance;
-};
-
-// Export the singleton instance
-export const supabase = getSupabaseClient();
-
-// Export service status information
-export const getServiceStatus = () => {
-  return {
-    status: serviceStatus,
-    lastCheck: lastServiceCheck,
-    consecutiveErrors
-  };
-};
-
-// Export a check function to verify if Supabase is currently available
-export const isSupabaseAvailable = async (): Promise<boolean> => {
+  
+  // For progress tracking, we need to use fetch directly
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${path}`;
+  const supabaseKey = supabaseAnonKey;
+  
+  // Create a new AbortController instance for the fetch request
+  const controller = new AbortController();
+  const { signal } = controller;
+  
   try {
-    // Only run a full check if it's been more than 20 seconds since the last check
-    const now = Date.now();
+    // Report start of upload
+    onProgress(0);
     
-    if (now - lastServiceCheck < 20000) {
-      // If we've checked recently, just return based on current status
-      return serviceStatus === 'available';
-    }
+    // Create a ReadableStream from the file
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', uploadUrl, true);
+    xhr.setRequestHeader('apikey', supabaseKey);
+    xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.setRequestHeader('x-upsert', 'true');
+    xhr.setRequestHeader('Cache-Control', '3600');
     
-    // If it's been more than 20 seconds, perform a new check
-    lastServiceCheck = now;
-    
-    // First check if there's an active session
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData.session) {
-      console.log('Active session found during availability check');
-      consecutiveErrors = 0;
-      serviceStatus = 'available';
-      return true;
-    }
-    
-    // If no session, try a lightweight query with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    
-    try {
-      const { error } = await supabase.from('profiles').select('id').limit(1);
-      clearTimeout(timeoutId);
-      
-      if (error) {
-        console.error('Error during availability check:', error);
-        consecutiveErrors++;
-        if (consecutiveErrors > 2) serviceStatus = 'degraded';
-        if (consecutiveErrors > 5) serviceStatus = 'unavailable';
-        return false;
+    // Set up progress tracking
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        onProgress(percentComplete);
       }
+    };
+    
+    // Create a promise to handle the XHR response
+    const uploadPromise = new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({ data: { path }, error: null });
+        } else {
+          reject({ 
+            error: { 
+              message: `Upload failed with status ${xhr.status}`,
+              status: xhr.status 
+            }, 
+            data: null 
+          });
+        }
+      };
       
-      // Reset consecutive errors counter on successful requests
-      consecutiveErrors = 0;
-      serviceStatus = 'available';
-      return true;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        console.error('Supabase availability check timed out');
-        consecutiveErrors++;
-        serviceStatus = 'degraded';
-        return false;
-      }
-      throw error;
-    }
+      xhr.onerror = () => {
+        reject({ 
+          error: { 
+            message: 'Network error occurred during upload',
+            status: 0 
+          }, 
+          data: null 
+        });
+      };
+    });
+    
+    // Start the upload
+    xhr.send(file);
+    
+    return uploadPromise;
   } catch (error) {
-    console.error('Supabase availability check failed:', error);
-    consecutiveErrors++;
-    if (consecutiveErrors > 2) {
-      serviceStatus = 'degraded';
-    }
-    return false;
+    return { data: null, error };
   }
 };
 
-// Export a function to get a fresh client with different options if needed
-// This should be used very sparingly and only for specific use cases
-export const createSupabaseClient = (options = {}) => {
-  console.warn('Creating a secondary Supabase client. This should be used with caution.');
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-      ...options
-    }
-  });
+// Helper to delete file from storage
+export const deleteFile = async (bucket: string, path: string) => {
+  return supabase.storage.from(bucket).remove([path]);
 };
+
+export default supabase;
