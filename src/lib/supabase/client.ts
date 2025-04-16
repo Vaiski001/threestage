@@ -12,6 +12,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create client with types
 export const supabase = createClient<SupabaseDatabase>(supabaseUrl, supabaseAnonKey);
 
+// Helper function to check if Supabase is available
+export const isSupabaseAvailable = (): boolean => {
+  return !!supabaseUrl && !!supabaseAnonKey;
+};
+
 // Helper function to get authenticated user
 export const getCurrentUser = async () => {
   const { data, error } = await supabase.auth.getSession();
