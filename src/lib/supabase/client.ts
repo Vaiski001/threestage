@@ -17,6 +17,35 @@ export const isSupabaseAvailable = (): boolean => {
   return !!supabaseUrl && !!supabaseAnonKey;
 };
 
+// Helper function to get service status
+export const getServiceStatus = async (): Promise<{
+  isAvailable: boolean;
+  message: string;
+}> => {
+  try {
+    // Simple health check, just try to get version info from Supabase
+    const { data, error } = await supabase.rpc('version');
+    
+    if (error) {
+      return {
+        isAvailable: false,
+        message: `Service unavailable: ${error.message}`
+      };
+    }
+    
+    return {
+      isAvailable: true,
+      message: 'Service is available'
+    };
+  } catch (error) {
+    console.error('Error checking service status:', error);
+    return {
+      isAvailable: false,
+      message: 'Cannot connect to service'
+    };
+  }
+};
+
 // Helper function to get authenticated user
 export const getCurrentUser = async () => {
   const { data, error } = await supabase.auth.getSession();
