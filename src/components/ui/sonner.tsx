@@ -1,10 +1,21 @@
-import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  // Get theme from document or default to 'light'
+  const getTheme = () => {
+    // Check if we're in a browser environment
+    if (typeof document !== 'undefined') {
+      // Get theme from data-theme attribute or from localStorage if set
+      const dataTheme = document.documentElement.getAttribute('data-theme');
+      const storedTheme = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
+      return dataTheme || storedTheme || 'light';
+    }
+    return 'light'; // Default theme for SSR
+  };
+  
+  const theme = getTheme();
 
   return (
     <Sonner
