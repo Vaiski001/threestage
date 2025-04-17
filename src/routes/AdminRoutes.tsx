@@ -10,10 +10,10 @@ import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminDevTools from "@/pages/admin/AdminDevTools";
 import NotFound from "@/pages/NotFound";
 
-// Export individual admin routes to use in parent Routes component
+// Export admin routes as an array to use in parent Routes component
 export const AdminRoutes = () => {
   return (
-    <React.Fragment>
+    <>
       {/* Admin dashboard - main view */}
       <Route 
         path="/admin/dashboard" 
@@ -93,6 +93,6 @@ export const AdminRoutes = () => {
           </ProtectedRoute>
         } 
       />
-    </React.Fragment>
+    </>
   );
 }; 

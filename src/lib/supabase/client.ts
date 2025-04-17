@@ -7,11 +7,16 @@ import { SupabaseDatabase } from './types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+// Function to create and return a new Supabase client
+export const createSupabaseClient = () => {
+  return createClient<SupabaseDatabase>(
+    supabaseUrl || 'https://placeholder-url.supabase.co', 
+    supabaseAnonKey || 'placeholder-key'
+  );
+};
+
 // Create client with types
-export const supabase = createClient<SupabaseDatabase>(
-  supabaseUrl || 'https://placeholder-url.supabase.co', 
-  supabaseAnonKey || 'placeholder-key'
-);
+export const supabase = createSupabaseClient();
 
 // Helper function to check if Supabase is available
 export const isSupabaseAvailable = (): boolean => {
