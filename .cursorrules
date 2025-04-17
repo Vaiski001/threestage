@@ -1,0 +1,81 @@
+# Threestage Project Rules
+
+## Portal Separation [PS]
+
+* **PS-01**: Code for Customer Portal MUST NOT be mixed with Company Portal code.
+* **PS-02**: Shared components MUST be placed in a common directory.
+* **PS-03**: Portal-specific routes MUST be defined in separate route files.
+* **PS-04**: Consistent naming conventions MUST be used to indicate portal ownership.
+* **PS-05**: API calls MUST respect portal boundaries and access controls.
+
+## Component Structure [CS]
+
+* **CS-01**: Component files MUST be named using PascalCase.
+* **CS-02**: Components SHOULD follow the atomic design methodology.
+* **CS-03**: Reusable UI components MUST be placed in the UI components directory.
+* **CS-04**: Logic SHOULD be separated from presentation using custom hooks.
+* **CS-05**: Form components MUST use React Hook Form with Zod validation.
+* **CS-06**: Components MUST include explicit TypeScript interfaces for props.
+
+## Styling Conventions [SC]
+
+* **SC-01**: Components MUST use Tailwind CSS for styling.
+* **SC-02**: Custom CSS SHOULD be avoided unless absolutely necessary.
+* **SC-03**: ShadCN components SHOULD be used when available instead of custom implementations.
+* **SC-04**: Color usage MUST follow the defined color scheme for each portal.
+* **SC-05**: Responsive design MUST be implemented for all components.
+* **SC-06**: Consistent spacing and sizing MUST be used throughout the application.
+
+## State Management [SM]
+
+* **SM-01**: Global state MUST be managed through React Context.
+* **SM-02**: Server state MUST be managed with React Query.
+* **SM-03**: Form state MUST be managed with React Hook Form.
+* **SM-04**: Local component state SHOULD use useState and useReducer appropriately.
+* **SM-05**: Context providers SHOULD be modular and focused on specific concerns.
+* **SM-06**: Prop drilling SHOULD be avoided by leveraging context or composition.
+
+## Authentication and Authorization [AA]
+
+* **AA-01**: All protected routes MUST use the RoleRouter component.
+* **AA-02**: User roles MUST be checked for every sensitive operation.
+* **AA-03**: Auth context MUST be used for authentication state.
+* **AA-04**: Supabase Row-Level Security MUST be implemented for data access.
+* **AA-05**: Authentication errors MUST be handled gracefully with user feedback.
+* **AA-06**: Session persistence SHOULD be implemented for better UX.
+
+## API Integration [AI]
+
+* **AI-01**: External API integrations MUST use a service layer pattern.
+* **AI-02**: API responses MUST be properly typed with TypeScript interfaces.
+* **AI-03**: Error handling MUST be consistent across all API calls.
+* **AI-04**: API calls SHOULD be cached appropriately using React Query.
+* **AI-05**: Real-time data SHOULD use Supabase subscriptions where appropriate.
+* **AI-06**: API credentials MUST be stored securely in environment variables.
+
+## Error Handling [EH]
+
+* **EH-01**: User-facing errors MUST use the Toast notification system.
+* **EH-02**: Critical errors MUST be logged for debugging.
+* **EH-03**: API errors MUST include specific error codes and messages.
+* **EH-04**: Form validation errors MUST provide clear guidance to users.
+* **EH-05**: Error boundaries SHOULD be used to prevent app crashes.
+* **EH-06**: Fallback UI SHOULD be provided for error states.
+
+## Performance Optimization [PO]
+
+* **PO-01**: Large component lists SHOULD use virtualization.
+* **PO-02**: Components SHOULD use React.memo for memoization when beneficial.
+* **PO-03**: Expensive calculations MUST use useMemo.
+* **PO-04**: Event handlers SHOULD use useCallback.
+* **PO-05**: Images MUST be optimized for web delivery.
+* **PO-06**: Code splitting SHOULD be used for larger feature sets.
+
+## Workflow Management [WM]
+
+* **WM-01**: Inquiry status changes MUST be tracked with appropriate history.
+* **WM-02**: Workflow transitions MUST validate permissions.
+* **WM-03**: Status updates MUST trigger appropriate notifications.
+* **WM-04**: Assignment changes MUST be recorded with timestamps.
+* **WM-05**: Workflow rules MUST be centralized in a service layer.
+* **WM-06**: Status visualization MUST use consistent indicators. 

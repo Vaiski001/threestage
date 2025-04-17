@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "@/pages/NotFound";
 import Index from "@/pages/Index";
@@ -19,6 +18,7 @@ import FormBuilder from "@/pages/FormBuilder";
 import CustomerProfile from "@/pages/CustomerProfile";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { FormEmbedded } from "@/components/forms/FormEmbedded";
+import { AdminRoutes } from "./AdminRoutes";
 
 export const AppRouter = () => {
   return (
@@ -216,6 +216,9 @@ export const AppRouter = () => {
           <NotFound />
         </ProtectedRoute>
       } />
+      
+      {/* Admin routes */}
+      <AdminRoutes />
       
       {/* Set Index as the fallback for empty path */}
       <Route path="" element={<Navigate to="/" />} />

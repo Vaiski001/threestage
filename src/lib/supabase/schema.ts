@@ -8,6 +8,309 @@
 import { supabase } from './client';
 
 /**
+ * Database schema definitions and types
+ */
+
+// Table names for type safety
+export const TABLES = {
+  profiles: 'profiles',
+  companies: 'companies',
+  customers: 'customers',
+  projects: 'projects',
+  project_milestones: 'project_milestones',
+  inquiries: 'inquiries',
+  messages: 'messages',
+  notifications: 'notifications',
+  attachments: 'attachments',
+  forms: 'forms',
+  form_submissions: 'form_submissions',
+  invoice_templates: 'invoice_templates',
+  invoices: 'invoices',
+  payments: 'payments',
+} as const;
+
+export type TableNames = typeof TABLES[keyof typeof TABLES];
+
+// User roles
+export const USER_ROLES = {
+  SUPER_ADMIN: 'super_admin',
+  COMPANY_ADMIN: 'company_admin',
+  COMPANY_STAFF: 'company_staff',
+  CUSTOMER: 'customer',
+} as const;
+
+export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
+
+// Inquiry status types
+export const INQUIRY_STATUS = {
+  NEW: 'new',
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type InquiryStatus = typeof INQUIRY_STATUS[keyof typeof INQUIRY_STATUS];
+
+// Project status types
+export const PROJECT_STATUS = {
+  DRAFT: 'draft',
+  ACTIVE: 'active',
+  ON_HOLD: 'on_hold',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type ProjectStatus = typeof PROJECT_STATUS[keyof typeof PROJECT_STATUS];
+
+// Payment status types
+export const PAYMENT_STATUS = {
+  PENDING: 'pending',
+  PAID: 'paid',
+  OVERDUE: 'overdue',
+  REFUNDED: 'refunded',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type PaymentStatus = typeof PAYMENT_STATUS[keyof typeof PAYMENT_STATUS];
+
+// Message channel types
+export const MESSAGE_CHANNEL = {
+  APP: 'app',
+  EMAIL: 'email',
+  SMS: 'sms',
+  INSTAGRAM: 'instagram',
+  WHATSAPP: 'whatsapp',
+} as const;
+
+export type MessageChannel = typeof MESSAGE_CHANNEL[keyof typeof MESSAGE_CHANNEL];
+
+// Notification types
+export const NOTIFICATION_TYPE = {
+  INQUIRY_CREATED: 'inquiry_created',
+  INQUIRY_UPDATED: 'inquiry_updated',
+  MESSAGE_RECEIVED: 'message_received',
+  PROJECT_UPDATED: 'project_updated',
+  MILESTONE_COMPLETED: 'milestone_completed',
+  INVOICE_CREATED: 'invoice_created',
+  PAYMENT_RECEIVED: 'payment_received',
+} as const;
+
+export type NotificationType = typeof NOTIFICATION_TYPE[keyof typeof NOTIFICATION_TYPE];
+
+// Database types
+export interface Profile {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string;
+  role: UserRole;
+  phone?: string;
+  company_id?: string;
+  customer_id?: string;
+  last_seen_at?: string;
+  is_active: boolean;
+}
+
+export interface Company {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  logo_url?: string;
+  website?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  tax_id?: string;
+  payment_details?: string;
+  settings?: Record<string, any>;
+}
+
+export interface Customer {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  company_name?: string;
+  tax_id?: string;
+  notes?: string;
+  company_id: string;
+}
+
+export interface Project {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  description?: string;
+  status: ProjectStatus;
+  customer_id: string;
+  company_id: string;
+  assigned_to?: string;
+  start_date?: string;
+  end_date?: string;
+  budget?: number;
+  currency?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ProjectMilestone {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  project_id: string;
+  title: string;
+  description?: string;
+  due_date?: string;
+  completed_at?: string;
+  is_completed: boolean;
+  amount?: number;
+  order: number;
+}
+
+export interface Inquiry {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  description?: string;
+  status: InquiryStatus;
+  customer_id: string;
+  company_id: string;
+  assigned_to?: string;
+  last_message_at?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface Message {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  inquiry_id: string;
+  sender_id: string;
+  content: string;
+  channel: MessageChannel;
+  is_read: boolean;
+  metadata?: Record<string, any>;
+  attachments?: string[];
+}
+
+export interface Notification {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  is_read: boolean;
+  reference_id?: string;
+  reference_type?: string;
+}
+
+export interface Attachment {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  size: number;
+  mime_type: string;
+  storage_path: string;
+  uploaded_by: string;
+  reference_id?: string;
+  reference_type?: string;
+}
+
+export interface Form {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  company_id: string;
+  title: string;
+  fields: Record<string, any>[];
+  is_active: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface FormSubmission {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  form_id: string;
+  customer_id?: string;
+  data: Record<string, any>;
+  metadata?: Record<string, any>;
+}
+
+export interface InvoiceTemplate {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  company_id: string;
+  name: string;
+  template: string;
+  is_default: boolean;
+}
+
+export interface Invoice {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  number: string;
+  company_id: string;
+  customer_id: string;
+  project_id?: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  issue_date: string;
+  due_date: string;
+  paid_date?: string;
+  items: Record<string, any>[];
+  notes?: string;
+  template_id?: string;
+}
+
+export interface Payment {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  invoice_id: string;
+  amount: number;
+  currency: string;
+  method: string;
+  status: PaymentStatus;
+  transaction_id?: string;
+  payment_date: string;
+  metadata?: Record<string, any>;
+}
+
+// Type mapping for database tables
+export interface DatabaseSchema {
+  [TABLES.profiles]: Profile;
+  [TABLES.companies]: Company;
+  [TABLES.customers]: Customer;
+  [TABLES.projects]: Project;
+  [TABLES.project_milestones]: ProjectMilestone;
+  [TABLES.inquiries]: Inquiry;
+  [TABLES.messages]: Message;
+  [TABLES.notifications]: Notification;
+  [TABLES.attachments]: Attachment;
+  [TABLES.forms]: Form;
+  [TABLES.form_submissions]: FormSubmission;
+  [TABLES.invoice_templates]: InvoiceTemplate;
+  [TABLES.invoices]: Invoice;
+  [TABLES.payments]: Payment;
+}
+
+/**
  * Database Tables
  * 
  * These tables form the core of the application's data model:
@@ -22,21 +325,6 @@ import { supabase } from './client';
  * 8. project_milestones - Milestones for project progress tracking
  * 9. geo_data - Geographic data for the map visualization
  */
-
-// Define table names as constants for consistency
-export const TABLES = {
-  PROFILES: 'profiles',
-  INQUIRIES: 'inquiries',
-  MESSAGES: 'messages',
-  PROJECTS: 'projects',
-  FORM_TEMPLATES: 'form_templates',
-  FORM_SUBMISSIONS: 'form_submissions',
-  PROJECT_DOCUMENTS: 'project_documents',
-  PROJECT_MILESTONES: 'project_milestones',
-  GEO_DATA: 'geo_data',
-  NOTIFICATIONS: 'notifications',
-  MESSAGE_ATTACHMENTS: 'message_attachments'
-};
 
 // Define the SQL statements for each table
 const tableDefinitions = {

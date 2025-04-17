@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,16 @@ export function DevNavigation() {
     { path: "/companies/:id", label: "Company Profile", disabled: true },
     { path: "/forms/:formId", label: "Form Embedded", disabled: true },
     { path: "/unauthorized", label: "Unauthorized" },
+    
+    // Admin Portal routes (new)
+    { type: "header", label: "Admin Portal" },
+    { path: "/admin/dashboard", label: "Admin Dashboard" },
+    { path: "/admin/companies", label: "Company Management" },
+    { path: "/admin/customers", label: "Customer Management" },
+    { path: "/admin/moderation", label: "Content Moderation" },
+    { path: "/admin/analytics", label: "Analytics & Reports" },
+    { path: "/admin/settings", label: "Admin Settings" },
+    { path: "/admin/dev-tools", label: "Dev Tools" },
     
     // Customer routes (grouped)
     { type: "header", label: "Customer Portal" },

@@ -1,17 +1,22 @@
-
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { UserRole } from "@/lib/supabase/types";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowPreview?: boolean;
+  requiredRole?: UserRole | "admin";
 }
 
-export const ProtectedRoute = ({ children, allowPreview = false }: ProtectedRouteProps) => {
-  const { isAuthenticated, loading, refreshProfile } = useAuth();
+export const ProtectedRoute = ({ 
+  children, 
+  allowPreview = false, 
+  requiredRole 
+}: ProtectedRouteProps) => {
+  const { isAuthenticated, loading, profile, refreshProfile } = useAuth();
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const location = useLocation();
@@ -103,6 +108,21 @@ export const ProtectedRoute = ({ children, allowPreview = false }: ProtectedRout
         <p className="text-muted-foreground">Please wait while we retrieve your information</p>
       </div>
     );
+  }
+
+  // Check role requirements if specified
+  if ((isAuthenticated || hasSession) && requiredRole && profile) {
+    // For admin routes, check if user has admin role
+    if (requiredRole === "admin" && profile.role !== "admin") {
+      console.log("User does not have admin role, redirecting to unauthorized");
+      return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
+    }
+    
+    // For role-specific routes (customer/company), check if user has required role
+    if (requiredRole !== "admin" && profile.role !== requiredRole) {
+      console.log(`User has ${profile.role} role but ${requiredRole} is required, redirecting to unauthorized`);
+      return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
+    }
   }
 
   // Allow access in development mode, preview mode, or with valid authentication

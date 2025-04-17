@@ -1,4 +1,4 @@
-import { Database } from '@supabase/supabase-js';
+// import { Database } from '@supabase/supabase-js';
 
 // Main Database interface
 export interface SupabaseDatabase {
@@ -74,7 +74,7 @@ export interface SupabaseDatabase {
       };
     };
     Enums: {
-      UserRole: 'customer' | 'company';
+      UserRole: 'customer' | 'company' | 'admin';
       InquiryStatus: 'new' | 'pending' | 'completed';
       Priority: 'high' | 'medium' | 'low';
       MessageChannel: 'app' | 'email' | 'instagram';
@@ -91,14 +91,17 @@ export interface SupabaseDatabase {
 
 // Custom type declaration for Supabase client
 declare global {
-  type SupabaseClientType = Database<SupabaseDatabase>;
+  type SupabaseClientType = any;
 }
+
+// User role type
+export type UserRole = 'customer' | 'company' | 'admin';
 
 // Profiles
 export interface Profile {
   id: string;
   email: string;
-  role: 'customer' | 'company';
+  role: UserRole;
   name: string;
   company_name: string | null;
   phone: string | null;

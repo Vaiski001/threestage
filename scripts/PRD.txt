@@ -1,0 +1,117 @@
+# Threestage PRD - Dual Portal Inquiry Management System
+
+## Project Overview
+Threestage is a dual-portal web application comprising a Customer Portal and a Company Portal. The application facilitates communication between customers and company representatives through different messaging channels, including email and social media platforms like Instagram.
+
+## Core Requirements
+
+### Dual Portal System
+- **Customer Portal**: Interface for customers to submit inquiries, track status, and communicate with company representatives.
+- **Company Portal**: Interface for company staff to manage customer inquiries, communications, and internal processes.
+
+### Communication System
+- Support for multiple communication channels (email, Instagram)
+- Unified message management across channels
+- Real-time notifications and updates
+- Message status tracking (sent, delivered, read)
+- File attachment support across channels
+
+### Inquiry Management
+- Tracking of inquiry stages (New → Pending → Completed)
+- Detailed history of all communications
+- Assignment of inquiries to staff members
+- Custom form builder for tailored inquiry forms
+- Kanban-style workflow management
+
+### Project Management
+- Project creation linked to inquiries
+- Configurable project stages with status tracking
+- Team member assignment functionality
+- Document management with visibility controls
+- Timeline visualization for project stages
+
+### User Authentication
+- Role-based access control ('customer' and 'company' roles)
+- Email/password authentication
+- Social authentication options (Google, GitHub)
+- Email verification
+- Password reset functionality
+- Session persistence
+
+### Geographic Visualization
+- Interactive map visualization using Mapbox
+- Custom markers for different inquiry statuses
+- Clustering for areas with multiple inquiries
+- Radius-based and attribute filtering
+- Address geocoding with caching
+
+### Analytics Dashboard
+- Overview metrics (inquiry volume, response time, conversion rates)
+- Time-series charts for trend analysis using Recharts
+- Geographic distribution visualization
+- Team performance metrics and comparisons
+- Custom report builder with export functionality
+
+## Technical Requirements
+- Modern, responsive UI using React, TypeScript, and Tailwind CSS
+- Enhanced UX with ShadCN components
+- Vite for fast development and building
+- Supabase for backend data storage, authentication, and real-time updates
+- React Query for server state management
+- React Hook Form with Zod for form validation
+- Implement secure API integrations for messaging channels
+- Mapbox for geographic visualization
+- Recharts for analytics visualization
+
+## Remaining Implementation Tasks
+
+### Customer Portal
+- Complete inquiry submission workflow with custom form support
+- Implement comprehensive inquiry tracking
+- Add message history view
+- Create notification system
+- Implement attachments for inquiries and messages
+- Add customer feedback mechanism
+- Complete projects view with document management
+
+### Company Portal
+- Complete inquiry management system
+- Finalize unified inbox for all communication channels
+- Implement staff assignment features
+- Complete analytics dashboard with Recharts
+- Finalize map visualization with filtering and clustering
+- Build custom form builder interface
+- Implement Kanban board for workflow management
+- Create reporting tools
+- Implement automated routing rules
+
+### Messaging System
+- Complete email channel integration
+- Finalize Instagram channel integration
+- Implement unified inbox for all channels
+- Implement real-time notifications
+- Add support for message templates
+- Create message scheduling functionality
+- Implement message attachments
+
+### Project Management
+- Complete project creation linked to inquiries
+- Implement project stages with status tracking
+- Add team member assignment functionality
+- Build document management with visibility controls
+- Create Kanban board interface
+- Implement timeline visualization for project stages
+
+### Geographic Features
+- Complete interactive map with custom markers
+- Implement marker clustering
+- Add radius-based and attribute filtering
+- Set up address geocoding
+- Build background processing for geocoding
+- Create map side panel with inquiry list
+
+### Infrastructure and DevOps
+- Set up comprehensive testing
+- Create production deployment workflow
+- Implement monitoring and error tracking
+- Finalize security measures with JWT token management 

@@ -1,0 +1,1 @@
+Implement Admin Portal with comprehensive platform management features including dashboard, company/customer management, content moderation, analytics, and developer tools. The Admin Portal should be accessible only to users with the 'admin' role and should provide a complete set of tools for platform administrators. 
