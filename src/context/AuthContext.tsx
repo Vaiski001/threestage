@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists } from '@/lib/supabase';
+import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists, isSupabaseAvailable } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { validateRole } from "@/lib/supabase/roleUtils";
 
@@ -32,7 +32,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [sessionChecked, setSessionChecked] = useState(false);
   const { toast } = useToast();
 
+  // Check if Supabase is available
+  const supabaseAvailable = isSupabaseAvailable();
+
   useEffect(() => {
+    // Skip if Supabase credentials are not available
+    if (!supabaseAvailable) {
+      setLoading(false);
+      setSessionChecked(true);
+      return;
+    }
+
     const initializeTables = async () => {
       try {
         const success = await ensureProfilesTableExists();
@@ -51,9 +61,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     
     initializeTables();
-  }, [toast]);
+  }, [toast, supabaseAvailable]);
 
   useEffect(() => {
+    // Skip if Supabase credentials are not available
+    if (!supabaseAvailable) {
+      setLoading(false);
+      setSessionChecked(true);
+      return;
+    }
+
     let mounted = true;
     
     const checkSession = async () => {
@@ -134,9 +151,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     return () => {
       mounted = false;
-      authListener.subscription.unsubscribe();
+      authListener?.subscription?.unsubscribe?.();
     };
-  }, [toast]);
+  }, [toast, supabaseAvailable]);
 
   const fetchProfileData = async (userId: string) => {
     try {
@@ -243,8 +260,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       profile, 
-      loading: (loading || profileLoading) && !sessionChecked,
-      isAuthenticated: !!user,
+      loading: supabaseAvailable ? (loading || profileLoading) && !sessionChecked : false,
+      isAuthenticated: supabaseAvailable ? !!user : true, // Consider authenticated in demo mode
       resetAuth,
       refreshProfile
     }}>

@@ -4,20 +4,24 @@ import { SupabaseDatabase } from './types';
 // Initialize Supabase client with typed interface
 // Use a more TypeScript-friendly approach for environment variables
 // This uses string literals directly which will be replaced by Vite at build time
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL or Anonymous Key is missing in environment variables');
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Create client with types
-export const supabase = createClient<SupabaseDatabase>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<SupabaseDatabase>(
+  supabaseUrl || 'https://placeholder-url.supabase.co', 
+  supabaseAnonKey || 'placeholder-key'
+);
 
 // Helper function to check if Supabase is available
 export const isSupabaseAvailable = (): boolean => {
   return !!supabaseUrl && !!supabaseAnonKey;
 };
+
+// Display a warning in development, but don't crash the app
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase URL or Anonymous Key is missing in environment variables. Some features may not work correctly.');
+}
 
 // Helper function to get service status
 export const getServiceStatus = async (): Promise<{

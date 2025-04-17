@@ -1,9 +1,9 @@
-
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { validateRole } from "@/lib/supabase/roleUtils";
+import { isSupabaseAvailable } from "@/lib/supabase/client";
 
 interface RoleRouterProps {
   children: React.ReactNode;
@@ -19,7 +19,23 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
   const isDevelopment = import.meta.env.DEV;
   const isPreview = window.location.hostname.includes('preview') || 
                    window.location.hostname.includes('lovable.app');
-  const bypassRoleCheck = (isDevelopment && process.env.NODE_ENV !== 'production') || isPreview;
+  // Also bypass if Supabase credentials are missing
+  const supabaseCredentialsMissing = !isSupabaseAvailable();
+  const bypassRoleCheck = (isDevelopment && process.env.NODE_ENV !== 'production') || 
+                         isPreview || 
+                         supabaseCredentialsMissing;
+
+  // Show a warning toast if Supabase credentials are missing
+  useEffect(() => {
+    if (supabaseCredentialsMissing) {
+      toast({
+        title: "Demo Mode Active",
+        description: "Supabase credentials are missing. App is running in demo mode with limited functionality.",
+        variant: "warning",
+        duration: 5000,
+      });
+    }
+  }, [supabaseCredentialsMissing, toast]);
 
   // Refresh profile on mount and path change
   useEffect(() => {
