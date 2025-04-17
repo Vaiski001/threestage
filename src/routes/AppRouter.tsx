@@ -217,7 +217,7 @@ export const AppRouter = () => {
         </ProtectedRoute>
       } />
       
-      {/* Admin routes */}
+      {/* Admin routes - using AdminRoutes component */}
       <AdminRoutes />
       
       {/* Set Index as the fallback for empty path */}
