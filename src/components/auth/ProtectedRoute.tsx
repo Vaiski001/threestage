@@ -1,12 +1,14 @@
-import { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 import { UserRole } from "@/lib/supabase/types";
+import { toast } from "@/components/ui/use-toast";
+import { isSupabaseAvailable } from "@/lib/supabase/client";
 
 interface ProtectedRouteProps {
-  children: ReactNode;
+  children?: ReactNode;
   allowPreview?: boolean;
   requiredRole?: UserRole | "admin";
 }
@@ -20,15 +22,30 @@ export const ProtectedRoute = ({
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [hasSession, setHasSession] = useState(false);
   const location = useLocation();
+  const supabaseAvailable = isSupabaseAvailable();
   
   // Development mode and preview bypass
   const isDevelopment = import.meta.env.DEV;
   const isPreview = window.location.hostname.includes('preview') || 
                    window.location.hostname.includes('lovable.app');
   const bypassAuth = (isDevelopment && process.env.NODE_ENV !== 'production') || 
-                    (allowPreview && isPreview);
+                    (allowPreview && isPreview) || 
+                    !supabaseAvailable;
 
   useEffect(() => {
+    // Show warning if no Supabase credentials are available
+    if (!supabaseAvailable) {
+      toast({
+        title: "Running in Demo Mode",
+        description: "Supabase credentials are missing. App is running with limited functionality.",
+        variant: "warning",
+        duration: 5000,
+      });
+      setIsCheckingSession(false);
+      setHasSession(true);
+      return;
+    }
+
     const checkSessionDirectly = async () => {
       // Skip session check if in development mode or preview with bypass enabled
       if (bypassAuth) {
@@ -76,12 +93,12 @@ export const ProtectedRoute = ({
     };
 
     checkSessionDirectly();
-  }, [isAuthenticated, loading, refreshProfile, bypassAuth]);
+  }, [isAuthenticated, loading, refreshProfile, bypassAuth, supabaseAvailable]);
 
   // Set up auth state change listener
   useEffect(() => {
-    // Skip in development/preview bypass mode
-    if (bypassAuth) return;
+    // Skip in development/preview bypass mode or when Supabase is not available
+    if (bypassAuth || !supabaseAvailable) return;
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -98,9 +115,9 @@ export const ProtectedRoute = ({
     return () => {
       subscription.unsubscribe();
     };
-  }, [refreshProfile, bypassAuth]);
+  }, [refreshProfile, bypassAuth, supabaseAvailable]);
 
-  if (loading || isCheckingSession) {
+  if ((loading || isCheckingSession) && supabaseAvailable) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -108,6 +125,11 @@ export const ProtectedRoute = ({
         <p className="text-muted-foreground">Please wait while we retrieve your information</p>
       </div>
     );
+  }
+
+  // When Supabase is not available, we'll allow access but show demo content
+  if (!supabaseAvailable) {
+    return <>{children || <div>Demo content placeholder</div>}</>;
   }
 
   // Check role requirements if specified
@@ -127,7 +149,7 @@ export const ProtectedRoute = ({
 
   // Allow access in development mode, preview mode, or with valid authentication
   if (bypassAuth || isAuthenticated || hasSession) {
-    return <>{children}</>;
+    return <>{children || <div>Protected content placeholder</div>}</>;
   }
 
   return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
