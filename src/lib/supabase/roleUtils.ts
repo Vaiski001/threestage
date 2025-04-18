@@ -1,56 +1,97 @@
-
 import { UserRole } from './types';
 
 /**
- * Validates and normalizes a role string to ensure it's a valid UserRole
- * @param roleString The role string to validate
- * @returns A valid UserRole ('customer' or 'company') or undefined if invalid
+ * Utility functions for handling user roles
  */
-export function validateRole(roleString: unknown): UserRole | undefined {
-  if (typeof roleString !== 'string') return undefined;
+
+/**
+ * Validates if the provided role is a valid user role
+ * @param role - Role to validate
+ * @returns The validated role as lowercase string, or null if invalid
+ */
+export function validateRole(role: unknown): UserRole | null {
+  // Check if role is a string
+  if (typeof role !== 'string') {
+    console.warn('Invalid role type:', typeof role);
+    return null;
+  }
   
-  const normalizedRole = roleString.toLowerCase().trim();
+  // Normalize to lowercase
+  const normalizedRole = role.toLowerCase();
   
+  // Special handling for admin role to ensure it's always recognized
+  if (normalizedRole === 'admin') {
+    console.log('Admin role validated successfully');
+    // Ensure it's properly stored in localStorage for future checks
+    try {
+      localStorage.setItem('supabase.auth.user_role', 'admin');
+      localStorage.setItem('userRole', 'admin');
+      sessionStorage.setItem('userRole', 'admin');
+    } catch (e) {
+      // Ignore storage errors in case of incognito mode
+      console.warn('Could not store admin role in localStorage:', e);
+    }
+    return 'admin';
+  }
+  
+  // Check if it's a valid role
   if (normalizedRole === 'customer' || normalizedRole === 'company') {
     return normalizedRole as UserRole;
   }
   
-  return undefined;
+  console.warn('Unknown role detected:', normalizedRole);
+  return null;
 }
 
 /**
- * Determines the user role from various sources with priority
- * @param urlRole Role from URL parameters
- * @param metadataRole Role from user metadata
- * @param localStorageRole Role from localStorage
- * @returns The validated user role with priority: URL > metadata > localStorage > default ('customer')
+ * Determines the user role from multiple possible sources
+ * Prioritizes URL params, then user_metadata, then localStorage
+ * @param params - URL search params
+ * @param user_metadata - User metadata from auth
+ * @returns The validated user role, or null if no valid role found
  */
 export function determineUserRole(
-  urlRole?: string | null,
-  metadataRole?: unknown,
-  localStorageRole?: string | null
-): UserRole {
-  // Check URL query parameters first (highest priority)
-  const validUrlRole = urlRole ? validateRole(urlRole) : undefined;
-  if (validUrlRole) return validUrlRole;
-  
-  // Check user metadata second
-  const validMetadataRole = validateRole(metadataRole);
-  if (validMetadataRole) return validMetadataRole;
-  
-  // Check localStorage third
-  const validLocalStorageRole = localStorageRole ? validateRole(localStorageRole) : undefined;
-  if (validLocalStorageRole) return validLocalStorageRole;
-  
-  // Default fallback
+  params: URLSearchParams | null,
+  user_metadata: Record<string, any> | null
+): UserRole | null {
+  // First priority: Check URL params
+  const roleParam = params?.get('role');
+  if (roleParam) {
+    const validatedRole = validateRole(roleParam);
+    if (validatedRole) return validatedRole;
+  }
+
+  // Second priority: Check user metadata
+  if (user_metadata?.role) {
+    const validatedRole = validateRole(user_metadata.role);
+    if (validatedRole) return validatedRole;
+  }
+
+  // Third priority: Check localStorage
+  const storedRole = localStorage.getItem('userRole');
+  if (storedRole) {
+    const validatedRole = validateRole(storedRole);
+    if (validatedRole) return validatedRole;
+  }
+
+  // Default to customer if no valid role found
   return 'customer';
 }
 
 /**
- * Gets the appropriate redirect path based on user role
- * @param role The validated user role
- * @returns The path to redirect to for dashboard access
+ * Returns the appropriate dashboard path based on user role
+ * @param role - The user role
+ * @returns The dashboard path for the specified role
  */
 export function getDashboardPathForRole(role: UserRole): string {
-  return role === 'company' ? '/company/dashboard' : '/customer/dashboard';
+  switch (role) {
+    case 'customer':
+      return '/customer/dashboard';
+    case 'company':
+      return '/company/dashboard';
+    case 'admin':
+      return '/admin/dashboard';
+    default:
+      return '/customer/dashboard';
+  }
 }

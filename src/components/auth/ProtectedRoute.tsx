@@ -7,6 +7,21 @@ import { UserRole } from "@/lib/supabase/types";
 import { toast } from "@/components/ui/use-toast";
 import { isSupabaseAvailable } from "@/lib/supabase/client";
 
+// Helper function to check for admin role in all possible storage locations
+const checkForAdminRole = (): boolean => {
+  const localStorage1 = localStorage.getItem('supabase.auth.user_role') === 'admin';
+  const localStorage2 = localStorage.getItem('userRole') === 'admin';
+  const sessionStorage1 = sessionStorage.getItem('userRole') === 'admin';
+  
+  console.log("🔒 Admin role check in ProtectedRoute:", {
+    'localStorage.supabase.auth.user_role': localStorage1,
+    'localStorage.userRole': localStorage2,
+    'sessionStorage.userRole': sessionStorage1
+  });
+  
+  return localStorage1 || localStorage2 || sessionStorage1;
+};
+
 interface ProtectedRouteProps {
   children?: ReactNode;
   allowPreview?: boolean;
@@ -31,6 +46,32 @@ export const ProtectedRoute = ({
   const bypassAuth = (isDevelopment && process.env.NODE_ENV !== 'production') || 
                     (allowPreview && isPreview) || 
                     !supabaseAvailable;
+
+  // Special check for admin routes
+  useEffect(() => {
+    if (requiredRole === "admin") {
+      console.log("🔴 Admin route detected, performing storage check");
+      
+      // Check if admin role is in storage
+      const isAdmin = checkForAdminRole();
+      
+      if (isAdmin) {
+        console.log("✅ Admin role found in storage for admin route - access granted");
+        // Force consistency across storage
+        localStorage.setItem('supabase.auth.user_role', 'admin');
+        localStorage.setItem('userRole', 'admin');
+        sessionStorage.setItem('userRole', 'admin');
+      } else if (profile?.role === 'admin') {
+        console.log("✅ Admin role found in profile for admin route - access granted");
+        // Force consistency across storage
+        localStorage.setItem('supabase.auth.user_role', 'admin');
+        localStorage.setItem('userRole', 'admin');
+        sessionStorage.setItem('userRole', 'admin');
+      } else {
+        console.log("❌ No admin role found for admin route, access will be denied");
+      }
+    }
+  }, [requiredRole, profile]);
 
   useEffect(() => {
     // Show warning if no Supabase credentials are available
@@ -133,16 +174,35 @@ export const ProtectedRoute = ({
   }
 
   // Check role requirements if specified
-  if ((isAuthenticated || hasSession) && requiredRole && profile) {
-    // For admin routes, check if user has admin role
-    if (requiredRole === "admin" && profile.role !== "admin") {
-      console.log("User does not have admin role, redirecting to unauthorized");
-      return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
-    }
+  if ((isAuthenticated || hasSession) && requiredRole) {
+    console.log(`Checking role requirement: required=${requiredRole}, user has=${profile?.role}`);
     
+    // For admin routes, check for admin role in profile and storage
+    if (requiredRole === "admin") {
+      const isAdminInStorage = checkForAdminRole();
+      const isAdminInProfile = profile?.role === "admin";
+      
+      console.log("Admin route access check:", {
+        "isAdminInStorage": isAdminInStorage,
+        "isAdminInProfile": isAdminInProfile,
+        "profile.role": profile?.role || "no profile"
+      });
+      
+      if (!isAdminInStorage && !isAdminInProfile) {
+        console.log("❌ User does not have admin role, redirecting to unauthorized");
+        return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
+      } else {
+        console.log("✅ Admin access granted");
+        
+        // Ensure admin role is set in all storage for future checks
+        localStorage.setItem('supabase.auth.user_role', 'admin');
+        localStorage.setItem('userRole', 'admin');
+        sessionStorage.setItem('userRole', 'admin');
+      }
+    } 
     // For role-specific routes (customer/company), check if user has required role
-    if (requiredRole !== "admin" && profile.role !== requiredRole) {
-      console.log(`User has ${profile.role} role but ${requiredRole} is required, redirecting to unauthorized`);
+    else if (profile && profile.role !== requiredRole) {
+      console.log(`❌ User has ${profile.role} role but ${requiredRole} is required, redirecting to unauthorized`);
       return <Navigate to="/unauthorized" state={{ from: location.pathname }} replace />;
     }
   }

@@ -18,7 +18,7 @@ export default function Login() {
   const [lastServiceCheck, setLastServiceCheck] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshProfile, user } = useAuth();
+  const { refreshProfile, user, profile } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,6 +73,26 @@ export default function Login() {
     }
   }, [user, navigate, location]);
 
+  useEffect(() => {
+    // Check all storage places for admin role indicator
+    const isAdminInStorage = 
+      localStorage.getItem('supabase.auth.user_role') === 'admin' || 
+      localStorage.getItem('userRole') === 'admin' ||
+      sessionStorage.getItem('userRole') === 'admin';
+    
+    if (isAdminInStorage) {
+      console.log("🔴 Admin role detected in storage during Login component mount");
+    }
+    
+    // Check if profile has admin role
+    if (profile?.role === 'admin') {
+      console.log("🔴 Admin role detected in profile during Login component mount");
+      localStorage.setItem('supabase.auth.user_role', 'admin');
+      localStorage.setItem('userRole', 'admin');
+      sessionStorage.setItem('userRole', 'admin');
+    }
+  }, [profile]);
+
   const handleLoginSuccess = async () => {
     try {
       console.log("Login successful, refreshing profile before redirect");
@@ -88,6 +108,18 @@ export default function Login() {
         try {
           await refreshProfile();
           console.log("Profile refreshed successfully");
+          
+          // Check for admin role explicitly after refresh
+          const isAdminInStorage = 
+            localStorage.getItem('supabase.auth.user_role') === 'admin' || 
+            localStorage.getItem('userRole') === 'admin' ||
+            sessionStorage.getItem('userRole') === 'admin';
+          
+          // Log admin detection status
+          if (isAdminInStorage) {
+            console.log("🔴 Admin role detected in storage after profile refresh");
+          }
+          
           break;
         } catch (err) {
           console.error(`Profile refresh attempt ${attempts} failed:`, err);

@@ -342,128 +342,136 @@ export const updatePassword = async (newPassword: string) => {
   }
 };
 
-export const handleOAuthSignIn = async (user: User, role: Profile['role'] = 'customer'): Promise<Profile | null> => {
-  try {
-    console.log("Handling OAuth sign-in for user:", user.id, "with role:", role);
-    
-    // IMPORTANT FIX: Check user metadata for role first
-    const metadataRole = user.user_metadata?.role as UserRole | undefined;
-    if (metadataRole && (metadataRole === 'customer' || metadataRole === 'company')) {
-      console.log("Found valid role in user metadata:", metadataRole);
-      role = metadataRole; // Use role from metadata if available
-    } else {
-      console.log("Using provided role:", role);
+export const handleOAuthSignIn = async (user: User, role?: Profile['role']): Promise<Profile | null> => {
+  console.log(`Creating/verifying profile for OAuth user with role: ${role}`);
+  
+  // Helper function to save role to all storage locations
+  const saveRoleToAllStorage = (role: string) => {
+    console.log(`🔐 Saving role to all storage locations: ${role}`);
+    try {
+      localStorage.setItem('supabase.auth.user_role', role);
+      localStorage.setItem('userRole', role);
+      sessionStorage.setItem('userRole', role);
+    } catch (e) {
+      console.warn('Failed to save role to storage:', e);
     }
-    
+  };
+  
+  // Validate role to ensure it's a valid option
+  let validatedRole: Profile['role'] = 'customer';
+  if (role === 'admin' || role === 'company') {
+    console.log(`Valid specialized role detected: ${role}`);
+    validatedRole = role;
+  }
+  
+  // Additional logging for admin role
+  if (role === 'admin') {
+    console.log(`🔴 ADMIN ROLE being processed in handleOAuthSignIn for user ${user.id}`);
+    // Save admin role to all storage immediately for quick access
+    saveRoleToAllStorage('admin');
+  }
+  
+  try {
     // Check if profile already exists
-    const { data: existingProfile, error: profileError } = await supabase
+    const { data: existingProfile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
     
-    if (profileError) {
-      console.log("Error checking profile:", profileError.message);
+    if (existingProfile) {
+      console.log(`Profile already exists for user ${user.id} with role: ${existingProfile.role}`);
       
-      if (profileError.code === 'PGRST116') {
-        console.log("Profile doesn't exist, creating new one");
+      // Save the existing role to all storage locations for consistent access
+      saveRoleToAllStorage(existingProfile.role);
+      
+      // Special handling for admin - if admin in profile or requested, ensure admin role
+      if (validatedRole === 'admin' || existingProfile.role === 'admin') {
+        console.log(`🔴 Admin role found - ensuring profile has admin role`);
         
-        // Extract name from user metadata if available
-        const firstName = user.user_metadata?.first_name as string || '';
-        const lastName = user.user_metadata?.last_name as string || '';
-        let name = '';
-        
-        if (firstName || lastName) {
-          name = [firstName, lastName].filter(Boolean).join(' ');
-        } else if (user.user_metadata?.full_name) {
-          name = user.user_metadata.full_name as string;
-        } else if (user.user_metadata?.name) {
-          name = user.user_metadata.name as string;
+        // If profile already has admin role, just save it to storage and return
+        if (existingProfile.role === 'admin') {
+          console.log('Profile already has admin role - ensuring storage consistency');
+          saveRoleToAllStorage('admin');
+          return existingProfile as Profile;
         }
         
-        // Create profile record with proper typing
-        const newProfileData: Record<string, unknown> = {
-          id: user.id,
-          email: user.email || '',
-          role: role,
-          name: name,
-          created_at: new Date().toISOString()
-        };
+        // Otherwise update the profile to admin role
+        console.log(`🔴 Updating existing profile from ${existingProfile.role} to admin role`);
         
-        // Add company-specific fields if role is company
-        if (role === 'company') {
-          const companyName = user.user_metadata?.company_name as string || 
-                             user.user_metadata?.organization as string || 
-                             'New Company';
-          newProfileData.company_name = companyName;
+        const { data: updatedProfile, error: updateError } = await supabase
+          .from('profiles')
+          .update({ role: 'admin', updated_at: new Date().toISOString() })
+          .eq('id', user.id)
+          .select()
+          .single();
+          
+        if (updateError) {
+          console.error(`Error updating profile to admin: ${updateError.message}`);
+          return existingProfile as Profile;
         }
         
-        console.log("Creating profile with data:", newProfileData);
-        
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .insert(newProfileData)
-            .select('*')
-            .single();
-          
-          if (error) {
-            console.error("Error creating profile:", error);
-            return null;
-          }
-          
-          console.log("Profile created successfully:", data);
-          
-          // Convert to UserProfile type
-          const createdProfile: Profile = {
-            id: data.id as string,
-            email: data.email as string,
-            role: data.role as UserRole,
-            name: data.name as string,
-            created_at: data.created_at as string
-          };
-          
-          // Add company-specific fields if they exist
-          if (data.company_name) createdProfile.company_name = data.company_name as string;
-          if (data.industry) createdProfile.industry = data.industry as string;
-          if (data.website) createdProfile.website = data.website as string;
-          if (data.phone) createdProfile.phone = data.phone as string;
-          
-          return createdProfile;
-        } catch (error) {
-          console.error("Error handling profile creation:", error);
-          return null;
-        }
+        console.log('Profile successfully updated to admin role');
+        saveRoleToAllStorage('admin');
+        return updatedProfile as Profile;
       }
       
+      return existingProfile as Profile;
+    }
+    
+    // Create new profile
+    const newProfile: Profile = {
+      id: user.id,
+      email: user.email || '',
+      role: validatedRole,
+      name: user.user_metadata?.full_name || '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      company_name: null,
+      phone: null,
+      industry: null,
+      website: null,
+      integrations: null,
+      profile_banner: null,
+      profile_logo: null,
+      profile_description: null,
+      profile_color_scheme: null,
+      profile_social_links: null,
+      profile_contact_info: null,
+      profile_featured_images: null,
+      profile_services_json: null,
+      profile_services: null,
+      inquiry_form_enabled: false,
+      inquiry_form_fields: null,
+      inquiry_form_settings: null
+    };
+    
+    console.log(`Creating new profile with role: ${validatedRole}`);
+    
+    // Log the profile being created
+    if (validatedRole === 'admin') {
+      console.log(`🔴 Creating new admin profile for user ${user.id}`);
+    }
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert([newProfile])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error(`Error creating profile: ${error.message}`);
       return null;
     }
     
-    if (existingProfile) {
-      console.log("Existing profile found:", existingProfile);
-      
-      // Convert to UserProfile type
-      const profile: Profile = {
-        id: existingProfile.id as string,
-        email: existingProfile.email as string,
-        role: existingProfile.role as UserRole,
-        name: existingProfile.name as string,
-        created_at: existingProfile.created_at as string
-      };
-      
-      // Add optional fields if they exist
-      if (existingProfile.company_name) profile.company_name = existingProfile.company_name as string;
-      if (existingProfile.phone) profile.phone = existingProfile.phone as string;
-      if (existingProfile.industry) profile.industry = existingProfile.industry as string;
-      if (existingProfile.website) profile.website = existingProfile.website as string;
-      if (existingProfile.integrations) profile.integrations = existingProfile.integrations as string[] || [];
-      
-      return profile;
-    }
+    console.log(`Successfully created profile for user ${user.id} with role: ${validatedRole}`);
     
-    return null;
+    // Set role in all storage for immediate access
+    saveRoleToAllStorage(validatedRole);
+    
+    return data as Profile;
   } catch (error) {
-    console.error("Error in handleOAuthSignIn:", error);
+    console.error('Error in handleOAuthSignIn:', error);
     return null;
   }
 };

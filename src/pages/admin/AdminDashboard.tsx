@@ -18,6 +18,22 @@ import { AdminLayout } from "@/components/layouts/AdminLayout";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
+
+// Admin role check helper function
+const checkForAdminRole = (): boolean => {
+  const localStorage1 = localStorage.getItem('supabase.auth.user_role') === 'admin';
+  const localStorage2 = localStorage.getItem('userRole') === 'admin';
+  const sessionStorage1 = sessionStorage.getItem('userRole') === 'admin';
+  
+  console.log("🔒 Admin role check in AdminDashboard:", {
+    'localStorage.supabase.auth.user_role': localStorage1,
+    'localStorage.userRole': localStorage2,
+    'sessionStorage.userRole': sessionStorage1
+  });
+  
+  return localStorage1 || localStorage2 || sessionStorage1;
+};
 
 interface DashboardStat {
   name: string;
@@ -37,12 +53,97 @@ interface RecentActivity {
 const AdminDashboard = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [adminConfirmed, setAdminConfirmed] = useState(false);
+  
+  // CRITICAL: Validate admin access at component mount
+  useEffect(() => {
+    console.log("🔴 AdminDashboard mounted - validating admin access");
+    
+    // Check for admin role in both storage and profile
+    const isAdminInStorage = checkForAdminRole();
+    const isAdminInProfile = profile?.role === 'admin';
+    
+    console.log("Admin dashboard access check:", {
+      "isAdminInStorage": isAdminInStorage,
+      "isAdminInProfile": isAdminInProfile,
+      "profile": profile ? `Found (role: ${profile.role})` : "Not loaded yet"
+    });
+    
+    if (isAdminInStorage || isAdminInProfile) {
+      console.log("✅ Admin access confirmed");
+      
+      // Ensure admin role is set in all storage locations
+      localStorage.setItem('supabase.auth.user_role', 'admin');
+      localStorage.setItem('userRole', 'admin');
+      sessionStorage.setItem('userRole', 'admin');
+      
+      setAdminConfirmed(true);
+      
+      // Show confirmation toast
+      toast({
+        title: "Admin access",
+        description: "Welcome to the admin dashboard",
+        variant: "default",
+        duration: 3000
+      });
+    } else {
+      // Only redirect if profile is loaded and doesn't have admin role
+      if (profile && profile.role !== 'admin') {
+        console.log("❌ Not an admin - redirecting to unauthorized");
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin privileges",
+          variant: "destructive",
+          duration: 5000
+        });
+        
+        navigate('/unauthorized', { replace: true });
+      } else if (!profile) {
+        // If profile not loaded yet, we'll wait for the next effect run
+        console.log("⏳ Waiting for profile data to confirm admin role");
+      }
+    }
+  }, [profile, navigate, toast]);
+  
+  // Watch for profile changes to validate admin role
+  useEffect(() => {
+    if (profile) {
+      console.log("Profile loaded in AdminDashboard, role:", profile.role);
+      
+      if (profile.role !== 'admin') {
+        console.log("❌ Profile does not have admin role - redirecting");
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin privileges",
+          variant: "destructive",
+          duration: 5000
+        });
+        
+        navigate('/unauthorized', { replace: true });
+      } else {
+        // Ensure admin role is set in all storage
+        localStorage.setItem('supabase.auth.user_role', 'admin');
+        localStorage.setItem('userRole', 'admin');
+        sessionStorage.setItem('userRole', 'admin');
+        
+        setAdminConfirmed(true);
+      }
+    }
+  }, [profile, navigate, toast]);
 
   // Mock data for the dashboard
   useEffect(() => {
+    // Only load dashboard data after admin role is confirmed
+    if (!adminConfirmed) {
+      return;
+    }
+    
+    console.log("Loading admin dashboard data");
+    
     // In production, this would fetch actual data from Supabase
     setStats([
       {
@@ -110,7 +211,7 @@ const AdminDashboard = () => {
     ]);
 
     setLoading(false);
-  }, []);
+  }, [adminConfirmed]);
 
   // Format relative time
   const formatTimeAgo = (timestamp: string) => {
@@ -127,6 +228,22 @@ const AdminDashboard = () => {
     return `${days} days ago`;
   };
 
+  // Show loading state until admin role is confirmed and data is loaded
+  if (!adminConfirmed || loading) {
+    return (
+      <AdminLayout>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-medium mb-2">Loading Admin Dashboard...</h2>
+            <p className="text-muted-foreground">
+              Verifying your admin privileges...
+            </p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+  
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
