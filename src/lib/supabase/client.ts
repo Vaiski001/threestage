@@ -7,19 +7,31 @@ import { SupabaseDatabase } from './types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+// Track fixed URLs to avoid duplicate console warnings
+const fixedUrls = new Set<string>();
+
 // Custom fetch function to ensure URLs always have proper https:// scheme
 const customFetch = (url: RequestInfo | URL, init?: RequestInit) => {
   // If url is a string and missing proper https:// scheme, fix it
   if (typeof url === 'string' && !url.match(/^https?:\/\//)) {
-    console.warn('Fixing malformed URL:', url);
-    // If it starts with ttps://, fix it
+    // Only log in development mode and only once per unique URL
+    const isDev = import.meta.env.DEV;
+    
+    // Fix URL
+    let fixedUrl = url;
     if (url.startsWith('ttps://')) {
-      url = 'https://' + url.substring(7);
-    } 
-    // If no scheme at all, add https://
-    else if (!url.includes('://')) {
-      url = 'https://' + url;
+      fixedUrl = 'https://' + url.substring(7);
+    } else if (!url.includes('://')) {
+      fixedUrl = 'https://' + url;
     }
+    
+    // Log only in dev mode and only for new URLs
+    if (isDev && !fixedUrls.has(url)) {
+      fixedUrls.add(url);
+      console.warn('Fixing malformed URL:', url);
+    }
+    
+    return fetch(fixedUrl, init);
   }
   
   return fetch(url, init);
@@ -60,27 +72,37 @@ export const getServiceStatus = async (): Promise<{
   isAvailable: boolean;
   message: string;
 }> => {
+  // Track if we've already checked service status to avoid duplicate calls
+  if ((getServiceStatus as any).hasChecked) {
+    return (getServiceStatus as any).lastResult;
+  }
+  
   try {
-    // Simple health check, just try to get version info from Supabase
-    const { data, error } = await supabase.rpc('version');
+    // Simplified health check - just try to get a user session from Supabase
+    const { data, error } = await supabase.auth.getSession();
     
-    if (error) {
-      return {
-        isAvailable: false,
-        message: `Service unavailable: ${error.message}`
-      };
-    }
-    
-    return {
-      isAvailable: true,
-      message: 'Service is available'
+    const result = {
+      isAvailable: !error,
+      message: error ? `Service unavailable: ${error.message}` : 'Service is available'
     };
+    
+    // Cache the result to avoid repeated checks
+    (getServiceStatus as any).hasChecked = true;
+    (getServiceStatus as any).lastResult = result;
+    
+    return result;
   } catch (error) {
     console.error('Error checking service status:', error);
-    return {
+    const result = {
       isAvailable: false,
       message: 'Cannot connect to service'
     };
+    
+    // Cache the result
+    (getServiceStatus as any).hasChecked = true;
+    (getServiceStatus as any).lastResult = result;
+    
+    return result;
   }
 };
 

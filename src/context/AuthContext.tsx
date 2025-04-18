@@ -1,12 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, UserProfile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists, isSupabaseAvailable } from '@/lib/supabase';
+import { supabase, Profile, forceSignOut, handleOAuthSignIn, ensureProfilesTableExists, isSupabaseAvailable } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { validateRole } from "@/lib/supabase/roleUtils";
+import React from 'react';
 
 interface AuthContextType {
   user: User | null;
-  profile: UserProfile | null;
+  profile: Profile | null;
   loading: boolean;
   isAuthenticated: boolean;
   resetAuth: () => Promise<void>;
@@ -26,7 +27,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -34,10 +35,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Check if Supabase is available
   const supabaseAvailable = isSupabaseAvailable();
+  
+  // Track if we've already initialized tables to avoid duplicate calls
+  const tablesInitialized = React.useRef(false);
 
   useEffect(() => {
     // Skip if Supabase credentials are not available
-    if (!supabaseAvailable) {
+    if (!supabaseAvailable || tablesInitialized.current) {
       setLoading(false);
       setSessionChecked(true);
       return;
@@ -45,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const initializeTables = async () => {
       try {
+        tablesInitialized.current = true;
         const success = await ensureProfilesTableExists();
         if (!success) {
           console.warn("Could not ensure profiles table exists. Some functionality may not work correctly.");
@@ -75,7 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const checkSession = async () => {
       try {
-        console.log("Checking for existing session...");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Checking for existing session...");
+        }
         setLoading(true);
         
         const { data, error } = await supabase.auth.getSession();
@@ -90,11 +97,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         if (data.session?.user) {
-          console.log("Found existing session for user:", data.session.user.id);
+          if (process.env.NODE_ENV === 'development') {
+            console.log("Found existing session for user:", data.session.user.id);
+          }
           if (mounted) {
             setUser(data.session.user);
           }
-        } else {
+        } else if (process.env.NODE_ENV === 'development') {
           console.log("No active session found");
         }
         
@@ -112,15 +121,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Auth state changed:", event);
+      }
       
       if (event === 'SIGNED_IN' && session) {
-        console.log("Sign in detected, setting user");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Sign in detected, setting user");
+        }
         setUser(session.user);
         
         if (session.user.user_metadata?.role) {
           localStorage.setItem('supabase.auth.user_role', session.user.user_metadata.role);
-          console.log("Stored user role in localStorage from auth change:", session.user.user_metadata.role);
+          if (process.env.NODE_ENV === 'development') {
+            console.log("Stored user role in localStorage from auth change:", session.user.user_metadata.role);
+          }
         }
         
         toast({
@@ -129,17 +144,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
       } 
       else if (event === 'SIGNED_OUT') {
-        console.log("Sign out detected, clearing user and profile");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Sign out detected, clearing user and profile");
+        }
         setUser(null);
         setProfile(null);
         localStorage.removeItem('supabase.auth.user_role');
       } 
       else if (event === 'TOKEN_REFRESHED' && session) {
-        console.log("Token refreshed, updating user");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Token refreshed, updating user");
+        }
         setUser(session.user);
       }
       else if (event === 'USER_UPDATED' && session) {
-        console.log("User updated, refreshing data");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("User updated, refreshing data");
+        }
         setUser(session.user);
         if (profile) {
           fetchProfileData(session.user.id);
@@ -155,12 +176,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [toast, supabaseAvailable]);
 
+  // Cache profile data to reduce redundant API calls
+  const profileCache = React.useRef(new Map<string, Profile>());
+
   const fetchProfileData = async (userId: string) => {
     try {
-      console.log("Explicitly fetching profile for user:", userId);
+      // Check cache first
+      if (profileCache.current.has(userId)) {
+        const cachedProfile = profileCache.current.get(userId);
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Using cached profile data for user:", userId);
+        }
+        setProfile(cachedProfile);
+        return cachedProfile;
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Explicitly fetching profile for user:", userId);
+      }
       setProfileLoading(true);
       
-      await ensureProfilesTableExists();
+      if (!tablesInitialized.current) {
+        await ensureProfilesTableExists();
+        tablesInitialized.current = true;
+      }
       
       const { data, error } = await supabase
         .from('profiles')
@@ -169,50 +208,78 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error) {
-        console.error("Error fetching profile:", error);
-        
         if (error.code === 'PGRST116') {
           const storedRole = localStorage.getItem('supabase.auth.user_role') || 
                             localStorage.getItem('oauth_role');
           const validatedRole = validateRole(storedRole) || 'customer';
           
-          console.log("Using role from localStorage for profile creation:", validatedRole);
+          if (process.env.NODE_ENV === 'development') {
+            console.log("Using role from localStorage for profile creation:", validatedRole);
+          }
           
           const createdProfile = await handleOAuthSignIn(user!, validatedRole);
           if (createdProfile) {
-            console.log("Created new profile during fetch:", createdProfile);
+            if (process.env.NODE_ENV === 'development') {
+              console.log("Created new profile during fetch:", createdProfile);
+            }
             setProfile(createdProfile);
             localStorage.setItem('supabase.auth.user_role', validatedRole);
+            
+            // Cache the profile
+            profileCache.current.set(userId, createdProfile);
+            
+            return createdProfile;
           } else {
             console.error("Failed to create profile during fetch");
           }
+        } else {
+          console.error("Error fetching profile:", error);
         }
         return null;
       }
 
       if (!data) {
-        console.log("No profile found for user:", userId);
+        if (process.env.NODE_ENV === 'development') {
+          console.log("No profile found for user:", userId);
+        }
         return null;
       }
       
-      const profileData: UserProfile = {
+      const profileData: Profile = {
         id: data.id as string,
         email: data.email as string,
-        role: data.role as UserProfile["role"],
+        role: data.role as Profile["role"],
         name: data.name as string,
         created_at: data.created_at as string,
+        company_name: data.company_name as string || null,
+        phone: data.phone as string || null,
+        industry: data.industry as string || null,
+        website: data.website as string || null,
+        integrations: data.integrations || null,
+        profile_banner: data.profile_banner || null,
+        profile_logo: data.profile_logo || null,
+        profile_description: data.profile_description || null,
+        profile_color_scheme: data.profile_color_scheme || null,
+        profile_social_links: data.profile_social_links || null,
+        profile_contact_info: data.profile_contact_info || null,
+        profile_featured_images: data.profile_featured_images || null,
+        profile_services_json: data.profile_services_json || null,
+        profile_services: data.profile_services || null,
+        inquiry_form_enabled: data.inquiry_form_enabled || false,
+        inquiry_form_fields: data.inquiry_form_fields || null,
+        inquiry_form_settings: data.inquiry_form_settings || null,
+        updated_at: data.updated_at as string
       };
-      
-      if (data.company_name) profileData.company_name = data.company_name as string;
-      if (data.phone) profileData.phone = data.phone as string;
-      if (data.industry) profileData.industry = data.industry as string;
-      if (data.website) profileData.website = data.website as string;
-      if (data.integrations) profileData.integrations = data.integrations as string[] || [];
-
-      console.log("Processed profile data with role:", profileData.role);
+  
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Processed profile data with role:", profileData.role);
+      }
       setProfile(profileData);
       
       localStorage.setItem('supabase.auth.user_role', profileData.role);
+      
+      // Cache the profile
+      profileCache.current.set(userId, profileData);
       
       return profileData;
     } catch (error) {
