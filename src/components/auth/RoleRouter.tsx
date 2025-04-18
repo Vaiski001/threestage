@@ -28,6 +28,16 @@ const isAdminPath = (path: string) => path.startsWith('/admin/');
 // Define auth paths that should not trigger role-specific redirects
 const AUTH_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'];
 
+// Define public paths that should always be accessible regardless of auth state
+const PUBLIC_PATHS = ['/', '/demo', '/login', '/signup', '/unauthorized', '/companies'];
+
+// Helper to check if a path is a public path
+const isPublicPath = (path: string) => 
+  PUBLIC_PATHS.includes(path) || 
+  path.startsWith('/auth/') || 
+  path.startsWith('/companies/') ||
+  path.startsWith('/forms/');
+
 interface RoleRouterProps {
   children: React.ReactNode;
 }
@@ -64,9 +74,12 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
       console.log("🔴 ADMIN ROLE found in storage - RoleRouter initial check");
       
       // If on a non-admin path and has admin role, redirect immediately
-      if (!isAdminPath(location.pathname)) {
-        console.log("🔴 Immediate redirect needed: Admin not on admin path");
+      // BUT don't redirect from the home page
+      if (!isAdminPath(location.pathname) && !isPublicPath(location.pathname)) {
+        console.log("🔴 Immediate redirect needed: Admin not on admin path or allowed public path");
         navigate('/admin/dashboard', { replace: true });
+      } else {
+        console.log("🔴 Admin user on allowed path, no redirection needed");
       }
     }
     
@@ -110,17 +123,8 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
       return;
     }
 
-    // Define paths that should always be accessible regardless of auth state
-    const publicPaths = ['/', '/demo', '/login', '/signup', '/unauthorized', '/companies'];
-    const isPublicPath = publicPaths.some(path => 
-      location.pathname === path || 
-      location.pathname.startsWith('/auth/') || 
-      location.pathname.startsWith('/companies/') ||
-      location.pathname.startsWith('/forms/')
-    );
-    
     // Skip redirection for public paths
-    if (isPublicPath) {
+    if (isPublicPath(location.pathname)) {
       console.log("Public path detected, skipping role check:", location.pathname);
       return;
     }
@@ -134,13 +138,13 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
     if (hasAdminRoleInStorage) {
       console.log("🔴 ADMIN ROLE found in storage during main path check");
       
-      // If not on admin path, redirect to admin dashboard
-      if (!currentPath.startsWith('/admin/')) {
-        console.log("🔴 Admin user not on admin path, redirecting to admin dashboard");
+      // If not on admin path or home page, redirect to admin dashboard
+      if (!currentPath.startsWith('/admin/') && !isPublicPath(currentPath)) {
+        console.log("🔴 Admin user not on admin path or allowed public path, redirecting to admin dashboard");
         navigate('/admin/dashboard', { replace: true });
         return;
       } else {
-        console.log("🔴 Admin user already on admin path, no redirection needed");
+        console.log("🔴 Admin user already on admin path or allowed public path, no redirection needed");
         return;
       }
     }
@@ -156,9 +160,9 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
         localStorage.setItem('userRole', 'admin');
         sessionStorage.setItem('userRole', 'admin');
         
-        // If not on admin path, redirect
-        if (!currentPath.startsWith('/admin/')) {
-          console.log("🔴 Admin user not on admin path, redirecting to admin dashboard");
+        // If not on admin path or allowed public path, redirect
+        if (!currentPath.startsWith('/admin/') && !isPublicPath(currentPath)) {
+          console.log("🔴 Admin user not on admin path or allowed public path, redirecting to admin dashboard");
           navigate('/admin/dashboard', { replace: true });
           return;
         }
@@ -190,8 +194,8 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
           console.log("🔴 Admin user detected, redirecting to admin dashboard");
           navigate('/admin/dashboard', { replace: true });
         }
-      } else if (!pathIsCompany && !pathIsCustomer && !pathIsAdmin) {
-        // If not on a role-specific path, redirect to appropriate dashboard
+      } else if (!pathIsCompany && !pathIsCustomer && !pathIsAdmin && !isPublicPath(currentPath)) {
+        // If not on a role-specific path or public path, redirect to appropriate dashboard
         console.log("User not on role-specific path, redirecting to appropriate dashboard");
         
         if (profile.role === 'company') {
@@ -231,8 +235,8 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
         localStorage.setItem('userRole', 'admin');
         sessionStorage.setItem('userRole', 'admin');
         
-        // Redirect if not on admin path
-        if (!currentPath.startsWith('/admin/')) {
+        // Redirect if not on admin path or public path
+        if (!currentPath.startsWith('/admin/') && !isPublicPath(currentPath)) {
           console.log("🔴 Admin role in storage, redirecting to admin dashboard");
           navigate('/admin/dashboard', { replace: true });
           return;
@@ -248,21 +252,17 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
           const pathIsCompany = currentPath.startsWith('/company/');
           const pathIsCustomer = currentPath.startsWith('/customer/');
           
-          // Redirect based on stored role if on wrong path
+          // If on a path that doesn't match role from localStorage, redirect
           if ((validRole === 'company' && pathIsCustomer) || 
-              (validRole === 'customer' && pathIsCompany)) {
-            console.log("User on wrong path based on localStorage role, redirecting");
-            
-            if (validRole === 'company') {
-              navigate('/company/dashboard', { replace: true });
-            } else if (validRole === 'customer') {
-              navigate('/customer/dashboard', { replace: true });
-            }
+              (validRole === 'customer' && pathIsCompany) ||
+              (!pathIsCompany && !pathIsCustomer && !isPublicPath(currentPath))) {
+            console.log("User on incorrect path for their stored role, redirecting");
+            navigate(getDashboardPathForRole(validRole), { replace: true });
           }
-        } else {
-          // If no valid role found in storage, redirect to login
-          console.log("No valid role found in storage, redirecting to login");
-          navigate('/login', { replace: true });
+        } else if (!isPublicPath(currentPath)) {
+          // No valid role and not on a public path - redirect to login
+          console.log("No valid role found and not on public path, redirecting to login");
+          navigate('/login', { state: { from: currentPath } });
         }
       }
     }

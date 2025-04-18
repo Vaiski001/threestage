@@ -1,412 +1,258 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import AdminLayout from "@/components/layouts/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { TableHead, TableRow, TableHeader, TableCell, TableBody, Table } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  UsersIcon, 
-  Building2Icon, 
-  MessagesSquareIcon, 
-  FileTextIcon, 
-  BarChart4Icon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ClipboardIcon
-} from "lucide-react";
-import { AdminLayout } from "@/components/layouts/AdminLayout";
+import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
-import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Loader2, RefreshCcw } from "lucide-react";
 
-// Admin role check helper function
-const checkForAdminRole = (): boolean => {
-  const localStorage1 = localStorage.getItem('supabase.auth.user_role') === 'admin';
-  const localStorage2 = localStorage.getItem('userRole') === 'admin';
-  const sessionStorage1 = sessionStorage.getItem('userRole') === 'admin';
-  
-  console.log("🔒 Admin role check in AdminDashboard:", {
-    'localStorage.supabase.auth.user_role': localStorage1,
-    'localStorage.userRole': localStorage2,
-    'sessionStorage.userRole': sessionStorage1
-  });
-  
-  return localStorage1 || localStorage2 || sessionStorage1;
-};
-
-interface DashboardStat {
-  name: string;
-  value: number;
-  change: number;
-  icon: React.ReactNode;
-}
-
-interface RecentActivity {
-  id: string;
-  type: 'company_signup' | 'customer_signup' | 'inquiry_created' | 'form_submitted';
-  title: string;
-  description: string;
-  timestamp: string;
-}
-
-const AdminDashboard = () => {
+const AdminDashboard: React.FC = () => {
   const { profile } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStat[]>([]);
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adminConfirmed, setAdminConfirmed] = useState(false);
-  
-  // CRITICAL: Validate admin access at component mount
-  useEffect(() => {
-    console.log("🔴 AdminDashboard mounted - validating admin access");
-    
-    // Check for admin role in both storage and profile
-    const isAdminInStorage = checkForAdminRole();
-    const isAdminInProfile = profile?.role === 'admin';
-    
-    console.log("Admin dashboard access check:", {
-      "isAdminInStorage": isAdminInStorage,
-      "isAdminInProfile": isAdminInProfile,
-      "profile": profile ? `Found (role: ${profile.role})` : "Not loaded yet"
-    });
-    
-    if (isAdminInStorage || isAdminInProfile) {
-      console.log("✅ Admin access confirmed");
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState({
+    totalCustomers: 0,
+    totalCompanies: 0,
+    totalInquiries: 0,
+    recentInquiries: [],
+  });
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
       
-      // Ensure admin role is set in all storage locations
-      localStorage.setItem('supabase.auth.user_role', 'admin');
-      localStorage.setItem('userRole', 'admin');
-      sessionStorage.setItem('userRole', 'admin');
+      console.log("Fetching admin dashboard data...");
       
-      setAdminConfirmed(true);
+      // Fetch dashboard data with error handling for each query
+      const customersPromise = supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'customer')
+        .then(result => {
+          if (result.error) throw new Error(`Error fetching customers: ${result.error.message}`);
+          return { count: result.count || 0 };
+        })
+        .catch(err => {
+          console.error("Customer query failed:", err);
+          return { count: 0 };
+        });
       
-      // Show confirmation toast
-      toast({
-        title: "Admin access",
-        description: "Welcome to the admin dashboard",
-        variant: "default",
-        duration: 3000
+      const companiesPromise = supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'company')
+        .then(result => {
+          if (result.error) throw new Error(`Error fetching companies: ${result.error.message}`);
+          return { count: result.count || 0 };
+        })
+        .catch(err => {
+          console.error("Company query failed:", err);
+          return { count: 0 };
+        });
+      
+      const inquiriesCountPromise = supabase
+        .from('inquiries')
+        .select('*', { count: 'exact', head: true })
+        .then(result => {
+          if (result.error) throw new Error(`Error fetching inquiry count: ${result.error.message}`);
+          return { count: result.count || 0 };
+        })
+        .catch(err => {
+          console.error("Inquiries count query failed:", err);
+          return { count: 0 };
+        });
+      
+      const recentInquiriesPromise = supabase
+        .from('inquiries')
+        .select('*, profiles(name)')
+        .order('created_at', { ascending: false })
+        .limit(5)
+        .then(result => {
+          if (result.error) throw new Error(`Error fetching recent inquiries: ${result.error.message}`);
+          return { data: result.data || [] };
+        })
+        .catch(err => {
+          console.error("Recent inquiries query failed:", err);
+          return { data: [] };
+        });
+
+      const [
+        { count: totalCustomers },
+        { count: totalCompanies },
+        { count: totalInquiries },
+        { data: recentInquiries }
+      ] = await Promise.all([
+        customersPromise,
+        companiesPromise,
+        inquiriesCountPromise,
+        recentInquiriesPromise
+      ]);
+
+      console.log("Dashboard data fetched successfully:", {
+        totalCustomers,
+        totalCompanies,
+        totalInquiries,
+        recentInquiriesCount: recentInquiries.length
       });
-    } else {
-      // Only redirect if profile is loaded and doesn't have admin role
-      if (profile && profile.role !== 'admin') {
-        console.log("❌ Not an admin - redirecting to unauthorized");
-        toast({
-          title: "Access Denied",
-          description: "You don't have admin privileges",
-          variant: "destructive",
-          duration: 5000
-        });
-        
-        navigate('/unauthorized', { replace: true });
-      } else if (!profile) {
-        // If profile not loaded yet, we'll wait for the next effect run
-        console.log("⏳ Waiting for profile data to confirm admin role");
-      }
-    }
-  }, [profile, navigate, toast]);
-  
-  // Watch for profile changes to validate admin role
-  useEffect(() => {
-    if (profile) {
-      console.log("Profile loaded in AdminDashboard, role:", profile.role);
+
+      setDashboardData({
+        totalCustomers: totalCustomers || 0,
+        totalCompanies: totalCompanies || 0,
+        totalInquiries: totalInquiries || 0,
+        recentInquiries: recentInquiries || [],
+      });
       
-      if (profile.role !== 'admin') {
-        console.log("❌ Profile does not have admin role - redirecting");
-        toast({
-          title: "Access Denied",
-          description: "You don't have admin privileges",
-          variant: "destructive",
-          duration: 5000
-        });
-        
-        navigate('/unauthorized', { replace: true });
-      } else {
-        // Ensure admin role is set in all storage
-        localStorage.setItem('supabase.auth.user_role', 'admin');
-        localStorage.setItem('userRole', 'admin');
-        sessionStorage.setItem('userRole', 'admin');
-        
-        setAdminConfirmed(true);
-      }
+    } catch (error) {
+      console.error("Error fetching admin dashboard data:", error);
+      setError(error instanceof Error ? error.message : "Unknown error occurred");
+    } finally {
+      setLoading(false);
     }
-  }, [profile, navigate, toast]);
-
-  // Mock data for the dashboard
-  useEffect(() => {
-    // Only load dashboard data after admin role is confirmed
-    if (!adminConfirmed) {
-      return;
-    }
-    
-    console.log("Loading admin dashboard data");
-    
-    // In production, this would fetch actual data from Supabase
-    setStats([
-      {
-        name: "Total Companies",
-        value: 124,
-        change: 12,
-        icon: <Building2Icon className="h-5 w-5 text-blue-500" />
-      },
-      {
-        name: "Total Customers",
-        value: 2456,
-        change: 18,
-        icon: <UsersIcon className="h-5 w-5 text-green-500" />
-      },
-      {
-        name: "Active Inquiries",
-        value: 347,
-        change: -5,
-        icon: <MessagesSquareIcon className="h-5 w-5 text-amber-500" />
-      },
-      {
-        name: "Forms Submitted",
-        value: 892,
-        change: 24,
-        icon: <FileTextIcon className="h-5 w-5 text-purple-500" />
-      }
-    ]);
-
-    setRecentActivity([
-      {
-        id: "1",
-        type: "company_signup",
-        title: "New Company Registration",
-        description: "TechSolutions Inc. signed up as a service provider",
-        timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString()
-      },
-      {
-        id: "2",
-        type: "inquiry_created",
-        title: "New Inquiry",
-        description: "An inquiry was submitted to DesignMasters Ltd.",
-        timestamp: new Date(Date.now() - 58 * 60 * 1000).toISOString()
-      },
-      {
-        id: "3",
-        type: "form_submitted",
-        title: "Form Submission",
-        description: "A customer submitted the 'Website Design Request' form",
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: "4",
-        type: "customer_signup",
-        title: "New Customer",
-        description: "John Doe created a new customer account",
-        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: "5",
-        type: "inquiry_created",
-        title: "New Inquiry",
-        description: "An inquiry was submitted to CreativeHub Agency",
-        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
-      }
-    ]);
-
-    setLoading(false);
-  }, [adminConfirmed]);
-
-  // Format relative time
-  const formatTimeAgo = (timestamp: string) => {
-    const now = new Date();
-    const date = new Date(timestamp);
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
-    if (seconds < 60) return `${seconds} seconds ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} minutes ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hours ago`;
-    const days = Math.floor(hours / 24);
-    return `${days} days ago`;
   };
 
-  // Show loading state until admin role is confirmed and data is loaded
-  if (!adminConfirmed || loading) {
+  useEffect(() => {
+    if (profile) {
+      console.log("Profile available, fetching dashboard data:", profile);
+      fetchDashboardData();
+    } else {
+      console.log("No profile available yet, waiting...");
+    }
+  }, [profile]);
+
+  // Show loading state
+  if (loading) {
     return (
       <AdminLayout>
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-medium mb-2">Loading Admin Dashboard...</h2>
-            <p className="text-muted-foreground">
-              Verifying your admin privileges...
-            </p>
-          </div>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <p className="text-lg mb-2">Loading dashboard data...</p>
+          <p className="text-sm text-muted-foreground">Please wait while we fetch the latest information</p>
         </div>
       </AdminLayout>
     );
   }
-  
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-120px)]">
+          <Alert variant="destructive" className="mb-4 max-w-lg">
+            <AlertTitle>Error loading dashboard</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button 
+            onClick={fetchDashboardData} 
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Try Again
+          </Button>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Monitor platform activity and perform administrative tasks
-          </p>
+      <div className="grid gap-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Welcome to the Threestage admin dashboard.</p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={fetchDashboardData} 
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
+            Refresh
+          </Button>
         </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">
-                {stat.name}
-              </CardTitle>
-              {stat.icon}
+        
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Customers</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value.toLocaleString()}</div>
-              <div className="flex items-center pt-1 text-xs">
-                {stat.change > 0 ? (
-                  <ArrowUpIcon className="w-3 h-3 text-green-500 mr-1" />
-                ) : (
-                  <ArrowDownIcon className="w-3 h-3 text-red-500 mr-1" />
-                )}
-                <span className={stat.change > 0 ? "text-green-500" : "text-red-500"}>
-                  {Math.abs(stat.change)}%
-                </span>
-                <span className="text-muted-foreground ml-1">from last month</span>
-              </div>
+              <div className="text-2xl font-bold">{dashboardData.totalCustomers}</div>
+              <p className="text-xs text-muted-foreground">Total registered customers</p>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Companies</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dashboardData.totalCompanies}</div>
+              <p className="text-xs text-muted-foreground">Total registered companies</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Inquiries</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dashboardData.totalInquiries}</div>
+              <p className="text-xs text-muted-foreground">Total inquiries in the system</p>
+            </CardContent>
+          </Card>
+        </div>
 
-      <div className="grid gap-6 mt-6 md:grid-cols-7">
-        {/* Activity Feed */}
-        <Card className="md:col-span-3">
+        <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Latest platform events and actions
-            </CardDescription>
+            <CardTitle>Recent Inquiries</CardTitle>
+            <CardDescription>The most recent inquiries across the platform.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4">
-                  <div className="rounded-full p-2 bg-muted">
-                    {activity.type === 'company_signup' && <Building2Icon className="h-4 w-4" />}
-                    {activity.type === 'customer_signup' && <UsersIcon className="h-4 w-4" />}
-                    {activity.type === 'inquiry_created' && <MessagesSquareIcon className="h-4 w-4" />}
-                    {activity.type === 'form_submitted' && <ClipboardIcon className="h-4 w-4" />}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{activity.title}</p>
-                    <p className="text-sm text-muted-foreground">{activity.description}</p>
-                    <p className="text-xs text-muted-foreground">{formatTimeAgo(activity.timestamp)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {dashboardData.recentInquiries.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dashboardData.recentInquiries.map((inquiry: any) => (
+                    <TableRow key={inquiry.id}>
+                      <TableCell>{inquiry.profiles?.name || 'Unknown'}</TableCell>
+                      <TableCell>{inquiry.title}</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          inquiry.status === 'pending' ? 'outline' :
+                          inquiry.status === 'in_progress' ? 'secondary' :
+                          inquiry.status === 'completed' ? 'default' : 'destructive'
+                        }>
+                          {inquiry.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(inquiry.created_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Alert>
+                <AlertTitle>No recent inquiries</AlertTitle>
+                <AlertDescription>
+                  There are no recent inquiries in the system.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
-
-        {/* Platform Health */}
-        <Card className="md:col-span-4">
-          <CardHeader>
-            <CardTitle>Platform Health</CardTitle>
-            <CardDescription>
-              System status and current performance metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="overview">
-              <TabsList className="mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="storage">Storage</TabsTrigger>
-                <TabsTrigger value="database">Database</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">API Status</p>
-                      <p className="text-xs text-muted-foreground">All systems operational</p>
-                    </div>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Healthy</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Authentication Service</p>
-                      <p className="text-xs text-muted-foreground">User login and registration</p>
-                    </div>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Healthy</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Messaging Service</p>
-                      <p className="text-xs text-muted-foreground">Email and in-app messaging</p>
-                    </div>
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Degraded</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Content Delivery</p>
-                      <p className="text-xs text-muted-foreground">File storage and delivery</p>
-                    </div>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Healthy</Badge>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="storage">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Total Storage Used</p>
-                      <p className="text-xs text-muted-foreground">24.5 GB of 50 GB</p>
-                    </div>
-                    <div className="w-24 bg-muted h-2 rounded-full overflow-hidden">
-                      <div className="bg-primary h-full" style={{ width: '49%' }}></div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="database">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Query Performance</p>
-                      <p className="text-xs text-muted-foreground">Average response time</p>
-                    </div>
-                    <p className="text-sm font-medium">124ms</p>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">Row Count</p>
-                      <p className="text-xs text-muted-foreground">Total records</p>
-                    </div>
-                    <p className="text-sm font-medium">512,489</p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-6 flex gap-4">
-        <Button variant="outline" className="flex gap-2">
-          <BarChart4Icon className="h-4 w-4" />
-          View Detailed Reports
-        </Button>
       </div>
     </AdminLayout>
   );
