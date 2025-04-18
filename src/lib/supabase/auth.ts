@@ -1,6 +1,6 @@
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from './client';
-import { UserRole, UserProfile } from './types';
+import { UserRole, Profile } from './types';
 import { getUserProfile } from './profiles';
 import { clearAuthStorage } from './signout';
 
@@ -29,8 +29,12 @@ export const signUpWithEmail = async (
     const role = userData.role as UserRole;
     const accountType = role; // Make account_type match role for consistency
     
-    // Create redirect URL with role and account_type
-    const redirectUrl = `${window.location.origin}/auth/callback?role=${role}&account_type=${accountType}`;
+    // Create redirect URL with role and account_type - ensure it has a full proper URL
+    // Using a full absolute URL to avoid any protocol issues
+    const origin = window.location.origin;
+    const secureOrigin = origin.startsWith('https://') ? origin : origin.replace('http://', 'https://');
+    const redirectUrl = `${secureOrigin}/auth/callback?role=${role}&account_type=${accountType}`;
+    
     console.log("Setting email verification redirect URL:", redirectUrl);
     
     // Create the auth user - ENSURE EMAIL CONFIRMATION IS ENABLED
@@ -153,8 +157,9 @@ export const signInWithEmail = async (email: string, password: string) => {
 export const signInWithOAuth = async (provider: 'google' | 'facebook' | 'linkedin', role: UserRole = 'customer') => {
   try {
     const domain = window.location.origin;
+    const secureOrigin = domain.startsWith('https://') ? domain : domain.replace('http://', 'https://');
     const redirectPath = '/auth/callback';
-    const redirectTo = `${domain}${redirectPath}?role=${role}&account_type=${role}`;
+    const redirectTo = `${secureOrigin}${redirectPath}?role=${role}&account_type=${role}`;
     
     console.log(`OAuth sign-in initiated with ${provider} for role: ${role}`);
     console.log(`Redirect URL: ${redirectTo}`);
@@ -337,7 +342,7 @@ export const updatePassword = async (newPassword: string) => {
   }
 };
 
-export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 'customer'): Promise<UserProfile | null> => {
+export const handleOAuthSignIn = async (user: User, role: Profile['role'] = 'customer'): Promise<Profile | null> => {
   try {
     console.log("Handling OAuth sign-in for user:", user.id, "with role:", role);
     
@@ -410,7 +415,7 @@ export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 
           console.log("Profile created successfully:", data);
           
           // Convert to UserProfile type
-          const createdProfile: UserProfile = {
+          const createdProfile: Profile = {
             id: data.id as string,
             email: data.email as string,
             role: data.role as UserRole,
@@ -438,7 +443,7 @@ export const handleOAuthSignIn = async (user: User, role: UserProfile['role'] = 
       console.log("Existing profile found:", existingProfile);
       
       // Convert to UserProfile type
-      const profile: UserProfile = {
+      const profile: Profile = {
         id: existingProfile.id as string,
         email: existingProfile.email as string,
         role: existingProfile.role as UserRole,
