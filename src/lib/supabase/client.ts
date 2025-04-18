@@ -7,11 +7,38 @@ import { SupabaseDatabase } from './types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+// Custom fetch function to ensure URLs always have proper https:// scheme
+const customFetch = (url: RequestInfo | URL, init?: RequestInit) => {
+  // If url is a string and missing proper https:// scheme, fix it
+  if (typeof url === 'string' && !url.match(/^https?:\/\//)) {
+    console.warn('Fixing malformed URL:', url);
+    // If it starts with ttps://, fix it
+    if (url.startsWith('ttps://')) {
+      url = 'https://' + url.substring(7);
+    } 
+    // If no scheme at all, add https://
+    else if (!url.includes('://')) {
+      url = 'https://' + url;
+    }
+  }
+  
+  return fetch(url, init);
+};
+
 // Function to create and return a new Supabase client
 export const createSupabaseClient = () => {
   return createClient<SupabaseDatabase>(
     supabaseUrl || 'https://placeholder-url.supabase.co', 
-    supabaseAnonKey || 'placeholder-key'
+    supabaseAnonKey || 'placeholder-key',
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+      },
+      global: {
+        fetch: customFetch
+      }
+    }
   );
 };
 
