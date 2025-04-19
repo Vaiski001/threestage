@@ -21,12 +21,28 @@ export function validateRole(role: unknown): UserRole | null {
   
   // Special handling for admin role to ensure it's always recognized
   if (normalizedRole === 'admin') {
-    console.log('Admin role validated successfully');
+    console.log('🔴 Admin role validated successfully');
     // Ensure it's properly stored in localStorage for future checks
     try {
+      console.log('Storing admin role in all storage locations');
       localStorage.setItem('supabase.auth.user_role', 'admin');
       localStorage.setItem('userRole', 'admin');
       sessionStorage.setItem('userRole', 'admin');
+      
+      // Verify storage was successful
+      const stored1 = localStorage.getItem('supabase.auth.user_role');
+      const stored2 = localStorage.getItem('userRole');
+      const stored3 = sessionStorage.getItem('userRole');
+      
+      console.log('Admin role storage verification:', {
+        'localStorage.supabase.auth.user_role': stored1,
+        'localStorage.userRole': stored2,
+        'sessionStorage.userRole': stored3
+      });
+      
+      if (stored1 !== 'admin' || stored2 !== 'admin' || stored3 !== 'admin') {
+        console.warn('⚠️ Admin role storage was not consistent across all locations');
+      }
     } catch (e) {
       // Ignore storage errors in case of incognito mode
       console.warn('Could not store admin role in localStorage:', e);

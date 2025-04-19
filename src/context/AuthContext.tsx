@@ -25,25 +25,31 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// Helper function to consistently save role in all storage locations
+// Check if admin role exists in any storage location
+const isAdminInStorage = () => {
+  const localStorage1 = localStorage.getItem('supabase.auth.user_role') === 'admin';
+  const localStorage2 = localStorage.getItem('userRole') === 'admin';
+  const sessionStorage1 = sessionStorage.getItem('userRole') === 'admin';
+  
+  console.log("🔍 Checking for admin role in storage:", {
+    'localStorage.supabase.auth.user_role': localStorage1,
+    'localStorage.userRole': localStorage2,
+    'sessionStorage.userRole': sessionStorage1
+  });
+  
+  return localStorage1 || localStorage2 || sessionStorage1;
+};
+
+// Helper to save role to all storage locations
 const saveRoleToStorage = (role: string) => {
-  console.log(`🔐 Saving role to all storage locations: ${role}`);
+  console.log(`Saving role to all storage: ${role}`);
   try {
     localStorage.setItem('supabase.auth.user_role', role);
     localStorage.setItem('userRole', role);
     sessionStorage.setItem('userRole', role);
-  } catch (e) {
-    console.warn('Failed to save role to storage:', e);
+  } catch (error) {
+    console.warn('Could not save role to storage:', error);
   }
-};
-
-// Helper function to check if admin role is in any storage
-const isAdminInStorage = (): boolean => {
-  const supabaseAuthRole = localStorage.getItem('supabase.auth.user_role');
-  const userRole = localStorage.getItem('userRole');
-  const sessionRole = sessionStorage.getItem('userRole');
-  
-  return supabaseAuthRole === 'admin' || userRole === 'admin' || sessionRole === 'admin';
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {

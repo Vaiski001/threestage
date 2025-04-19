@@ -182,10 +182,13 @@ export const ProtectedRoute = ({
       const isAdminInStorage = checkForAdminRole();
       const isAdminInProfile = profile?.role === "admin";
       
-      console.log("Admin route access check:", {
+      console.log("🔍 Admin route access check:", {
         "isAdminInStorage": isAdminInStorage,
         "isAdminInProfile": isAdminInProfile,
-        "profile.role": profile?.role || "no profile"
+        "profile.role": profile?.role || "no profile",
+        "localStorage.supabase.auth.user_role": localStorage.getItem('supabase.auth.user_role'),
+        "localStorage.userRole": localStorage.getItem('userRole'),
+        "sessionStorage.userRole": sessionStorage.getItem('userRole')
       });
       
       if (!isAdminInStorage && !isAdminInProfile) {

@@ -194,8 +194,9 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
           console.log("🔴 Admin user detected, redirecting to admin dashboard");
           navigate('/admin/dashboard', { replace: true });
         }
-      } else if (!pathIsCompany && !pathIsCustomer && !pathIsAdmin && !isPublicPath(currentPath)) {
-        // If not on a role-specific path or public path, redirect to appropriate dashboard
+      } 
+      // If not on a role-specific path or public path, redirect to appropriate dashboard
+      else if (!pathIsCompany && !pathIsCustomer && !pathIsAdmin && !isPublicPath(currentPath)) {
         console.log("User not on role-specific path, redirecting to appropriate dashboard");
         
         if (profile.role === 'company') {
