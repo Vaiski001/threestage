@@ -115,13 +115,12 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (profile) {
-      console.log("Profile available, fetching dashboard data:", profile);
-      fetchDashboardData();
-    } else {
-      console.log("No profile available yet, waiting...");
-    }
-  }, [profile]);
+    // Log profile for debugging
+    console.log("Admin Dashboard mounted, profile:", profile);
+    
+    // Try to fetch data even if profile isn't available immediately
+    fetchDashboardData();
+  }, []);
 
   // Show loading state
   if (loading) {

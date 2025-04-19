@@ -5,13 +5,21 @@ import { ModeToggle } from "../theme/mode-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 export interface AdminLayoutProps {
   children: ReactNode;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { profile, logout } = useAuth();
+  const { profile, resetAuth } = useAuth();
+  const navigate = useNavigate();
+
+  const logout = async () => {
+    console.log("Logging out admin user");
+    await resetAuth();
+    navigate("/login");
+  };
 
   // Admin sidebar navigation items
   const sidebarNavItems = [
@@ -31,19 +39,24 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: "Users"
     },
     {
-      title: "Inquiries",
-      href: "/admin/inquiries",
-      icon: "MessageSquare"
+      title: "Content",
+      href: "/admin/moderation",
+      icon: "FileText"
     },
     {
-      title: "Forms",
-      href: "/admin/forms",
-      icon: "FileText"
+      title: "Analytics",
+      href: "/admin/analytics",
+      icon: "BarChart"
     },
     {
       title: "Settings",
       href: "/admin/settings",
       icon: "Settings"
+    },
+    {
+      title: "Developer",
+      href: "/admin/dev-tools",
+      icon: "Code"
     }
   ];
 
@@ -82,7 +95,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => navigate("/admin/settings")}
+                >
+                  Settings
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

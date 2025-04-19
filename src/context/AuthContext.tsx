@@ -126,11 +126,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfileData = async (userId: string) => {
     console.log("Fetching profile data for user:", userId);
     try {
-      // Special handling for admin - check if admin role is already set in storage
-      if (isAdminInStorage()) {
-        console.log("🔴 ADMIN ROLE found in storage during profile fetch");
-      }
-      
       // Check if we have the data in sessionStorage to prevent unnecessary fetches
       const cachedProfileData = sessionStorage.getItem(`profile_${userId}`);
       
@@ -145,6 +140,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (cachedProfile.role === 'admin') {
           console.log("🔴 ADMIN ROLE DETECTED in cached profile - ensuring proper storage");
           saveRoleToStorage('admin');
+          
+          // Force check localStorage to ensure it was properly set
+          console.log("Verifying storage after admin role detection:", {
+            'localStorage.supabase.auth.user_role': localStorage.getItem('supabase.auth.user_role'),
+            'localStorage.userRole': localStorage.getItem('userRole'),
+            'sessionStorage.userRole': sessionStorage.getItem('userRole')
+          });
         } else {
           // For non-admin roles, ensure role is saved consistently
           saveRoleToStorage(cachedProfile.role);
@@ -180,8 +182,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // For admin role, ensure it's properly set in all storage mechanisms
       if (profileData.role === 'admin') {
-        console.log("🔴 ADMIN ROLE DETECTED in database profile - ensuring proper storage");
-        saveRoleToStorage('admin');
+        console.log("🔴 ADMIN ROLE DETECTED in database profile - forcing storage consistency");
+        
+        // Force clear any conflicting role first
+        try {
+          localStorage.removeItem('supabase.auth.user_role');
+          localStorage.removeItem('userRole');
+          sessionStorage.removeItem('userRole');
+          
+          // Then set admin role
+          localStorage.setItem('supabase.auth.user_role', 'admin');
+          localStorage.setItem('userRole', 'admin');
+          sessionStorage.setItem('userRole', 'admin');
+          
+          // Verify storage
+          console.log("Verifying admin role storage after database fetch:", {
+            'localStorage.supabase.auth.user_role': localStorage.getItem('supabase.auth.user_role'),
+            'localStorage.userRole': localStorage.getItem('userRole'),
+            'sessionStorage.userRole': sessionStorage.getItem('userRole')
+          });
+        } catch (e) {
+          console.warn("Error setting admin role in storage:", e);
+        }
         
         // Also update sessionStorage to ensure consistency
         sessionStorage.setItem(`profile_${userId}`, JSON.stringify(profileData));
@@ -361,7 +383,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               localStorage.removeItem('oauth_role');
               localStorage.removeItem('oauth_provider');
             } else {
-              await fetchProfileData(session.user.id);
+              console.log("Normal sign-in flow - fetching profile data for user:", session.user.id);
+              
+              // Clear any potentially inconsistent role data first
+              localStorage.removeItem('supabase.auth.user_role');
+              localStorage.removeItem('userRole');
+              sessionStorage.removeItem('userRole');
+              
+              // Fetch profile - this will set the correct role based on the database
+              const profile = await fetchProfileData(session.user.id);
+              
+              // Double-check that admin role is properly set
+              if (profile?.role === 'admin') {
+                console.log("🔴 ADMIN ROLE detected during sign-in - forcing proper storage");
+                saveRoleToStorage('admin');
+                
+                // Verify storage
+                console.log("Verifying admin role storage after sign-in:", {
+                  'localStorage.supabase.auth.user_role': localStorage.getItem('supabase.auth.user_role'),
+                  'localStorage.userRole': localStorage.getItem('userRole'),
+                  'sessionStorage.userRole': sessionStorage.getItem('userRole')
+                });
+              }
             }
           }
         } else if (event === "SIGNED_OUT") {
