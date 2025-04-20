@@ -1,4 +1,4 @@
-
+import React from "react";
 import { Link } from "react-router-dom";
 import { Container } from "@/components/ui/Container";
 import { useAuth } from "@/context/AuthContext";
@@ -8,13 +8,14 @@ import { AuthButtons } from "./AuthButtons";
 import { MobileMenu } from "./MobileMenu";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
+import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 
 export function Header() {
   const { isAuthenticated, profile, resetAuth } = useAuth();
 
   return (
     <header className="py-4 border-b">
-      <Container>
+      <Container size="lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="text-xl font-semibold mr-8">
@@ -24,6 +25,7 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggleButton />
             <Link to="/demo">
               <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2">
                 <Play className="h-4 w-4" />

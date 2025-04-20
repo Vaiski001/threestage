@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, Play } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface MobileMenuProps {
   isAuthenticated: boolean;
@@ -65,6 +65,13 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
               <Play className="h-4 w-4" />
               See Demo
             </Link>
+            
+            {/* Theme toggle for mobile users */}
+            <div className="py-2 flex items-center justify-between">
+              <span className="text-sm font-medium">Theme</span>
+              <ThemeToggle />
+            </div>
+            
             {!isAuthenticated && (
               <>
                 <button

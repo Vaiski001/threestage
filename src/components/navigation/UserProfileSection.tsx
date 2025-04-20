@@ -1,9 +1,9 @@
-
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Settings, User, Building, LogOut, ChevronDown } from "lucide-react";
+import { Settings, User, Building, LogOut, ChevronDown, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { UserProfile } from "@/lib/supabase/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTheme } from "@/context/ThemeContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { signOut } from "@/lib/supabase";
 
+// Import UserProfile from the correct location
+interface UserProfile {
+  id?: string;
+  name?: string;
+  company_name?: string;
+  avatar_url?: string;
+}
+
 interface UserProfileSectionProps {
   profile: UserProfile | null;
   isCompany: boolean;
@@ -24,6 +32,7 @@ interface UserProfileSectionProps {
 export const UserProfileSection = ({ profile, isCompany }: UserProfileSectionProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   
   const handleSignOut = async () => {
     try {
@@ -101,6 +110,20 @@ export const UserProfileSection = ({ profile, isCompany }: UserProfileSectionPro
               </DropdownMenuItem>
             )}
           </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={toggleTheme}>
+            {theme === 'dark' ? (
+              <>
+                <Sun className="mr-2 h-4 w-4" />
+                <span>Light Theme</span>
+              </>
+            ) : (
+              <>
+                <Moon className="mr-2 h-4 w-4" />
+                <span>Dark Theme</span>
+              </>
+            )}
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
             <LogOut className="mr-2 h-4 w-4" />

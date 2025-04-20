@@ -1,10 +1,10 @@
-
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, ChevronDown } from "lucide-react";
+import { User, LogOut, ChevronDown, Sun, Moon } from "lucide-react";
 import { signOut, forceSignOut } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,7 @@ export function AccountDropdown({ profile }: AccountDropdownProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { resetAuth } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSignOut = async () => {
     try {
@@ -75,6 +76,22 @@ export function AccountDropdown({ profile }: AccountDropdownProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleDashboardClick}>Dashboard</DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate("/profile")}>Profile</DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={toggleTheme}>
+          {theme === 'dark' ? (
+            <>
+              <Sun className="h-4 w-4 mr-2" />
+              Light Theme
+            </>
+          ) : (
+            <>
+              <Moon className="h-4 w-4 mr-2" />
+              Dark Theme
+            </>
+          )}
+        </DropdownMenuItem>
+        
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
           <LogOut className="h-4 w-4 mr-2" />
