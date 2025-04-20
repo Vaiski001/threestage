@@ -49,6 +49,21 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: "BarChart"
     },
     {
+      title: "Notifications",
+      href: "/admin/notifications",
+      icon: "Bell"
+    },
+    {
+      title: "Audit Logs",
+      href: "/admin/audit-logs",
+      icon: "History"
+    },
+    {
+      title: "API Management",
+      href: "/admin/api",
+      icon: "Key"
+    },
+    {
       title: "Settings",
       href: "/admin/settings",
       icon: "Settings"

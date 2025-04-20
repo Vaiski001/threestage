@@ -8,6 +8,10 @@ import ContentModeration from "@/pages/admin/ContentModeration";
 import AnalyticsReports from "@/pages/admin/AnalyticsReports";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminDevTools from "@/pages/admin/AdminDevTools";
+import SystemConfiguration from "@/pages/admin/SystemConfiguration";
+import NotificationManagement from "@/pages/admin/NotificationManagement";
+import AuditLogs from "@/pages/admin/AuditLogs";
+import ApiManagement from "@/pages/admin/ApiManagement";
 import NotFound from "@/pages/NotFound";
 
 // Export admin routes as an array to use in parent Routes component
@@ -70,6 +74,46 @@ export const AdminRoutes = () => {
         element={
           <ProtectedRoute requiredRole="admin">
             <AdminSettings />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* System Configuration */}
+      <Route 
+        path="/admin/system-config" 
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <SystemConfiguration />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Notification Management */}
+      <Route 
+        path="/admin/notifications" 
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <NotificationManagement />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Audit Logs */}
+      <Route 
+        path="/admin/audit-logs" 
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AuditLogs />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* API Management */}
+      <Route 
+        path="/admin/api" 
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <ApiManagement />
           </ProtectedRoute>
         } 
       />
