@@ -52,6 +52,15 @@ export const ProtectedRoute = ({
     if (requiredRole === "admin") {
       console.log("🔴 Admin route detected, performing storage check");
       
+      // Only perform admin check if there's indication of authentication
+      const hasAuthToken = localStorage.getItem('supabase.auth.token') || 
+                        sessionStorage.getItem('supabase.auth.token');
+      
+      if (!hasAuthToken && !profile) {
+        console.log("No auth data detected, skipping admin role check");
+        return;
+      }
+      
       // Check if admin role is in storage
       const isAdmin = checkForAdminRole();
       

@@ -7,6 +7,16 @@ import { isSupabaseAvailable } from "@/lib/supabase/client";
 
 // Helper function to check for admin role in all possible storage locations
 const checkForAdminRole = (): boolean => {
+  // First, check if there's any indication of authentication
+  // If not, we can skip the check entirely
+  const hasAnyAuthData = localStorage.getItem('supabase.auth.token') || 
+                       sessionStorage.getItem('supabase.auth.token');
+  
+  if (!hasAnyAuthData) {
+    console.log("No auth data detected, skipping admin role check");
+    return false;
+  }
+  
   const localStorage1 = localStorage.getItem('supabase.auth.user_role') === 'admin';
   const localStorage2 = localStorage.getItem('userRole') === 'admin';
   const sessionStorage1 = sessionStorage.getItem('userRole') === 'admin';
@@ -67,30 +77,36 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
     console.log("Loading state:", loading);
     console.log("Bypass Role Check:", bypassRoleCheck);
     
-    // Check for admin role in all storage locations
-    const isAdmin = checkForAdminRole();
-    
-    if (isAdmin) {
-      console.log("🔴 ADMIN ROLE found in storage - RoleRouter initial check");
+    // Only perform admin checks if user is authenticated or we have profile data
+    // This prevents unnecessary admin checks for unauthenticated visitors
+    if (profile || localStorage.getItem('supabase.auth.token')) {
+      // Check for admin role in all storage locations
+      const isAdmin = checkForAdminRole();
       
-      // If on a non-admin path and has admin role, redirect immediately
-      // BUT don't redirect from the home page
-      if (!isAdminPath(location.pathname) && !isPublicPath(location.pathname)) {
-        console.log("🔴 Immediate redirect needed: Admin not on admin path or allowed public path");
-        navigate('/admin/dashboard', { replace: true });
-      } else {
-        console.log("🔴 Admin user on allowed path, no redirection needed");
+      if (isAdmin) {
+        console.log("🔴 ADMIN ROLE found in storage - RoleRouter initial check");
+        
+        // If on a non-admin path and has admin role, redirect immediately
+        // BUT don't redirect from the home page
+        if (!isAdminPath(location.pathname) && !isPublicPath(location.pathname)) {
+          console.log("🔴 Immediate redirect needed: Admin not on admin path or allowed public path");
+          navigate('/admin/dashboard', { replace: true });
+        } else {
+          console.log("🔴 Admin user on allowed path, no redirection needed");
+        }
       }
-    }
-    
-    // If profile has admin role, log it
-    if (profile && profile.role === 'admin') {
-      console.log("🔴 ADMIN USER DETECTED in profile object");
       
-      // Set all storage locations to admin role for consistency
-      localStorage.setItem('supabase.auth.user_role', 'admin');
-      localStorage.setItem('userRole', 'admin');
-      sessionStorage.setItem('userRole', 'admin');
+      // If profile has admin role, log it
+      if (profile && profile.role === 'admin') {
+        console.log("🔴 ADMIN USER DETECTED in profile object");
+        
+        // Set all storage locations to admin role for consistency
+        localStorage.setItem('supabase.auth.user_role', 'admin');
+        localStorage.setItem('userRole', 'admin');
+        sessionStorage.setItem('userRole', 'admin');
+      }
+    } else {
+      console.log("No authenticated user detected, skipping admin role checks");
     }
   }, [profile, loading, location.pathname, bypassRoleCheck, navigate]);
 
@@ -130,6 +146,21 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
     }
     
     const currentPath = location.pathname;
+
+    // Only perform role checks if we have a profile or auth token
+    // This prevents unnecessary checks for unauthenticated visitors
+    const hasAuthToken = !!localStorage.getItem('supabase.auth.token');
+    
+    if (!profile && !hasAuthToken) {
+      console.log("No authenticated user data, skipping advanced role checks");
+      
+      // If not on a public path, redirect to login
+      if (!isPublicPath(currentPath)) {
+        console.log("Unauthenticated user on protected path, redirecting to login");
+        navigate('/login', { state: { from: currentPath } });
+      }
+      return;
+    }
     
     // Check for admin role in all storage locations before even checking profile
     const hasAdminRoleInStorage = checkForAdminRole();
