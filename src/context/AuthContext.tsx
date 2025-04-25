@@ -276,8 +276,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Authentication state change listener
   useEffect(() => {
+    // Add a debounce flag to prevent multiple profile fetches
+    let isProcessingAuth = false;
+    let lastAuthTimestamp = 0;
+    
     const getProfile = async () => {
       try {
+        // Prevent concurrent profile fetch operations
+        if (isProcessingAuth) {
+          console.log("Skipping duplicate profile fetch - already in progress");
+          return;
+        }
+        
+        // Prevent rapid successive profile fetches (debounce)
+        const now = Date.now();
+        if (now - lastAuthTimestamp < 1000) { // 1 second debounce
+          console.log("Skipping rapid profile fetch - debounced");
+          return;
+        }
+        
+        isProcessingAuth = true;
+        lastAuthTimestamp = now;
+        
+        console.log("Getting user profile...");
         const { data, error } = await supabase.auth.getUser();
         
         if (error) {
@@ -285,6 +306,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setProfile(null);
           setLoading(false);
+          isProcessingAuth = false;
           return;
         }
         
@@ -293,6 +315,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setProfile(null);
           setLoading(false);
+          isProcessingAuth = false;
           return;
         }
         
@@ -304,7 +327,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           saveRoleToStorage('admin');
         }
         
-        // Get profile data
+        // Get profile data - only if not already fetched recently
         const profile = await fetchProfileData(data.user.id);
         
         // Special handling for admin roles
@@ -312,8 +335,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log("🔴 Admin role from database - ensuring it's properly saved");
           saveRoleToStorage('admin');
         }
+        
+        isProcessingAuth = false;
       } catch (error) {
         console.error("Error in getProfile:", error);
+        isProcessingAuth = false;
       } finally {
         setLoading(false);
       }
@@ -356,6 +382,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         console.log("Auth state changed:", event);
         
+        // Prevent multiple rapid profile fetches by checking timestamp
+        const now = Date.now();
+        if (now - lastAuthTimestamp < 1000) {
+          console.log("Skipping auth event due to debounce:", event);
+          return;
+        }
+        
         if (event === "SIGNED_IN" && session) {
           console.log("User signed in");
           setUser(session.user);
@@ -383,28 +416,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               localStorage.removeItem('oauth_role');
               localStorage.removeItem('oauth_provider');
             } else {
-              console.log("Normal sign-in flow - fetching profile data for user:", session.user.id);
-              
-              // Clear any potentially inconsistent role data first
-              localStorage.removeItem('supabase.auth.user_role');
-              localStorage.removeItem('userRole');
-              sessionStorage.removeItem('userRole');
-              
-              // Fetch profile - this will set the correct role based on the database
-              const profile = await fetchProfileData(session.user.id);
-              
-              // Double-check that admin role is properly set
-              if (profile?.role === 'admin') {
-                console.log("🔴 ADMIN ROLE detected during sign-in - forcing proper storage");
-                saveRoleToStorage('admin');
-                
-                // Verify storage
-                console.log("Verifying admin role storage after sign-in:", {
-                  'localStorage.supabase.auth.user_role': localStorage.getItem('supabase.auth.user_role'),
-                  'localStorage.userRole': localStorage.getItem('userRole'),
-                  'sessionStorage.userRole': sessionStorage.getItem('userRole')
-                });
-              }
+              // Regular sign in - fetch profile with debounce
+              await getProfile();
             }
           }
         } else if (event === "SIGNED_OUT") {
@@ -412,21 +425,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setProfile(null);
           
-          // Clear role data
-          try {
-            localStorage.removeItem('supabase.auth.user_role');
-            localStorage.removeItem('userRole');
-            sessionStorage.removeItem('userRole');
-          } catch (e) {
-            console.warn("Could not clear role data:", e);
-          }
-        } else if (event === "USER_UPDATED" && session) {
-          console.log("User updated");
+          // Clear any stored roles to prevent role conflicts
+          localStorage.removeItem('supabase.auth.user_role');
+          localStorage.removeItem('userRole');
+          sessionStorage.removeItem('userRole');
+        } else if (session?.user) {
+          // Other auth events with session - make sure user state is updated
           setUser(session.user);
-          
-          if (session.user) {
-            await fetchProfileData(session.user.id);
-          }
         }
       }
     );

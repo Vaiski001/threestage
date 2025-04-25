@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import * as React from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmail, signInWithGoogle } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -53,8 +54,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     
     try {
       const isAvailable = await isSupabaseAvailable();
-      const status = getServiceStatus();
-      setServiceStatus(status.status);
+      const statusResult = await getServiceStatus();
+      setServiceStatus(statusResult.status);
       
       if (!isAvailable) {
         const errorMsg = "Supabase services may be experiencing issues. Some features might not work correctly.";
@@ -121,159 +122,130 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     setErrorMessage(null);
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setLoginAttempts(prev => prev + 1);
-    
-    if (captchaDetected && loginAttempts > 1) {
-      toast({
-        title: "CAPTCHA Protection Active",
-        description: "We strongly recommend using Google login instead of password login at this time.",
-        variant: "destructive",
-      });
-    }
-    
-    try {
-      const isAvailable = await isSupabaseAvailable();
-      if (!isAvailable && serviceStatus !== 'available') {
-        const errorMsg = "Authentication services are temporarily unavailable. Please try again later or use Google login.";
-        toast({
-          title: "Service Unavailable",
-          description: errorMsg,
-          variant: "destructive",
-        });
-        setErrorMessage(errorMsg);
-        if (onError) onError(errorMsg);
-        return;
-      }
-    } catch (error) {
-    }
-    
     setIsLoading(true);
     
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-      const timeoutMsg = "Login request timed out. Please try Google login instead.";
-      setErrorMessage(timeoutMsg);
-      
-      if (onError) {
-        onError(timeoutMsg);
+    try {
+      // Validate inputs before submitting
+      const result = loginSchema.safeParse({ email: emailValue, password: passwordValue });
+      if (!result.success) {
+        const formattedErrors: Record<string, string> = {};
+        result.error.errors.forEach((error) => {
+          if (error.path[0]) {
+            formattedErrors[error.path[0].toString()] = error.message;
+          }
+        });
+        setErrors(formattedErrors);
+        setIsLoading(false);
+        return;
       }
       
-      toast({
-        title: "Login timed out",
-        description: "The login request took too long to complete. Please try Google login instead.",
-        variant: "destructive",
-      });
-    }, 15000);
-    
-    setLoginTimeout(timeout);
-    
-    try {
-      console.log("Attempting login with:", { email: emailValue });
+      // Clear any previous login timeouts
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+        setLoginTimeout(null);
+      }
+      
+      console.log("Starting login process for:", emailValue);
+      
+      // Clear localStorage before login to prevent conflicts
+      localStorage.removeItem('supabase.auth.user_role');
+      localStorage.removeItem('userRole');
+      sessionStorage.removeItem('userRole');
+      
+      // Setup timeout to prevent hanging on login
+      const timeout = setTimeout(() => {
+        setIsLoading(false);
+        setErrorMessage("Login request timed out. Please try again.");
+      }, 15000);
+      setLoginTimeout(timeout);
+      
+      // Increment login attempt counter
+      setLoginAttempts(prev => prev + 1);
+      
+      // Attempt login
       const { data, error } = await signInWithEmail(emailValue, passwordValue);
       
+      // Clear timeout as we received a response
       if (loginTimeout) {
         clearTimeout(loginTimeout);
         setLoginTimeout(null);
       }
       
       if (error) {
-        console.error("Login error from Supabase:", error);
-        let errorMsg = "Invalid email or password. Please double-check your credentials and try again.";
+        console.error("Login error:", error);
         
-        if (error.message && error.message.includes("Email not confirmed")) {
-          errorMsg = "Please confirm your email before logging in.";
-        } else if (error.message && error.message.includes("rate limit")) {
-          errorMsg = "Too many login attempts. Please wait a minute and try again.";
-        } else if (error.message && (error.message.includes("captcha") || error.message.includes("CAPTCHA"))) {
-          errorMsg = "CAPTCHA verification failed. Please try Google login instead.";
+        // Handle specific error cases
+        if (error.message?.includes("Invalid login credentials")) {
+          setErrorMessage("Invalid email or password. Please check your credentials and try again.");
+        } else if (error.message?.includes("rate limit")) {
+          setErrorMessage("Too many login attempts. Please try again later.");
           setCaptchaDetected(true);
-        } else if (error.message && (error.message.includes("unavailable") || error.message.includes("maintenance"))) {
-          errorMsg = "Supabase services are currently unavailable. Please try again later or use Google login.";
+        } else if (error.message?.includes("captcha")) {
+          setErrorMessage("Security verification required. Please try again in a moment.");
+          setCaptchaDetected(true);
+        } else {
+          setErrorMessage(error.message || "An error occurred during login. Please try again.");
         }
         
-        setErrorMessage(errorMsg);
+        // Track failed login
+        setLoginAttempts(prev => prev + 1);
         
-        if (onError) {
-          onError(errorMsg);
+        // If multiple failures, suggest password reset
+        if (loginAttempts >= 2) {
+          toast({
+            title: "Having trouble logging in?",
+            description: "You can reset your password using the 'Forgot password?' link below.",
+            duration: 8000,
+          });
         }
         
-        toast({
-          title: "Login failed",
-          description: errorMsg,
-          variant: "destructive",
-        });
-        
+        setIsLoading(false);
         return;
       }
       
-      if (data?.user) {
-        console.log("Login successful for user:", data.user.id);
-        
-        if (data.user.user_metadata?.role) {
-          localStorage.setItem('supabase.auth.user_role', data.user.user_metadata.role);
-          console.log("Stored user role in localStorage:", data.user.user_metadata.role);
-        }
-        
-        toast({
-          title: "Login successful",
-          description: "You have been successfully logged in.",
-        });
-        
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          navigate("/dashboard");
-        }
-      } else {
-        console.error("No user returned after successful login");
-        const noUserMsg = "Login succeeded but user data couldn't be retrieved. Please try again.";
-        setErrorMessage(noUserMsg);
-        
-        if (onError) {
-          onError(noUserMsg);
-        }
-      }
-    } catch (error: any) {
-      console.error("Login error:", error);
+      // If we got here, the login was successful
+      console.log("Login successful");
+      setErrorMessage(null);
       
-      let errorMsg = "An error occurred during login. Please try again.";
-      
-      if (error.message) {
-        if (error.message.includes("Invalid login")) {
-          errorMsg = "Invalid email or password. Please double-check your credentials and try again.";
-        } else if (error.message.includes("Email not confirmed")) {
-          errorMsg = "Please confirm your email before logging in.";
-        } else if (error.message.includes("rate limit")) {
-          errorMsg = "Too many login attempts. Please wait a minute and try again.";
-        } else if (error.message.includes("captcha") || error.message.includes("CAPTCHA")) {
-          errorMsg = "CAPTCHA verification failed. Please try Google login instead.";
-          setCaptchaDetected(true);
-        } else if (error.message.includes("unavailable") || error.message.includes("maintenance")) {
-          errorMsg = "Supabase services are currently unavailable. Please try again later or use Google login.";
-        } else {
-          errorMsg = error.message;
-        }
+      if (onSuccess) {
+        onSuccess();
       }
       
-      toast({
-        title: "Login failed",
-        description: errorMsg,
-        variant: "destructive",
-      });
+      // Navigate to dashboard with slight delay to allow auth context to update
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 500);
+    } catch (err: any) {
+      console.error("Exception during login:", err);
       
-      setErrorMessage(errorMsg);
-      
-      if (onError) {
-        onError(errorMsg);
+      // Clear any timeouts
+      if (loginTimeout) {
+        clearTimeout(loginTimeout);
+        setLoginTimeout(null);
       }
-    } finally {
+      
+      setErrorMessage(err.message || "An unexpected error occurred. Please try again.");
+      
+      // If there seem to be connection issues, check Supabase availability
+      setTimeout(async () => {
+        try {
+          const statusResult = await getServiceStatus();
+          const status = statusResult.status || 'unavailable';
+          setServiceStatus(status);
+          
+          if (status !== 'available') {
+            toast({
+              title: "Service Status",
+              description: `Our authentication service is currently ${status}. This may affect your login.`,
+              duration: 6000,
+            });
+          }
+        } catch (e) {
+          console.error("Error checking service status:", e);
+        }
+      }, 500);
+      
       setIsLoading(false);
     }
   };

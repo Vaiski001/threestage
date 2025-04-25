@@ -70,6 +70,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Helper function to get service status
 export const getServiceStatus = async (): Promise<{
   isAvailable: boolean;
+  status: 'available' | 'degraded' | 'unavailable';
   message: string;
 }> => {
   // Track if we've already checked service status to avoid duplicate calls
@@ -81,9 +82,18 @@ export const getServiceStatus = async (): Promise<{
     // Simplified health check - just try to get a user session from Supabase
     const { data, error } = await supabase.auth.getSession();
     
+    let status: 'available' | 'degraded' | 'unavailable' = 'available';
+    let message = 'Service is available';
+    
+    if (error) {
+      status = 'unavailable';
+      message = `Service unavailable: ${error.message}`;
+    }
+    
     const result = {
       isAvailable: !error,
-      message: error ? `Service unavailable: ${error.message}` : 'Service is available'
+      status,
+      message
     };
     
     // Cache the result to avoid repeated checks
@@ -95,6 +105,7 @@ export const getServiceStatus = async (): Promise<{
     console.error('Error checking service status:', error);
     const result = {
       isAvailable: false,
+      status: 'unavailable' as const,
       message: 'Cannot connect to service'
     };
     

@@ -112,42 +112,95 @@ export const signInWithEmail = async (email: string, password: string) => {
   try {
     console.log("Signing in with email:", email);
     
-    // Add additional logging for debugging
-    console.log("Auth state before sign in:", 
-      await supabase.auth.getSession().then(res => 
-        `Has session: ${!!res.data.session}, Error: ${res.error ? res.error.message : 'none'}`
-      )
-    );
+    // Clear any existing auth state to prevent conflicts
+    localStorage.removeItem('supabase.auth.user_role');
+    localStorage.removeItem('userRole');
+    sessionStorage.removeItem('userRole');
     
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      console.error('Error signing in with email:', error);
-      return { error };
+    // First check current auth state to avoid unnecessary sign-ins
+    const { data: currentSession } = await supabase.auth.getSession();
+    if (currentSession.session?.user?.email === email) {
+      console.log("User is already signed in with this email, returning existing session");
+      return { data: currentSession };
     }
     
-    // Additional verification that we got valid data
-    if (!data?.user) {
-      console.error('No user returned from auth.signInWithPassword');
-      return { 
-        error: { message: "Authentication failed - no user returned" } 
-      };
+    // If user is signed in with a different email, sign them out first
+    if (currentSession.session) {
+      console.log("Signing out existing user before new login");
+      await supabase.auth.signOut({ scope: 'local' });
     }
     
-    console.log("Sign in successful:", data.user.id);
+    // Perform login with retry mechanism
+    let attempts = 0;
+    const maxAttempts = 2;
+    let lastError = null;
     
-    // Verify the session was created properly
-    const sessionCheck = await supabase.auth.getSession();
-    console.log("Session after login:", 
-      `Has session: ${!!sessionCheck.data.session}, ` +
-      `User ID: ${sessionCheck.data.session?.user?.id || 'none'}, ` +
-      `Error: ${sessionCheck.error ? sessionCheck.error.message : 'none'}`
-    );
+    while (attempts < maxAttempts) {
+      attempts++;
+      console.log(`Sign in attempt ${attempts}/${maxAttempts}`);
+      
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) {
+          console.error(`Error on attempt ${attempts}:`, error);
+          lastError = error;
+          
+          // If this is not the last attempt, wait before retrying
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+          
+          return { error };
+        }
+        
+        // Additional verification that we got valid data
+        if (!data?.user) {
+          console.error('No user returned from auth.signInWithPassword');
+          lastError = { message: "Authentication failed - no user returned" };
+          
+          // If this is not the last attempt, wait before retrying
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+          
+          return { error: lastError };
+        }
+        
+        console.log("Sign in successful:", data.user.id);
+        
+        // Verify the session was created properly
+        const sessionCheck = await supabase.auth.getSession();
+        console.log("Session after login:", 
+          `Has session: ${!!sessionCheck.data.session}, ` +
+          `User ID: ${sessionCheck.data.session?.user?.id || 'none'}, ` +
+          `Error: ${sessionCheck.error ? sessionCheck.error.message : 'none'}`
+        );
+        
+        // Add a small delay to ensure session is properly established
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        return { data };
+      } catch (error) {
+        console.error(`Exception during sign in attempt ${attempts}:`, error);
+        lastError = error;
+        
+        // If this is not the last attempt, wait before retrying
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          continue;
+        }
+      }
+    }
     
-    return { data };
+    // If we get here, all attempts failed
+    console.error('All sign in attempts failed');
+    return { error: lastError || { message: "Authentication failed after multiple attempts" } };
   } catch (error: any) {
     console.error('Exception during sign in:', error);
     throw error;

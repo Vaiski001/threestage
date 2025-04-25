@@ -106,13 +106,13 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
     }
   }, [supabaseCredentialsMissing, toast]);
 
-  // Refresh profile on mount and path change
+  // Refresh profile on mount only, not on path change
   useEffect(() => {
-    if (!bypassRoleCheck) {
-      console.log("Refreshing profile due to path change:", location.pathname);
+    if (!bypassRoleCheck && !loading) {
+      console.log("Initial profile refresh on RoleRouter mount");
       refreshProfile();
     }
-  }, [refreshProfile, location.pathname, bypassRoleCheck]);
+  }, [refreshProfile, bypassRoleCheck, loading]);
 
   useEffect(() => {
     // Skip in development/preview bypass mode
