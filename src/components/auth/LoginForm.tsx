@@ -127,10 +127,10 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
     
     try {
       // Validate inputs before submitting
-      const result = loginSchema.safeParse({ email: emailValue, password: passwordValue });
-      if (!result.success) {
+      const validationResult = loginSchema.safeParse({ email: emailValue, password: passwordValue });
+      if (!validationResult.success) {
         const formattedErrors: Record<string, string> = {};
-        result.error.errors.forEach((error) => {
+        validationResult.error.errors.forEach((error) => {
           if (error.path[0]) {
             formattedErrors[error.path[0].toString()] = error.message;
           }
@@ -148,23 +148,45 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       
       console.log("Starting login process for:", emailValue);
       
-      // Clear localStorage before login to prevent conflicts
+      // Clear storage completely before login to prevent conflicts
       localStorage.removeItem('supabase.auth.user_role');
       localStorage.removeItem('userRole');
+      localStorage.removeItem('supabase.auth.token');
       sessionStorage.removeItem('userRole');
+      sessionStorage.removeItem('supabase.auth.token');
       
-      // Setup timeout to prevent hanging on login
+      // Completely clear any auth-related localStorage items
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('supabase.auth.') || key.includes('user') || key.includes('role')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Setup timeout to prevent hanging on login (increased to 20 seconds)
       const timeout = setTimeout(() => {
         setIsLoading(false);
-        setErrorMessage("Login request timed out. Please try again.");
-      }, 15000);
+        setErrorMessage(
+          "Login request timed out. The authentication service might be temporarily unavailable. " +
+          "Please try again or use Google login instead."
+        );
+        
+        // Automatically check service status when timeout occurs
+        checkSupabaseAvailability();
+        
+        // Show toast with more details
+        toast({
+          title: "Connection issue detected",
+          description: "We're having trouble connecting to our authentication service. You might want to try Google login as an alternative.",
+          duration: 8000,
+        });
+      }, 20000);
       setLoginTimeout(timeout);
       
       // Increment login attempt counter
       setLoginAttempts(prev => prev + 1);
       
       // Attempt login
-      const { data, error } = await signInWithEmail(emailValue, passwordValue);
+      const loginResult = await signInWithEmail(emailValue, passwordValue);
       
       // Clear timeout as we received a response
       if (loginTimeout) {
@@ -172,30 +194,45 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         setLoginTimeout(null);
       }
       
-      if (error) {
-        console.error("Login error:", error);
+      // Check for errors
+      if (loginResult.error) {
+        console.error("Login error:", loginResult.error);
         
-        // Handle specific error cases
-        if (error.message?.includes("Invalid login credentials")) {
+        // Handle specific error cases with improved user feedback
+        const errorMessage = loginResult.error.message as string || '';
+        
+        if (errorMessage.includes("Invalid login credentials")) {
           setErrorMessage("Invalid email or password. Please check your credentials and try again.");
-        } else if (error.message?.includes("rate limit")) {
-          setErrorMessage("Too many login attempts. Please try again later.");
+        } else if (errorMessage.includes("rate limit")) {
+          setErrorMessage("Too many login attempts. Please try again later or use Google login instead.");
           setCaptchaDetected(true);
-        } else if (error.message?.includes("captcha")) {
-          setErrorMessage("Security verification required. Please try again in a moment.");
+        } else if (errorMessage.includes("captcha")) {
+          setErrorMessage("Security verification required. Please try again in a moment or use Google login instead.");
           setCaptchaDetected(true);
+        } else if (errorMessage.includes("timeout") || errorMessage.includes("timed out")) {
+          setErrorMessage(
+            "Request timed out. Please check your internet connection and try again, " +
+            "or use Google login as an alternative."
+          );
+          // Check service status after timeout
+          await checkSupabaseAvailability();
         } else {
-          setErrorMessage(error.message || "An error occurred during login. Please try again.");
+          // Use the detailed error message if available
+          setErrorMessage(
+            (loginResult.error as any).details || 
+            errorMessage || 
+            "An error occurred during login. Please try again or use Google login."
+          );
         }
         
         // Track failed login
         setLoginAttempts(prev => prev + 1);
         
-        // If multiple failures, suggest password reset
+        // If multiple failures, suggest password reset or Google login
         if (loginAttempts >= 2) {
           toast({
             title: "Having trouble logging in?",
-            description: "You can reset your password using the 'Forgot password?' link below.",
+            description: "You can reset your password or try logging in with Google instead.",
             duration: 8000,
           });
         }
@@ -215,7 +252,7 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       // Navigate to dashboard with slight delay to allow auth context to update
       setTimeout(() => {
         navigate("/dashboard");
-      }, 500);
+      }, 1000); // Increased from 500 to 1000ms
     } catch (err: any) {
       console.error("Exception during login:", err);
       
@@ -225,11 +262,16 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
         setLoginTimeout(null);
       }
       
-      setErrorMessage(err.message || "An unexpected error occurred. Please try again.");
+      setErrorMessage(
+        err.details || 
+        err.message || 
+        "An unexpected error occurred. Please try again or use Google login."
+      );
       
       // If there seem to be connection issues, check Supabase availability
       setTimeout(async () => {
         try {
+          await checkSupabaseAvailability();
           const statusResult = await getServiceStatus();
           const status = statusResult.status || 'unavailable';
           setServiceStatus(status);
@@ -237,8 +279,8 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
           if (status !== 'available') {
             toast({
               title: "Service Status",
-              description: `Our authentication service is currently ${status}. This may affect your login.`,
-              duration: 6000,
+              description: `Our authentication service is currently ${status}. This may affect your login. Using Google login is recommended.`,
+              duration: 8000,
             });
           }
         } catch (e) {

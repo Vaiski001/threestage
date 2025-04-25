@@ -117,6 +117,10 @@ export const signInWithEmail = async (email: string, password: string) => {
     localStorage.removeItem('userRole');
     sessionStorage.removeItem('userRole');
     
+    // Also clear any session data
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.removeItem('supabase.auth.token');
+    
     // First check current auth state to avoid unnecessary sign-ins
     const { data: currentSession } = await supabase.auth.getSession();
     if (currentSession.session?.user?.email === email) {
@@ -130,9 +134,13 @@ export const signInWithEmail = async (email: string, password: string) => {
       await supabase.auth.signOut({ scope: 'local' });
     }
     
+    // Force clear storage again after sign out
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.removeItem('supabase.auth.token');
+    
     // Perform login with retry mechanism
     let attempts = 0;
-    const maxAttempts = 2;
+    const maxAttempts = 3; // Increased from 2 to 3 attempts
     let lastError = null;
     
     while (attempts < maxAttempts) {
@@ -140,39 +148,80 @@ export const signInWithEmail = async (email: string, password: string) => {
       console.log(`Sign in attempt ${attempts}/${maxAttempts}`);
       
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        // Use Promise.race to implement a timeout for the auth request
+        const authPromise = supabase.auth.signInWithPassword({
           email,
           password,
         });
+        
+        // Set a timeout of 10 seconds
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject({ message: `Authentication request timed out after ${10} seconds on attempt ${attempts}` });
+          }, 10000);
+        });
+        
+        // Race the authentication request against the timeout
+        const { data, error } = await Promise.race([
+          authPromise,
+          timeoutPromise as Promise<{ data: null, error: any }>
+        ]);
         
         if (error) {
           console.error(`Error on attempt ${attempts}:`, error);
           lastError = error;
           
+          // Add better error information
+          lastError.attempt = attempts;
+          lastError.timestamp = new Date().toISOString();
+          
           // If this is not the last attempt, wait before retrying
           if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Exponential backoff: wait longer with each attempt
+            const backoffTime = 500 * Math.pow(1.5, attempts - 1);
+            console.log(`Waiting ${backoffTime}ms before retry attempt ${attempts + 1}`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
             continue;
           }
           
-          return { error };
+          return { error: {
+            ...lastError,
+            message: lastError.message || "Authentication failed after multiple attempts",
+            details: "Please check your internet connection and try again. If the problem persists, try using Google login instead."
+          }};
         }
         
         // Additional verification that we got valid data
         if (!data?.user) {
           console.error('No user returned from auth.signInWithPassword');
-          lastError = { message: "Authentication failed - no user returned" };
+          lastError = { 
+            message: "Authentication failed - no user returned",
+            attempt: attempts,
+            timestamp: new Date().toISOString()
+          };
           
           // If this is not the last attempt, wait before retrying
           if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            const backoffTime = 500 * Math.pow(1.5, attempts - 1);
+            console.log(`Waiting ${backoffTime}ms before retry attempt ${attempts + 1}`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
             continue;
           }
           
-          return { error: lastError };
+          return { error: { 
+            ...lastError,
+            details: "Please try again or use Google login."
+          }};
         }
         
         console.log("Sign in successful:", data.user.id);
+        
+        // Store auth data in localStorage for persistence
+        try {
+          localStorage.setItem('supabase.auth.user_id', data.user.id);
+        } catch (e) {
+          console.warn('Could not save user_id to localStorage:', e);
+        }
         
         // Verify the session was created properly
         const sessionCheck = await supabase.auth.getSession();
@@ -183,7 +232,7 @@ export const signInWithEmail = async (email: string, password: string) => {
         );
         
         // Add a small delay to ensure session is properly established
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Increased from 300 to 500ms
         
         return { data };
       } catch (error) {
@@ -192,7 +241,9 @@ export const signInWithEmail = async (email: string, password: string) => {
         
         // If this is not the last attempt, wait before retrying
         if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          const backoffTime = 500 * Math.pow(1.5, attempts - 1);
+          console.log(`Waiting ${backoffTime}ms before retry attempt ${attempts + 1}`);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
           continue;
         }
       }
@@ -200,10 +251,22 @@ export const signInWithEmail = async (email: string, password: string) => {
     
     // If we get here, all attempts failed
     console.error('All sign in attempts failed');
-    return { error: lastError || { message: "Authentication failed after multiple attempts" } };
+    return { error: lastError || { 
+      message: "Authentication failed after multiple attempts",
+      details: "Please try using a different authentication method or check if Supabase is properly configured."
+    }};
   } catch (error: any) {
     console.error('Exception during sign in:', error);
-    throw error;
+    
+    // Create a more informative error object
+    const enhancedError = {
+      message: error.message || "An unexpected error occurred during login",
+      originalError: error,
+      timestamp: new Date().toISOString(),
+      details: "There was a problem connecting to the authentication service. Please try again later or use Google login."
+    };
+    
+    return { error: enhancedError };
   }
 };
 

@@ -39,6 +39,36 @@ const customFetch = (url: RequestInfo | URL, init?: RequestInit) => {
 
 // Function to create and return a new Supabase client
 export const createSupabaseClient = () => {
+  console.log('Creating Supabase client with URL:', supabaseUrl ? 'URL provided' : 'NO URL');
+  
+  // Add additional logging for environment variables
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase initialization error: Missing required environment variables');
+    console.error(`URL defined: ${!!supabaseUrl}, Key defined: ${!!supabaseAnonKey}`);
+    
+    // Check if we're in Vercel or other environments that might format vars differently
+    console.log('Environment check:', {
+      NODE_ENV: import.meta.env.MODE,
+      DEV: import.meta.env.DEV,
+      PROD: import.meta.env.PROD,
+    });
+  }
+  
+  // Create a custom fetch implementation with timeout
+  const fetchWithTimeout = (url: RequestInfo | URL, init?: RequestInit) => {
+    // Set maximum timeout for all requests (15 seconds)
+    const timeout = 15000;
+    
+    return Promise.race([
+      customFetch(url, init),
+      new Promise<Response>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Request timed out after ${timeout}ms`));
+        }, timeout);
+      })
+    ]);
+  };
+  
   return createClient<SupabaseDatabase>(
     supabaseUrl || 'https://placeholder-url.supabase.co', 
     supabaseAnonKey || 'placeholder-key',
@@ -46,9 +76,18 @@ export const createSupabaseClient = () => {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
+        detectSessionInUrl: true,
+        storageKey: 'supabase.auth.token'
       },
       global: {
-        fetch: customFetch
+        fetch: fetchWithTimeout,
+        headers: {
+          'X-Client-Info': 'threestage-app'
+        }
+      },
+      // Increase timeout for slow connections
+      realtime: {
+        timeout: 30000,
       }
     }
   );
