@@ -26,7 +26,6 @@ import AnalyticsReports from "@/pages/admin/AnalyticsReports";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminDevTools from "@/pages/admin/AdminDevTools";
 import { CustomerPortalLayout } from "@/components/customer/layout/CustomerPortalLayout";
-import InquirySubmission from "@/pages/InquirySubmission";
 
 export const AppRouter = () => {
   return (
@@ -87,7 +86,7 @@ export const AppRouter = () => {
       
       <Route path="/customer/inquiry/new" element={
         <ProtectedRoute allowPreview>
-          <InquirySubmission />
+          <NotFound />
         </ProtectedRoute>
       } />
       
