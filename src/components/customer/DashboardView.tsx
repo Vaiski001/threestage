@@ -57,7 +57,7 @@ export const DashboardView = ({
   };
 
   const handleViewInquiries = () => {
-    navigate("/enquiries");
+    navigate("/customer/enquiries");
   };
 
   const handleBrowseCompanies = () => {

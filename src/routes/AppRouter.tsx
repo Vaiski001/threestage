@@ -85,6 +85,12 @@ export const AppRouter = () => {
         </ProtectedRoute>
       } />
       
+      <Route path="/customer/enquiries/:id" element={
+        <ProtectedRoute allowPreview={true}>
+          <Enquiries />
+        </ProtectedRoute>
+      } />
+      
       <Route path="/customer/inquiry/new" element={
         <ProtectedRoute allowPreview>
           <InquirySubmission />

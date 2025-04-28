@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Container } from "@/components/ui/Container";
@@ -8,12 +7,19 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Filter, Plus, Search, Bell } from "lucide-react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Enquiries = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const params = useParams();
   const userRole = profile?.role || "customer";
   const isDemo = window.location.pathname.includes("demo");
+  
+  const createNewEnquiry = () => {
+    navigate("/customer/inquiry/new");
+  };
 
   return (
     <AppLayout>
@@ -56,7 +62,13 @@ const Enquiries = () => {
                   <Filter className="h-4 w-4 mr-2" />
                   Filter
                 </Button>
-                <Button size="sm" onClick={() => toast({ title: "Feature coming soon", description: "New enquiry creation is coming soon." })}>
+                <Button 
+                  size="sm" 
+                  onClick={userRole === "company" 
+                    ? () => toast({ title: "Feature coming soon", description: "New enquiry creation is coming soon." })
+                    : createNewEnquiry
+                  }
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   {userRole === "company" ? "New Enquiry" : "Create Enquiry"}
                 </Button>
@@ -64,11 +76,30 @@ const Enquiries = () => {
             </div>
             
             <div className="pb-8">
-              <KanbanBoard 
-                isDemo={isDemo} 
-                isCompanyView={userRole === "company"}
-                height="h-[750px]"
-              />
+              {params.id ? (
+                // Inquiry detail view - for now just show ID
+                <div className="bg-card p-6 rounded-lg shadow-sm border">
+                  <h2 className="text-xl font-semibold mb-4">Inquiry Details (ID: {params.id})</h2>
+                  <p className="text-muted-foreground mb-6">
+                    Viewing details for this specific inquiry. 
+                    This is a placeholder until the full inquiry detail component is implemented.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate("/customer/enquiries")}
+                  >
+                    Back to All Inquiries
+                  </Button>
+                </div>
+              ) : (
+                // Inquiry list view (KanbanBoard)
+                <KanbanBoard 
+                  isDemo={isDemo} 
+                  isCompanyView={userRole === "company"}
+                  height="h-[750px]"
+                />
+              )}
             </div>
           </Container>
         </div>
