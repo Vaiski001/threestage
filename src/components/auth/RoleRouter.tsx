@@ -3,8 +3,8 @@ import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { validateRole, getDashboardPathForRole } from "@/lib/supabase/roleUtils";
-import { isSupabaseAvailable, clearAuthStorage } from "@/lib/supabase/client";
-import { supabaseClient } from "../../lib/supabase";
+import { isSupabaseAvailable, supabase } from "@/lib/supabase/client";
+import { clearAuthStorage } from "@/lib/supabase/signout";
 
 // Helper function to check for admin role in all possible storage locations
 const checkForAdminRole = (): boolean => {
