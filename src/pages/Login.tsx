@@ -9,7 +9,50 @@ import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { isSupabaseAvailable, getServiceStatus } from "@/lib/supabase/client";
+import { isSupabaseAvailable, getServiceStatus, supabase } from "@/lib/supabase/client";
+
+// Helper function to clear all auth data 
+const clearAllAuthData = () => {
+  console.log("Login page: Clearing all authentication data from storage");
+  
+  // Force Supabase to clear its session
+  supabase.auth.signOut().then(() => {
+    console.log("Signed out from Supabase");
+  }).catch(err => {
+    console.error("Error signing out from Supabase:", err);
+  });
+  
+  // Clear all auth-related items from localStorage
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('supabase.auth.') || 
+        key.includes('user') || 
+        key.includes('role') || 
+        key.includes('profile_')) {
+      console.log(`Removing localStorage item: ${key}`);
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Clear all auth-related items from sessionStorage
+  Object.keys(sessionStorage).forEach(key => {
+    if (key.startsWith('supabase.auth.') || 
+        key.includes('user') || 
+        key.includes('role') || 
+        key.includes('profile_')) {
+      console.log(`Removing sessionStorage item: ${key}`);
+      sessionStorage.removeItem(key);
+    }
+  });
+  
+  // Force clear specific known items to ensure they're gone
+  localStorage.removeItem('supabase.auth.token');
+  localStorage.removeItem('supabase.auth.user_role');
+  localStorage.removeItem('userRole');
+  sessionStorage.removeItem('supabase.auth.token');
+  sessionStorage.removeItem('userRole');
+  
+  console.log("Login page: Storage cleared completely");
+};
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
@@ -28,10 +71,8 @@ export default function Login() {
     setError(null);
     
     try {
-      // Clear any cached auth data
-      localStorage.removeItem('supabase.auth.user_role');
-      localStorage.removeItem('userRole');
-      sessionStorage.removeItem('userRole');
+      // Clear auth data completely
+      clearAllAuthData();
       
       // Refresh the auth profile
       await refreshProfile();
@@ -113,6 +154,12 @@ export default function Login() {
       navigate('/dashboard');
     }
   }, [user, profile, navigate]);
+
+  // Clear auth data on component mount
+  useEffect(() => {
+    console.log("Login page mounted - clearing auth data");
+    clearAllAuthData();
+  }, []);
 
   return (
     <React.Fragment>

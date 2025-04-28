@@ -149,18 +149,38 @@ export function LoginForm({ onSuccess, onError }: LoginFormProps) {
       console.log("Starting login process for:", emailValue);
       
       // Clear storage completely before login to prevent conflicts
-      localStorage.removeItem('supabase.auth.user_role');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('supabase.auth.token');
-      sessionStorage.removeItem('userRole');
-      sessionStorage.removeItem('supabase.auth.token');
+      console.log("Clearing all authentication data from storage");
       
-      // Completely clear any auth-related localStorage items
+      // Clear all auth-related items from localStorage
       Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('supabase.auth.') || key.includes('user') || key.includes('role')) {
+        if (key.startsWith('supabase.auth.') || 
+            key.includes('user') || 
+            key.includes('role') || 
+            key.includes('profile_')) {
+          console.log(`Removing localStorage item: ${key}`);
           localStorage.removeItem(key);
         }
       });
+      
+      // Clear all auth-related items from sessionStorage
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('supabase.auth.') || 
+            key.includes('user') || 
+            key.includes('role') || 
+            key.includes('profile_')) {
+          console.log(`Removing sessionStorage item: ${key}`);
+          sessionStorage.removeItem(key);
+        }
+      });
+      
+      // Force clear specific known items to ensure they're gone
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('supabase.auth.user_role');
+      localStorage.removeItem('userRole');
+      sessionStorage.removeItem('supabase.auth.token');
+      sessionStorage.removeItem('userRole');
+      
+      console.log("Storage cleared, proceeding with login attempt");
       
       // Setup timeout to prevent hanging on login (increased to 20 seconds)
       const timeout = setTimeout(() => {

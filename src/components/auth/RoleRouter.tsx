@@ -5,6 +5,42 @@ import { useToast } from "@/hooks/use-toast";
 import { validateRole, getDashboardPathForRole } from "@/lib/supabase/roleUtils";
 import { isSupabaseAvailable } from "@/lib/supabase/client";
 
+// Helper function to clear all auth data from storage
+const clearAllAuthData = () => {
+  console.log("Clearing all authentication data from storage");
+  
+  // Clear all auth-related items from localStorage
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('supabase.auth.') || 
+        key.includes('user') || 
+        key.includes('role') || 
+        key.includes('profile_')) {
+      console.log(`Removing localStorage item: ${key}`);
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Clear all auth-related items from sessionStorage
+  Object.keys(sessionStorage).forEach(key => {
+    if (key.startsWith('supabase.auth.') || 
+        key.includes('user') || 
+        key.includes('role') || 
+        key.includes('profile_')) {
+      console.log(`Removing sessionStorage item: ${key}`);
+      sessionStorage.removeItem(key);
+    }
+  });
+  
+  // Force clear specific known items to ensure they're gone
+  localStorage.removeItem('supabase.auth.token');
+  localStorage.removeItem('supabase.auth.user_role');
+  localStorage.removeItem('userRole');
+  sessionStorage.removeItem('supabase.auth.token');
+  sessionStorage.removeItem('userRole');
+  
+  console.log("Storage cleared completely");
+};
+
 // Helper function to check for admin role in all possible storage locations
 const checkForAdminRole = (): boolean => {
   // First, check if there's any indication of authentication
@@ -122,6 +158,14 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
     }
   }, [supabaseCredentialsMissing, toast]);
 
+  // Clear all auth data when navigating to login page
+  useEffect(() => {
+    if (location.pathname === '/login') {
+      console.log("Login page detected - clearing all authentication data");
+      clearAllAuthData();
+    }
+  }, [location.pathname]);
+  
   // Refresh profile on mount only, not on path change
   useEffect(() => {
     if (!bypassRoleCheck && !loading) {
