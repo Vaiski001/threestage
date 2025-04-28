@@ -1,4 +1,3 @@
-
 import { CustomerStats } from "./CustomerStats";
 import { EmptyState } from "./EmptyState";
 import { DashboardSection } from "./DashboardSection";
@@ -39,7 +38,6 @@ interface ActionCard {
 interface DashboardViewProps {
   customerStats: CustomerStat[];
   customerEnquiries: CustomerEnquiry[];
-  createNewEnquiry: () => void;
   customerName?: string;
   isDemo?: boolean;
 }
@@ -47,13 +45,16 @@ interface DashboardViewProps {
 export const DashboardView = ({ 
   customerStats, 
   customerEnquiries, 
-  createNewEnquiry,
   customerName = "John Doe",
   isDemo = false
 }: DashboardViewProps) => {
   const isEmpty = customerEnquiries.length === 0;
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const createNewEnquiry = () => {
+    navigate("/customer/inquiry/new");
+  };
 
   const handleViewInquiries = () => {
     navigate("/enquiries");

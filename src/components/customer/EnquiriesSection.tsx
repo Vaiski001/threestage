@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { EmptyState } from "./EmptyState";
 import { DashboardSection } from "./DashboardSection";
@@ -16,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Container } from "@/components/ui/Container";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { useNavigate } from "react-router-dom";
 
 interface CustomerEnquiry {
   id: string;
@@ -34,14 +34,14 @@ interface CustomerEnquiry {
 
 interface EnquiriesSectionProps {
   customerEnquiries: CustomerEnquiry[];
-  createNewEnquiry: () => void;
 }
 
-export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: EnquiriesSectionProps) => {
+export const EnquiriesSection = ({ customerEnquiries }: EnquiriesSectionProps) => {
   const [activeStatus, setActiveStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const isEmpty = customerEnquiries.length === 0;
 
@@ -51,6 +51,10 @@ export const EnquiriesSection = ({ customerEnquiries, createNewEnquiry }: Enquir
 
   const handleSelectStatusChange = (value: string) => {
     setStatusFilter(value);
+  };
+
+  const createNewEnquiry = () => {
+    navigate("/customer/inquiry/new");
   };
 
   return (

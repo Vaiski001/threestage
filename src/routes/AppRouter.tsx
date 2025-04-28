@@ -25,6 +25,8 @@ import ContentModeration from "@/pages/admin/ContentModeration";
 import AnalyticsReports from "@/pages/admin/AnalyticsReports";
 import AdminSettings from "@/pages/admin/AdminSettings";
 import AdminDevTools from "@/pages/admin/AdminDevTools";
+import { CustomerPortalLayout } from "@/components/customer/layout/CustomerPortalLayout";
+import InquirySubmission from "@/pages/InquirySubmission";
 
 export const AppRouter = () => {
   return (
@@ -56,6 +58,7 @@ export const AppRouter = () => {
       {/* Redirect routes */}
       <Route path="/forms" element={<Navigate to="/company/forms" replace />} />
       <Route path="/enquiries" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/customer/enquiries/new" element={<Navigate to="/customer/inquiry/new" replace />} />
       
       {/* Customer routes */}
       <Route path="/customer/dashboard" element={
@@ -79,6 +82,12 @@ export const AppRouter = () => {
       <Route path="/customer/enquiries" element={
         <ProtectedRoute allowPreview={true}>
           <Enquiries />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/customer/inquiry/new" element={
+        <ProtectedRoute allowPreview>
+          <InquirySubmission />
         </ProtectedRoute>
       } />
       
