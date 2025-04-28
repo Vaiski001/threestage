@@ -1,45 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { validateRole, getDashboardPathForRole } from "@/lib/supabase/roleUtils";
-import { isSupabaseAvailable } from "@/lib/supabase/client";
-
-// Helper function to clear all auth data from storage
-const clearAllAuthData = () => {
-  console.log("Clearing all authentication data from storage");
-  
-  // Clear all auth-related items from localStorage
-  Object.keys(localStorage).forEach(key => {
-    if (key.startsWith('supabase.auth.') || 
-        key.includes('user') || 
-        key.includes('role') || 
-        key.includes('profile_')) {
-      console.log(`Removing localStorage item: ${key}`);
-      localStorage.removeItem(key);
-    }
-  });
-  
-  // Clear all auth-related items from sessionStorage
-  Object.keys(sessionStorage).forEach(key => {
-    if (key.startsWith('supabase.auth.') || 
-        key.includes('user') || 
-        key.includes('role') || 
-        key.includes('profile_')) {
-      console.log(`Removing sessionStorage item: ${key}`);
-      sessionStorage.removeItem(key);
-    }
-  });
-  
-  // Force clear specific known items to ensure they're gone
-  localStorage.removeItem('supabase.auth.token');
-  localStorage.removeItem('supabase.auth.user_role');
-  localStorage.removeItem('userRole');
-  sessionStorage.removeItem('supabase.auth.token');
-  sessionStorage.removeItem('userRole');
-  
-  console.log("Storage cleared completely");
-};
+import { isSupabaseAvailable, clearAuthStorage } from "@/lib/supabase/client";
+import { supabaseClient } from "../../lib/supabase";
 
 // Helper function to check for admin role in all possible storage locations
 const checkForAdminRole = (): boolean => {
@@ -86,14 +51,44 @@ const isPublicPath = (path: string) =>
 
 interface RoleRouterProps {
   children: React.ReactNode;
+  allowedRoles?: string[];
+  redirectPath?: string;
+  loginPath?: string;
+  homeRoutes?: string[];
 }
 
-export const RoleRouter = ({ children }: RoleRouterProps) => {
+export const RoleRouter = ({ 
+  children, 
+  allowedRoles = [], 
+  redirectPath = "/login", 
+  loginPath = "/login",
+  homeRoutes = ["/customer", "/company", "/company-portal", "/admin", "/", "/home"],
+  ...rest
+}: RoleRouterProps) => {
   const { profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [hasCheckedRole, setHasCheckedRole] = useState(false);
+  const currentPath = location.pathname;
+  
+  // Check if we're at the login page
+  const isLoginPage = currentPath === loginPath;
+  
+  // If at login page and trying to navigate home, redirect based on role
+  useEffect(() => {
+    if (isLoginPage && location.state?.from && homeRoutes.includes(location.state.from)) {
+      console.log("Detected navigation from home route to login:", location.state.from);
+    }
+  }, [isLoginPage, location.state, homeRoutes]);
+  
+  // Clear auth data if explicitly navigating to login page with a redirect parameter
+  useEffect(() => {
+    if (isLoginPage && location.state?.clearAuth) {
+      console.log("Clearing auth data due to explicit redirect with clearAuth flag");
+      clearAuthStorage();
+    }
+  }, [isLoginPage, location.state]);
 
   // Development mode and preview bypass
   const isDevelopment = import.meta.env.DEV;
@@ -158,14 +153,6 @@ export const RoleRouter = ({ children }: RoleRouterProps) => {
     }
   }, [supabaseCredentialsMissing, toast]);
 
-  // Clear all auth data when navigating to login page
-  useEffect(() => {
-    if (location.pathname === '/login') {
-      console.log("Login page detected - clearing all authentication data");
-      clearAllAuthData();
-    }
-  }, [location.pathname]);
-  
   // Refresh profile on mount only, not on path change
   useEffect(() => {
     if (!bypassRoleCheck && !loading) {
